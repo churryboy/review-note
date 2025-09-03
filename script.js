@@ -40,8 +40,26 @@ const reviewImage = document.getElementById('reviewImage');
 const imageCard = document.getElementById('imageCard');
 const leftIndicator = document.getElementById('leftIndicator');
 const rightIndicator = document.getElementById('rightIndicator');
+const wrongBtn = document.getElementById('wrongBtn');
 const ambiguousBtn = document.getElementById('ambiguousBtn');
-const unknownBtn = document.getElementById('unknownBtn');
+
+// Coaching guide elements
+const coachingOverlay = document.getElementById('coachingOverlay');
+const coachingSkip = document.getElementById('coachingSkip');
+const coachingNext = document.getElementById('coachingNext');
+const coachingDone = document.getElementById('coachingDone');
+
+// List coaching guide elements
+const listCoachingOverlay = document.getElementById('listCoachingOverlay');
+const listCoachingSkip = document.getElementById('listCoachingSkip');
+const listCoachingNext = document.getElementById('listCoachingNext');
+const listCoachingDone = document.getElementById('listCoachingDone');
+
+// N-round coaching guide elements
+const nListCoachingOverlay = document.getElementById('nListCoachingOverlay');
+const nListCoachingSkip = document.getElementById('nListCoachingSkip');
+const nListCoachingNext = document.getElementById('nListCoachingNext');
+const nListCoachingDone = document.getElementById('nListCoachingDone');
 
 // Image detail elements
 const detailImage = document.getElementById('detailImage');
@@ -52,6 +70,14 @@ const detailTimestamp = document.getElementById('detailTimestamp');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    // Always treat as first-time user on refresh
+    localStorage.removeItem('hasSeenCoaching');
+    localStorage.removeItem('hasSeenListCoaching');
+    sessionStorage.removeItem('shownListCoach');
+    // Reset n회독 coaching flags for testing on every refresh
+    sessionStorage.removeItem('shownNListCoach');
+    sessionStorage.removeItem('nListCoachPending');
+
     loadQuestions();
     loadPopQuizItems();
     updateQuestionCount();
@@ -93,8 +119,23 @@ function setupEventListeners() {
     // });
 
     // Image review actions
+    wrongBtn.addEventListener('click', () => categorizeQuestion('wrong'));
     ambiguousBtn.addEventListener('click', () => categorizeQuestion('ambiguous'));
-    unknownBtn.addEventListener('click', () => categorizeQuestion('unknown'));
+
+    // Coaching guide
+    coachingSkip.addEventListener('click', closeCoachingGuide);
+    coachingNext.addEventListener('click', nextCoachingStep);
+    coachingDone.addEventListener('click', closeCoachingGuide);
+
+    // List coaching guide
+    listCoachingSkip.addEventListener('click', closeListCoachingGuide);
+    listCoachingNext.addEventListener('click', nextListCoachingStep);
+    listCoachingDone.addEventListener('click', closeListCoachingGuide);
+
+    // N-round coaching guide
+    nListCoachingSkip.addEventListener('click', closeNListCoachingGuide);
+    nListCoachingNext.addEventListener('click', nextNListCoachingStep);
+    nListCoachingDone.addEventListener('click', closeNListCoachingGuide);
 
     // Set up swipe gestures
     setupSwipeGestures();
@@ -152,6 +193,9 @@ function showImageReviewView() {
     settingsView.style.display = 'none';
     imageReviewView.style.display = 'flex';
     solutionView.style.display = 'none';
+    
+    // Show coaching guide for first-time users
+    checkAndShowCoachingGuide();
 }
 
 // Handle image capture
@@ -175,46 +219,50 @@ async function handleImageCapture(event) {
 function categorizeQuestion(category) {
     if (!currentImageBlob) return;
 
-    // Show loading overlay briefly for visual feedback
-    loadingOverlay.classList.add('active');
+    // Determine pre-count of 0회독 items before adding
+    const preCountRound0 = questions.filter(q => q.round === 0).length;
 
-    setTimeout(() => {
-        // Convert image to base64 for storage
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // Create new question entry
-            const newQuestion = {
-                id: Date.now(),
-                questionNumber: '문제 ' + (questions.length + 1),
-                publisher: '출처모름',
-                questionText: '이미지 문제',
-                answerChoices: [],
-                handwrittenNotes: '',
-                imageUrl: e.target.result, // Base64 image data
-                category: category,
-                round: 0, // Start in 0회독
-                timestamp: new Date().toISOString(),
-                lastAccessed: new Date().toISOString(),
-                solutionNotes: '' // For storing solution process
-            };
-
-            questions.unshift(newQuestion); // Add to beginning of array
-            saveQuestions();
-            updateQuestionCount();
-
-            // Show success feedback
-            const categoryText = category === 'ambiguous' ? '애매한 문제' : '모르는 문제';
-            showToast(`${categoryText}로 저장되었습니다!`);
-            
-            // Clean up and go back to 0회독 view
-            cleanupCurrentImage();
-            show0RoundView();
-            
-            loadingOverlay.classList.remove('active');
+    // Convert image to base64 for storage immediately
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Create new question entry
+        const newQuestion = {
+            id: Date.now(),
+            questionNumber: '문제 ' + (questions.length + 1),
+            publisher: '출처모름',
+            questionText: '이미지 문제',
+            answerChoices: [],
+            handwrittenNotes: '',
+            imageUrl: e.target.result, // Base64 image data
+            category: category,
+            round: 0, // Start in 0회독
+            timestamp: new Date().toISOString(),
+            lastAccessed: new Date().toISOString(),
+            solutionNotes: '' // For storing solution process
         };
+
+        questions.unshift(newQuestion); // Add to beginning of array
+        saveQuestions();
+        updateQuestionCount();
+
+        // Show success feedback
+        const categoryText = category === 'ambiguous' ? '애매한 문제' : '틀린 문제';
+        showToast(`${categoryText}로 저장되었습니다!`);
         
-        reader.readAsDataURL(currentImageBlob);
-    }, 500); // Brief delay for visual feedback
+        // Clean up and go back to 0회독 view
+        cleanupCurrentImage();
+        show0RoundView();
+        
+        // Show list coaching the first time 0회독 transitions from 0 → 1
+        if (preCountRound0 === 0 && !sessionStorage.getItem('shownListCoach')) {
+            setTimeout(() => {
+                console.log('Triggering list coaching after first card created');
+                showListCoachingGuide();
+            }, 300); // small delay to ensure list rendered
+        }
+    };
+    
+    reader.readAsDataURL(currentImageBlob);
 }
 
 // Clean up current image resources
@@ -251,7 +299,7 @@ function display0RoundQuestions() {
                         <div class="question-meta">
                             <div class="source-category">
                                 <span class="question-source">${question.publisher}</span>
-                                ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매함' : '모름'}</span>` : ''}
+                                ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매함' : '틀림'}</span>` : ''}
                             </div>
                         </div>
                     </div>
@@ -318,7 +366,7 @@ function displayNRoundQuestions() {
                             <div class="source-category">
                                 <span class="question-source">${question.publisher}</span>
                                 <span class="question-round">${question.round}회독</span>
-                                ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매함' : '모름'}</span>` : ''}
+                                ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매함' : '틀림'}</span>` : ''}
                             </div>
                         </div>
                     </div>
@@ -356,6 +404,19 @@ function displayNRoundQuestions() {
         console.log('Setting up n회독 swipe for item:', item.dataset.id);
         setupNRoundSwipe(item);
     });
+
+    // Show n회독 coaching only when: first n회독 card exists AND user is on n회독 page
+    if (
+        roundNQuestions.length === 1 &&
+        sessionStorage.getItem('nListCoachPending') === 'true' &&
+        !sessionStorage.getItem('shownNListCoach')
+    ) {
+        setTimeout(() => {
+            console.log('Triggering n회독 coaching after entering n회독 with first card');
+            showNListCoachingGuide();
+            sessionStorage.removeItem('nListCoachPending');
+        }, 200);
+    }
 }
 
 // Show solution view
@@ -379,7 +440,7 @@ function showSolutionView(questionId, fromView) {
     document.getElementById('solutionTimestamp').textContent = new Date(question.lastAccessed).toLocaleString('ko-KR');
 
     const solutionCategory = document.getElementById('solutionCategory');
-    solutionCategory.textContent = question.category === 'ambiguous' ? '애매함' : '모름';
+    solutionCategory.textContent = question.category === 'ambiguous' ? '애매함' : '틀림';
     solutionCategory.className = `solution-category ${question.category}`;
 
     document.getElementById('solutionImage').src = question.imageUrl;
@@ -452,7 +513,7 @@ function openImageDetail(questionId) {
     detailPublisher.textContent = question.publisher || '출처모름';
     detailTimestamp.textContent = new Date(question.lastAccessed).toLocaleString('ko-KR');
 
-    detailCategory.textContent = question.category === 'ambiguous' ? '애매함' : '모름';
+    detailCategory.textContent = question.category === 'ambiguous' ? '애매함' : '틀림';
     detailCategory.className = `detail-category ${question.category}`;
 
     detailImage.src = question.imageUrl;
@@ -682,11 +743,11 @@ function setupSwipeGestures() {
         const threshold = 120;
 
         if (deltaX < -threshold) {
-            // Swiped left - Ambiguous
-            swipeComplete('left', 'ambiguous');
+            // Swiped left - Wrong
+            swipeComplete('left', 'wrong');
         } else if (deltaX > threshold) {
-            // Swiped right - Unknown
-            swipeComplete('right', 'unknown');
+            // Swiped right - Ambiguous
+            swipeComplete('right', 'ambiguous');
         } else {
             // Snap back to center
             imageCard.style.transform = 'translateX(0) rotate(0deg)';
@@ -829,9 +890,17 @@ function setupQuestionSwipe(item) {
 function moveToNRound(questionId) {
     const questionIndex = questions.findIndex(q => q.id === questionId);
     if (questionIndex !== -1) {
+        // Capture pre-count of n회독 items
+        const preCountNRound = questions.filter(q => q.round > 0).length;
+
         questions[questionIndex].round = 1; // Move to 1회독
         saveQuestions();
         showToast('n회독으로 이동했습니다!');
+
+        // Mark coaching pending if this creates the first n회독 card
+        if (preCountNRound === 0) {
+            sessionStorage.setItem('nListCoachPending', 'true');
+        }
     }
 }
 
@@ -1033,6 +1102,123 @@ function showRandomPopQuiz() {
     if (round0View.style.display !== 'none') {
         display0RoundQuestions();
     } else if (roundNView.style.display !== 'none') {
-        displayNRoundQuestions();
+                 displayNRoundQuestions();
+     }
+}
+
+// Check and show coaching guide for first-time users
+function checkAndShowCoachingGuide() {
+    const hasSeenCoaching = localStorage.getItem('hasSeenCoaching');
+    if (!hasSeenCoaching) {
+        showCoachingGuide();
+    }
+}
+
+// Show coaching guide
+function showCoachingGuide() {
+    coachingOverlay.style.display = 'flex';
+    // Reset to first step
+    document.querySelectorAll('.coaching-step').forEach(step => step.classList.remove('active'));
+    document.getElementById('step1').classList.add('active');
+    document.querySelectorAll('.step-dot').forEach(dot => dot.classList.remove('active'));
+    document.querySelector('.step-dot[data-step="1"]').classList.add('active');
+    coachingNext.style.display = 'block';
+    coachingDone.style.display = 'none';
+}
+
+// Close coaching guide
+function closeCoachingGuide() {
+    coachingOverlay.style.display = 'none';
+    localStorage.setItem('hasSeenCoaching', 'true');
+}
+
+// Next coaching step
+function nextCoachingStep() {
+    const currentStep = document.querySelector('.coaching-step.active');
+    const currentStepId = currentStep.id;
+    
+    if (currentStepId === 'step1') {
+        // Move to step 2
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
+        document.querySelector('.step-dot[data-step="1"]').classList.remove('active');
+        document.querySelector('.step-dot[data-step="2"]').classList.add('active');
+                 coachingNext.style.display = 'none';
+         coachingDone.style.display = 'block';
+     }
+}
+
+// Check and show list coaching guide
+function checkAndShowListCoaching() {
+    const hasSeenListCoaching = localStorage.getItem('hasSeenListCoaching');
+    if (!hasSeenListCoaching) {
+        showListCoachingGuide();
+    }
+}
+
+// Show list coaching guide
+function showListCoachingGuide() {
+    listCoachingOverlay.style.display = 'flex';
+    // Reset to first step
+    document.querySelectorAll('#listCoachingOverlay .coaching-step').forEach(step => step.classList.remove('active'));
+    document.getElementById('listStep1').classList.add('active');
+    document.querySelectorAll('#listCoachingOverlay .step-dot').forEach(dot => dot.classList.remove('active'));
+    document.querySelector('#listCoachingOverlay .step-dot[data-step="1"]').classList.add('active');
+    listCoachingNext.style.display = 'block';
+    listCoachingDone.style.display = 'none';
+    // Mark shown for this session to avoid duplicates until refresh
+    sessionStorage.setItem('shownListCoach', 'true');
+}
+
+// Close list coaching guide
+function closeListCoachingGuide() {
+    listCoachingOverlay.style.display = 'none';
+    localStorage.setItem('hasSeenListCoaching', 'true');
+}
+
+// Next list coaching step
+function nextListCoachingStep() {
+    const currentStep = document.querySelector('#listCoachingOverlay .coaching-step.active');
+    const currentStepId = currentStep.id;
+    
+    if (currentStepId === 'listStep1') {
+        // Move to step 2
+        document.getElementById('listStep1').classList.remove('active');
+        document.getElementById('listStep2').classList.add('active');
+        document.querySelector('#listCoachingOverlay .step-dot[data-step="1"]').classList.remove('active');
+        document.querySelector('#listCoachingOverlay .step-dot[data-step="2"]').classList.add('active');
+        listCoachingNext.style.display = 'none';
+        listCoachingDone.style.display = 'block';
+    }
+} 
+
+// N-round coaching helpers
+function showNListCoachingGuide() {
+    nListCoachingOverlay.style.display = 'flex';
+    document.querySelectorAll('#nListCoachingOverlay .coaching-step').forEach(step => step.classList.remove('active'));
+    document.getElementById('nListStep1').classList.add('active');
+    document.querySelectorAll('#nListCoachingOverlay .step-dot').forEach(dot => dot.classList.remove('active'));
+    document.querySelector('#nListCoachingOverlay .step-dot[data-step="1"]').classList.add('active');
+    nListCoachingNext.style.display = 'block';
+    nListCoachingDone.style.display = 'none';
+    sessionStorage.setItem('shownNListCoach', 'true');
+}
+
+function closeNListCoachingGuide() {
+    nListCoachingOverlay.style.display = 'none';
+    localStorage.setItem('hasSeenNListCoaching', 'true');
+}
+
+function nextNListCoachingStep() {
+    const currentStep = document.querySelector('#nListCoachingOverlay .coaching-step.active');
+    const currentStepId = currentStep.id;
+    
+    if (currentStepId === 'nListStep1') {
+        document.getElementById('nListStep1').classList.remove('active');
+        document.getElementById('nListStep2').classList.add('active');
+        document.querySelector('#nListCoachingOverlay .step-dot[data-step="1"]').classList.remove('active');
+        document.querySelector('#nListCoachingOverlay .step-dot[data-step="2"]').classList.add('active');
+        nListCoachingNext.style.display = 'none';
+        nListCoachingDone.style.display = 'block';
     }
 } 

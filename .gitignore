@@ -7,9 +7,10 @@ node_modules/
 .env.production
 
 # Google Cloud credentials
-*.json
 google-cloud-key.json
 service-account-key.json
+*-key.json
+credentials.json
 
 # Logs
 logs

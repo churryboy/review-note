@@ -388,13 +388,13 @@ body {
     transform: translateY(-2px);
 }
 
-.action-btn.unknown {
+.action-btn.wrong {
     background: rgba(255, 85, 0, 0.1);
     color: #FF5500;
     border: 2px solid rgba(255, 85, 0, 0.2);
 }
 
-.action-btn.unknown:hover {
+.action-btn.wrong:hover {
     background: rgba(255, 85, 0, 0.2);
     transform: translateY(-2px);
 }
@@ -445,7 +445,7 @@ body {
     background: #FFA500;
 }
 
-.solution-category.unknown {
+.solution-category.wrong {
     background: #FF5500;
 }
 
@@ -699,7 +699,7 @@ body {
     background: #FFA500;
 }
 
-.question-category.unknown {
+.question-category.wrong {
     background: #FF5500;
 }
 
@@ -875,6 +875,220 @@ body {
     max-height: 90vh;
     object-fit: contain;
     display: block;
+}
+
+/* Coaching Guide Overlay */
+.coaching-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 4000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.coaching-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 400px;
+    width: 100%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.coaching-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.coaching-header h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.coaching-skip {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.coaching-skip:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #333;
+}
+
+.coaching-steps {
+    padding: 20px;
+    min-height: 300px;
+}
+
+.coaching-step {
+    display: none;
+    text-align: center;
+}
+
+.coaching-step.active {
+    display: block;
+}
+
+.step-icon {
+    font-size: 3rem;
+    color: #FF5500;
+    margin-bottom: 20px;
+}
+
+.coaching-step h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.coaching-step p {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+.swipe-demo {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.demo-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.demo-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.demo-arrow.left {
+    color: #FF5500;
+}
+
+.demo-arrow.right {
+    color: #FFA500;
+}
+
+.demo-arrow i {
+    font-size: 1.5rem;
+    animation: bounce 2s infinite;
+}
+
+.demo-image {
+    font-size: 2rem;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #ddd;
+}
+
+.demo-list-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 2px dashed #ddd;
+}
+
+.demo-thumbnail {
+    width: 30px;
+    height: 30px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.demo-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.coaching-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-top: 1px solid #eee;
+}
+
+.step-indicators {
+    display: flex;
+    gap: 8px;
+}
+
+.step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ddd;
+    transition: all 0.3s ease;
+}
+
+.step-dot.active {
+    background: #FF5500;
+}
+
+.coaching-next,
+.coaching-done {
+    background: linear-gradient(135deg, #FF5500, #FF8A00);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.coaching-next:hover,
+.coaching-done:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 85, 0, 0.3);
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateX(0);
+    }
+    40% {
+        transform: translateX(-5px);
+    }
+    60% {
+        transform: translateX(5px);
+    }
 }
 
 /* Loading Overlay */

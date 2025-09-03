@@ -99,15 +99,15 @@
                 <!-- Swipe indicators -->
                 <div class="swipe-indicator left" id="leftIndicator">
                     <div class="indicator-content">
-                        <i class="fas fa-question-circle"></i>
-                        <span>애매한 문제</span>
+                        <i class="fas fa-times-circle"></i>
+                        <span>틀린 문제</span>
                     </div>
                 </div>
                 
                 <div class="swipe-indicator right" id="rightIndicator">
                     <div class="indicator-content">
-                        <i class="fas fa-times-circle"></i>
-                        <span>모르는 문제</span>
+                        <i class="fas fa-question-circle"></i>
+                        <span>애매한 문제</span>
                     </div>
                 </div>
                 
@@ -125,13 +125,13 @@
             
             <!-- Action buttons -->
             <div class="review-actions">
+                <button class="action-btn wrong" id="wrongBtn">
+                    <i class="fas fa-times-circle"></i>
+                    <span>틀린 문제</span>
+                </button>
                 <button class="action-btn ambiguous" id="ambiguousBtn">
                     <i class="fas fa-question-circle"></i>
                     <span>애매한 문제</span>
-                </button>
-                <button class="action-btn unknown" id="unknownBtn">
-                    <i class="fas fa-times-circle"></i>
-                    <span>모르는 문제</span>
                 </button>
             </div>
         </div>
@@ -196,6 +196,181 @@
                 <i class="fas fa-times"></i>
             </button>
             <img id="popupImage" src="" alt="문제 이미지">
+        </div>
+    </div>
+
+    <!-- Coaching Guide Overlay -->
+    <div class="coaching-overlay" id="coachingOverlay" style="display: none;">
+        <div class="coaching-content">
+            <div class="coaching-header">
+                <h2>사용법 안내</h2>
+                <button class="coaching-skip" id="coachingSkip">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="coaching-steps">
+                <!-- Step 1: Left swipe explanation -->
+                <div class="coaching-step active" id="step1">
+                    <div class="step-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <h3>왼쪽으로 스와이프</h3>
+                    <p>왼쪽으로 스와이프하면<br>틀린 문제로 저장됩니다</p>
+                    <div class="swipe-demo">
+                        <div class="demo-card">
+                            <div class="demo-arrow left">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>틀린 문제</span>
+                            </div>
+                            <div class="demo-image">📝</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 2: Right swipe explanation -->
+                <div class="coaching-step" id="step2">
+                    <div class="step-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h3>오른쪽으로 스와이프</h3>
+                    <p>오른쪽으로 스와이프하면<br>애매한 문제로 저장됩니다</p>
+                    <div class="swipe-demo">
+                        <div class="demo-card">
+                            <div class="demo-image">📝</div>
+                            <div class="demo-arrow right">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>애매한 문제</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="coaching-footer">
+                <div class="step-indicators">
+                    <span class="step-dot active" data-step="1"></span>
+                    <span class="step-dot" data-step="2"></span>
+                </div>
+                <button class="coaching-next" id="coachingNext">다음</button>
+                <button class="coaching-done" id="coachingDone" style="display: none;">시작하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- List Coaching Guide Overlay -->
+    <div class="coaching-overlay" id="listCoachingOverlay" style="display: none;">
+        <div class="coaching-content">
+            <div class="coaching-header">
+                <h2>목록 사용법</h2>
+                <button class="coaching-skip" id="listCoachingSkip">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="coaching-steps">
+                <!-- Step 1: Left swipe explanation for list -->
+                <div class="coaching-step active" id="listStep1">
+                    <div class="step-icon">
+                        <i class="fas fa-redo"></i>
+                    </div>
+                    <h3>왼쪽으로 스와이프</h3>
+                    <p>왼쪽으로 스와이프하면<br>n회독으로 이동합니다</p>
+                    <div class="swipe-demo">
+                        <div class="demo-card">
+                            <div class="demo-arrow left">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>n회독</span>
+                            </div>
+                            <div class="demo-image">📝</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 2: Right swipe explanation for list -->
+                <div class="coaching-step" id="listStep2">
+                    <div class="step-icon">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                    <h3>오른쪽으로 스와이프</h3>
+                    <p>오른쪽으로 스와이프하면<br>문제가 삭제됩니다</p>
+                    <div class="swipe-demo">
+                        <div class="demo-card">
+                            <div class="demo-image">📝</div>
+                            <div class="demo-arrow right">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>삭제</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="coaching-footer">
+                <div class="step-indicators">
+                    <span class="step-dot active" data-step="1"></span>
+                    <span class="step-dot" data-step="2"></span>
+                </div>
+                <button class="coaching-next" id="listCoachingNext">다음</button>
+                <button class="coaching-done" id="listCoachingDone" style="display: none;">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- N회독 Coaching Guide Overlay -->
+    <div class="coaching-overlay" id="nListCoachingOverlay" style="display: none;">
+        <div class="coaching-content">
+            <div class="coaching-header">
+                <h2>n회독 사용법</h2>
+                <button class="coaching-skip" id="nListCoachingSkip">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="coaching-steps">
+                <div class="coaching-step active" id="nListStep1">
+                    <div class="step-icon">
+                        <i class="fas fa-redo"></i>
+                    </div>
+                    <h3>회독 수 올리기</h3>
+                    <p>왼쪽으로 스와이프하면<br>회독 수가 +1 증가합니다</p>
+                    <div class="swipe-demo">
+                        <div class="demo-card">
+                            <div class="demo-arrow left">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>+1 회독</span>
+                            </div>
+                            <div class="demo-image">📝</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="coaching-step" id="nListStep2">
+                    <div class="step-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h3>팝퀴즈로 이동</h3>
+                    <p>오른쪽으로 스와이프하면<br>팝퀴즈로 이동합니다</p>
+                    <div class="swipe-demo">
+                        <div class="demo-card">
+                            <div class="demo-image">📝</div>
+                            <div class="demo-arrow right">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>팝퀴즈</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="coaching-footer">
+                <div class="step-indicators">
+                    <span class="step-dot active" data-step="1"></span>
+                    <span class="step-dot" data-step="2"></span>
+                </div>
+                <button class="coaching-next" id="nListCoachingNext">다음</button>
+                <button class="coaching-done" id="nListCoachingDone" style="display: none;">확인</button>
+            </div>
         </div>
     </div>
 

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>복습노트 - 문제 스캔 & 저장</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-book"></i>
+                <span class="logo-text">스마트 오답노트</span>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- 0회독 View -->
+        <div class="round-view" id="round0View">
+            <div class="question-list" id="round0List">
+                <!-- 0회독 questions will be dynamically added here -->
+            </div>
+            
+            <div class="empty-state" id="round0Empty">
+                <i class="fas fa-inbox"></i>
+                <p>아직 저장된 문제가 없습니다</p>
+                <small>좌측 하단 카메라 버튼으로 문제를 촬영해보세요</small>
+            </div>
+            
+            <!-- Floating Camera Button -->
+            <button class="floating-camera-btn" id="floatingCameraBtn">
+                <i class="fas fa-camera"></i>
+            </button>
+            
+            <!-- Hidden file input for camera -->
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+        </div>
+
+        <!-- n회독 View -->
+        <div class="round-view" id="roundNView" style="display: none;">
+            <div class="question-list" id="roundNList">
+                <!-- n회독 questions will be dynamically added here -->
+            </div>
+            
+            <div class="empty-state" id="roundNEmpty">
+                <i class="fas fa-inbox"></i>
+                <p>아직 복습할 문제가 없습니다</p>
+            </div>
+        </div>
+
+        <!-- Pop Quiz View -->
+        <div class="round-view" id="settingsView" style="display: none;">
+            <div class="pop-quiz-container" id="popQuizContainer">
+                <!-- Pop quiz content will be displayed here -->
+            </div>
+            
+            <div class="empty-state" id="popQuizEmpty">
+                <i class="fas fa-clock"></i>
+                <p>팝퀴즈 대기 중...</p>
+                <small>n회독에서 스와이프한 문제들이 랜덤하게 나타납니다</small>
+            </div>
+            
+            <div class="settings-content">
+                <div class="setting-item">
+                    <span>버전 정보</span>
+                    <span>v1.0.0</span>
+                </div>
+                <div class="setting-item">
+                    <span>저장된 문제 수</span>
+                    <span id="totalQuestionCount">0개</span>
+                </div>
+                <div class="setting-item">
+                    <span>팝퀴즈 대기</span>
+                    <span id="popQuizWaitingCount">0개</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Review View -->
+        <div class="image-review-view" id="imageReviewView" style="display: none;">
+            <div class="review-header">
+                <button class="back-btn" id="backToCameraFromReview">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h2>문제를 분류해주세요</h2>
+                <div class="review-progress">
+                    <span>1/1</span>
+                </div>
+            </div>
+            
+            <div class="swipe-container">
+                <!-- Swipe indicators -->
+                <div class="swipe-indicator left" id="leftIndicator">
+                    <div class="indicator-content">
+                        <i class="fas fa-question-circle"></i>
+                        <span>애매한 문제</span>
+                    </div>
+                </div>
+                
+                <div class="swipe-indicator right" id="rightIndicator">
+                    <div class="indicator-content">
+                        <i class="fas fa-times-circle"></i>
+                        <span>모르는 문제</span>
+                    </div>
+                </div>
+                
+                <!-- Image card -->
+                <div class="image-card" id="imageCard">
+                    <img id="reviewImage" src="" alt="문제 이미지">
+                    <div class="image-overlay">
+                        <div class="swipe-hint">
+                            <i class="fas fa-hand-paper"></i>
+                            <p>좌우로 스와이프하여 분류</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action buttons -->
+            <div class="review-actions">
+                <button class="action-btn ambiguous" id="ambiguousBtn">
+                    <i class="fas fa-question-circle"></i>
+                    <span>애매한 문제</span>
+                </button>
+                <button class="action-btn unknown" id="unknownBtn">
+                    <i class="fas fa-times-circle"></i>
+                    <span>모르는 문제</span>
+                </button>
+            </div>
+        </div>
+
+
+
+        <!-- Solution View -->
+        <div class="solution-view" id="solutionView" style="display: none;">
+            <div class="solution-header">
+                <button class="back-btn" id="backFromSolution">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="solution-title">
+                    <h2 id="solutionQuestionNumber">문제 1</h2>
+                    <span class="solution-category" id="solutionCategory"></span>
+                </div>
+                <button class="delete-btn" id="deleteSolutionQuestion" title="삭제">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            
+            <div class="solution-content">
+                <!-- Original Image -->
+                <div class="solution-image-container">
+                    <img id="solutionImage" src="" alt="문제 이미지">
+                </div>
+                
+                <!-- Solution Process -->
+                <div class="solution-process">
+                    <div class="solution-meta">
+                        <div class="meta-row">
+                            <span class="meta-label">출처:</span>
+                            <span class="meta-value" id="solutionPublisher">출처모름</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="meta-label">마지막 확인:</span>
+                            <span class="meta-value" id="solutionTimestamp"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="solution-notes">
+                        <h3>풀이 과정</h3>
+                        <textarea 
+                            id="solutionNotes" 
+                            placeholder="문제의 풀이 과정을 작성해보세요..."
+                            rows="8"
+                        ></textarea>
+                        <button class="save-solution-btn" id="saveSolutionBtn">
+                            <i class="fas fa-save"></i>
+                            <span>저장</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Image Popup Modal -->
+    <div class="image-popup-overlay" id="imagePopupOverlay" style="display: none;">
+        <div class="image-popup-content">
+            <button class="popup-close" id="popupClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="popupImage" src="" alt="문제 이미지">
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>문제를 분석하고 있습니다...</p>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" id="nav0Round">
+            <i class="fas fa-book-open"></i>
+            <span>0회독</span>
+        </button>
+        <button class="nav-item" id="navNRound">
+            <i class="fas fa-redo"></i>
+            <span>n회독</span>
+        </button>
+        <button class="nav-item" id="navSettings">
+            <i class="fas fa-question-circle"></i>
+            <span>팝퀴즈</span>
+            <span class="quiz-badge" id="quizBadge" style="display: none;"></span>
+        </button>
+    </nav>
+
+    <script src="script.js"></script>
+</body>
+</html> 

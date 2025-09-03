@@ -1,0 +1,31 @@
+{
+  "name": "review-note",
+  "version": "1.0.0",
+  "description": "Mobile-optimized website for scanning and storing exam questions",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "npm install",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ocr",
+    "exam",
+    "questions",
+    "mobile",
+    "education"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "dotenv": "^16.3.1",
+    "@google-cloud/vision": "^4.0.2",
+    "@anthropic-ai/sdk": "^0.24.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+} 

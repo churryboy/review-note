@@ -3,6 +3,7 @@ let questions = [];
 let popQuizItems = [];
 let currentImageBlob = null;
 let currentImageUrl = null;
+let currentImageHash = null;
 
 // Constants
 const POP_QUIZ_DELAY_MS = 10 * 1000; // 10 seconds readiness delay
@@ -221,6 +222,23 @@ function setupEventListeners() {
         });
     }
     quizSubmit.addEventListener('click', handleQuizSubmit);
+
+    // Review answer input persistence (by image hash)
+    const reviewAnswerInput = document.getElementById('reviewAnswerInput');
+    if (reviewAnswerInput) {
+        const saveReviewAnswer = async () => {
+            if (!currentImageHash) return;
+            await saveAnswerForHash(currentImageHash, reviewAnswerInput.value || '');
+        };
+        reviewAnswerInput.addEventListener('blur', saveReviewAnswer);
+        reviewAnswerInput.addEventListener('change', saveReviewAnswer);
+        reviewAnswerInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveReviewAnswer();
+            }
+        });
+    }
 }
 
 // Replace persistSolutionAnswer with async version mapping by image hash
@@ -233,8 +251,7 @@ async function persistSolutionAnswer() {
     question.userAnswer = answer;
     const hash = question.imageHash || (await ensureQuestionImageHash(question));
     if (hash) {
-        answerByHash[hash] = answer;
-        saveAnswerByHash();
+        await saveAnswerForHash(hash, answer);
     }
     saveQuestions();
 }
@@ -311,6 +328,17 @@ async function handleImageCapture(event) {
     // Store the image file and create URL for display
     currentImageBlob = file;
     currentImageUrl = URL.createObjectURL(file);
+    currentImageHash = null;
+
+    // Compute image hash early so review input can save by hash
+    try {
+        const fr = new FileReader();
+        fr.onload = async (e) => {
+            const dataUrl = e.target.result;
+            currentImageHash = await computeSHA256HexFromDataUrl(dataUrl);
+        };
+        fr.readAsDataURL(file);
+    } catch (_) {}
     
     // Show the image in review view
     reviewImage.src = currentImageUrl;
@@ -344,7 +372,7 @@ function categorizeQuestion(category) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         const dataUrl = e.target.result;
-        const imageHash = await computeSHA256HexFromDataUrl(dataUrl);
+        const imageHash = currentImageHash || await computeSHA256HexFromDataUrl(dataUrl);
         const reviewAnswerInput = document.getElementById('reviewAnswerInput');
         const initialAnswer = reviewAnswerInput ? (reviewAnswerInput.value || '') : '';
         
@@ -366,9 +394,8 @@ function categorizeQuestion(category) {
         };
 
         questions.unshift(newQuestion);
-        if (newQuestion.imageHash && initialAnswer) {
-            answerByHash[newQuestion.imageHash] = initialAnswer;
-            saveAnswerByHash();
+        if (newQuestion.imageHash) {
+            await saveAnswerForHash(newQuestion.imageHash, initialAnswer);
         }
         saveQuestions();
         updateQuestionCount();
@@ -402,6 +429,7 @@ function cleanupCurrentImage() {
     }
     currentImageBlob = null;
     currentImageUrl = null;
+    currentImageHash = null;
 }
 
 // Display questions in 0회독 view (unused)
@@ -927,7 +955,7 @@ function loadPopQuizItems() {
     }
 }
 
-// New: Save/load answers mapped by image hash
+// Save/load answers mapped by image hash
 function saveAnswerByHash() {
     try {
         localStorage.setItem('reviewNoteAnswerByHash', JSON.stringify(answerByHash));
@@ -942,6 +970,20 @@ function loadAnswerByHash() {
             answerByHash = {};
         }
     }
+}
+
+async function saveAnswerForHash(imageHash, answer) {
+    if (!imageHash) return;
+    const val = (answer || '').trim();
+    answerByHash[imageHash] = val;
+    saveAnswerByHash();
+    try {
+        await fetch('/api/answers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageHash, answer: val })
+        });
+    } catch (_) {}
 }
 
 // New: Compute SHA-256 hex of a Data URL (fallbacks to simple hash)

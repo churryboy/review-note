@@ -229,6 +229,11 @@ function setupEventListeners() {
         const saveReviewAnswer = async () => {
             if (!currentImageHash) return;
             await saveAnswerForHash(currentImageHash, reviewAnswerInput.value || '');
+            const dbg = document.getElementById('reviewDebugHash');
+            if (dbg) {
+                dbg.textContent = `${currentImageHash} - ${(reviewAnswerInput.value || '').trim()}`;
+                dbg.style.display = 'block';
+            }
         };
         reviewAnswerInput.addEventListener('blur', saveReviewAnswer);
         reviewAnswerInput.addEventListener('change', saveReviewAnswer);
@@ -336,6 +341,12 @@ async function handleImageCapture(event) {
         fr.onload = async (e) => {
             const dataUrl = e.target.result;
             currentImageHash = await computeSHA256HexFromDataUrl(dataUrl);
+            const dbg = document.getElementById('reviewDebugHash');
+            if (dbg && currentImageHash) {
+                const ans = answerByHash[currentImageHash] || '';
+                dbg.textContent = `${currentImageHash} - ${ans}`;
+                dbg.style.display = 'block';
+            }
         };
         fr.readAsDataURL(file);
     } catch (_) {}
@@ -567,22 +578,24 @@ function showSolutionView(questionId, fromView) {
     if (solutionAnswerInput) {
         solutionAnswerInput.value = question.userAnswer || '';
         ensureQuestionImageHash(question).then(async (hash) => {
-            if (hash) {
-                // Try backend first
-                try {
-                    const r = await fetch(`/api/answers/${hash}`);
-                    if (r.ok) {
-                        const j = await r.json();
-                        if (typeof j.answer === 'string' && j.answer.length > 0) {
-                            solutionAnswerInput.value = j.answer;
-                            return;
-                        }
+            if (!hash) return;
+            try {
+                const r = await fetch(`/api/answers/${hash}`);
+                if (r.ok) {
+                    const j = await r.json();
+                    if (typeof j.answer === 'string' && j.answer.length > 0) {
+                        solutionAnswerInput.value = j.answer;
                     }
-                } catch (_) {}
-                // Fallback to local map
-                if (typeof answerByHash[hash] === 'string') {
-                    solutionAnswerInput.value = answerByHash[hash];
                 }
+            } catch (_) {}
+            if (typeof answerByHash[hash] === 'string' && answerByHash[hash].length > 0) {
+                solutionAnswerInput.value = answerByHash[hash];
+            }
+            const dbg = document.getElementById('solutionDebugHash');
+            if (dbg) {
+                const ans = (solutionAnswerInput.value || '').trim();
+                dbg.textContent = `${hash} - ${ans}`;
+                dbg.style.display = 'block';
             }
         });
     }

@@ -37,6 +37,15 @@
             <!-- Hidden file input for camera -->
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
 
+            <div class="list-controls" id="nListControls">
+                <select id="nSortSelect" aria-label="정렬">
+                    <option value="round_desc">회독 높은 순</option>
+                    <option value="round_asc">회독 낮은 순</option>
+                    <option value="recent">최근 열어본 순</option>
+                    <option value="oldest">예전에 열어본 순</option>
+                </select>
+            </div>
+
             <div class="question-list" id="roundNList">
                 <!-- n회독 questions will be dynamically added here -->
             </div>

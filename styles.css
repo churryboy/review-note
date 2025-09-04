@@ -119,7 +119,24 @@ body {
     position: relative;
 }
 
+/* Controls above lists */
+.list-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin: 8px 0 12px;
+}
 
+.list-controls select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: white;
+    border: 2px solid #eee;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    color: #333;
+}
 
 /* Floating Camera Button */
 .floating-camera-btn {

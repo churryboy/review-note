@@ -356,7 +356,12 @@ function display0RoundQuestions() {
 
 // Display questions in n회독 view
 function displayNRoundQuestions() {
-    const roundNQuestions = questions.filter(q => (q.round ?? -1) >= 0);
+    let roundNQuestions = questions.filter(q => (q.round ?? -1) >= 0);
+
+    // Apply sorting based on dropdown
+    const sortSelect = document.getElementById('nSortSelect');
+    const sortValue = sortSelect ? sortSelect.value : 'round_desc';
+    roundNQuestions = sortNRoundQuestions(roundNQuestions, sortValue);
     
     if (roundNQuestions.length === 0) {
         if (roundNList) roundNList.style.display = 'none';
@@ -427,6 +432,30 @@ function displayNRoundQuestions() {
         }, 200);
     }
 }
+
+function sortNRoundQuestions(items, mode) {
+    const arr = [...items];
+    if (mode === 'round_desc') {
+        arr.sort((a, b) => (b.round ?? 0) - (a.round ?? 0));
+    } else if (mode === 'round_asc') {
+        arr.sort((a, b) => (a.round ?? 0) - (b.round ?? 0));
+    } else if (mode === 'recent') {
+        arr.sort((a, b) => new Date(b.lastAccessed || b.timestamp) - new Date(a.lastAccessed || a.timestamp));
+    } else if (mode === 'oldest') {
+        arr.sort((a, b) => new Date(a.lastAccessed || a.timestamp) - new Date(b.lastAccessed || b.timestamp));
+    }
+    return arr;
+}
+
+// Wire up sort change
+(function initNSortHandler(){
+    document.addEventListener('change', (e) => {
+        const target = e.target;
+        if (target && target.id === 'nSortSelect') {
+            displayNRoundQuestions();
+        }
+    });
+})();
 
 // Show solution view
 function showSolutionView(questionId, fromView) {

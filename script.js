@@ -215,11 +215,16 @@ function setupEventListeners() {
             q.lastAccessed = new Date().toISOString();
             saveQuestions();
             displayNRoundQuestions();
-            // Inline system message
             const sys = document.getElementById('solutionSystemMsg');
             if (sys) {
                 sys.textContent = '1회독 추가되었습니다';
                 sys.style.display = 'block';
+                // Tooltip show/hide
+                sys.classList.add('show');
+                setTimeout(() => {
+                    sys.classList.remove('show');
+                    setTimeout(() => { sys.style.display = 'none'; }, 180);
+                }, 1500);
             }
         });
     }
@@ -228,7 +233,6 @@ function setupEventListeners() {
         addQuizBtn.addEventListener('click', () => {
             const questionId = parseInt(solutionView.dataset.currentId);
             if (!questionId) return;
-            // Move to pop quiz using existing function
             const index = questions.findIndex(q => q.id === questionId);
             if (index !== -1) {
                 const question = questions[index];
@@ -239,13 +243,17 @@ function setupEventListeners() {
                 savePopQuizItems();
                 updatePopQuizBadge();
                 displayNRoundQuestions();
-                // Inline system message
                 const sys = document.getElementById('solutionSystemMsg');
                 if (sys) {
                     sys.textContent = '퀴즈에 추가되었습니다. 까먹을 때 쯤 제시해 드리겠습니다';
                     sys.style.display = 'block';
+                    sys.classList.add('show');
+                    setTimeout(() => {
+                        sys.classList.remove('show');
+                        setTimeout(() => { sys.style.display = 'none'; }, 180);
+                    }, 1500);
                 }
-                showSettingsView();
+                // Do not navigate to pop quiz per request
             }
         });
     }

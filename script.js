@@ -5,6 +5,7 @@ let currentImageBlob = null;
 let currentImageUrl = null;
 
 // DOM elements
+// Removed 0회독 view (list) from UI; keep references guarded
 const round0View = document.getElementById('round0View');
 const roundNView = document.getElementById('roundNView');
 const settingsView = document.getElementById('settingsView');
@@ -18,9 +19,11 @@ const round0Empty = document.getElementById('round0Empty');
 const roundNEmpty = document.getElementById('roundNEmpty');
 const totalQuestionCount = document.getElementById('totalQuestionCount');
 const loadingOverlay = document.getElementById('loadingOverlay');
-const nav0Round = document.getElementById('nav0Round');
+// Removed nav0Round; default to n회독
 const navNRound = document.getElementById('navNRound');
 const navSettings = document.getElementById('navSettings');
+const navAchievement = document.getElementById('navAchievement');
+const achievementView = document.getElementById('achievementView');
 const backToCameraFromReview = document.getElementById('backToCameraFromReview');
 const backFromSolution = document.getElementById('backFromSolution');
 const deleteSolutionQuestion = document.getElementById('deleteSolutionQuestion');
@@ -105,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQuestionCount();
     updatePopQuizBadge();
     setupEventListeners();
-    show0RoundView(); // Show 0회독 view by default
+    showNRoundView(); // Default to n회독 view
     startPopQuizTimer(); // Start random pop quiz timer
 });
 
@@ -120,12 +123,15 @@ function setupEventListeners() {
     cameraInput.addEventListener('change', handleImageCapture);
 
     // Bottom navigation
-    nav0Round.addEventListener('click', show0RoundView);
+    // Removed nav0Round
     navNRound.addEventListener('click', showNRoundView);
     navSettings.addEventListener('click', showSettingsView);
+    if (navAchievement) {
+        navAchievement.addEventListener('click', showAchievementView);
+    }
     
     // Review navigation
-    backToCameraFromReview.addEventListener('click', show0RoundView);
+    backToCameraFromReview.addEventListener('click', showNRoundView);
 
     // Solution navigation
     backFromSolution.addEventListener('click', returnToPreviousView);
@@ -202,65 +208,72 @@ function setupEventListeners() {
         });
     }
 
-    // Set up swipe gestures
-    setupSwipeGestures();
+    // Disable image swipe gestures per new spec
+    // setupSwipeGestures();
 }
 
-// Show 0회독 view
+// Show 0회독 view (deprecated): redirect to n회독
 function show0RoundView() {
-    round0View.style.display = 'block';
-    roundNView.style.display = 'none';
-    settingsView.style.display = 'none';
-    imageReviewView.style.display = 'none';
-    solutionView.style.display = 'none';
-    
-    nav0Round.classList.add('active');
-    navNRound.classList.remove('active');
-    navSettings.classList.remove('active');
-    
-    display0RoundQuestions();
+    showNRoundView();
 }
 
 // Show n회독 view
 function showNRoundView() {
-    round0View.style.display = 'none';
-    roundNView.style.display = 'block';
-    settingsView.style.display = 'none';
-    imageReviewView.style.display = 'none';
-    solutionView.style.display = 'none';
+    if (round0View) round0View.style.display = 'none';
+    if (roundNView) roundNView.style.display = 'block';
+    if (settingsView) settingsView.style.display = 'none';
+    if (achievementView) achievementView.style.display = 'none';
+    if (imageReviewView) imageReviewView.style.display = 'none';
+    if (solutionView) solutionView.style.display = 'none';
     
-    nav0Round.classList.remove('active');
-    navNRound.classList.add('active');
-    navSettings.classList.remove('active');
+    if (navNRound) navNRound.classList.add('active');
+    if (navSettings) navSettings.classList.remove('active');
+    if (navAchievement) navAchievement.classList.remove('active');
     
     displayNRoundQuestions();
 }
 
 // Show settings view (Pop Quiz)
 function showSettingsView() {
-    round0View.style.display = 'none';
-    roundNView.style.display = 'none';
-    settingsView.style.display = 'block';
-    imageReviewView.style.display = 'none';
-    solutionView.style.display = 'none';
+    if (round0View) round0View.style.display = 'none';
+    if (roundNView) roundNView.style.display = 'none';
+    if (settingsView) settingsView.style.display = 'block';
+    if (achievementView) achievementView.style.display = 'none';
+    if (imageReviewView) imageReviewView.style.display = 'none';
+    if (solutionView) solutionView.style.display = 'none';
     
-    nav0Round.classList.remove('active');
-    navNRound.classList.remove('active');
-    navSettings.classList.add('active');
+    if (navNRound) navNRound.classList.remove('active');
+    if (navSettings) navSettings.classList.add('active');
+    if (navAchievement) navAchievement.classList.remove('active');
     
     displayPopQuiz();
 }
 
+// Show 성취도 view
+function showAchievementView() {
+    if (round0View) round0View.style.display = 'none';
+    if (roundNView) roundNView.style.display = 'none';
+    if (settingsView) settingsView.style.display = 'none';
+    if (achievementView) achievementView.style.display = 'block';
+    if (imageReviewView) imageReviewView.style.display = 'none';
+    if (solutionView) solutionView.style.display = 'none';
+
+    if (navNRound) navNRound.classList.remove('active');
+    if (navSettings) navSettings.classList.remove('active');
+    if (navAchievement) navAchievement.classList.add('active');
+}
+
 // Show image review view
 function showImageReviewView() {
-    round0View.style.display = 'none';
-    roundNView.style.display = 'none';
-    settingsView.style.display = 'none';
-    imageReviewView.style.display = 'flex';
-    solutionView.style.display = 'none';
+    if (round0View) round0View.style.display = 'none';
+    if (roundNView) roundNView.style.display = 'none';
+    if (settingsView) settingsView.style.display = 'none';
+    if (achievementView) achievementView.style.display = 'none';
+    if (imageReviewView) imageReviewView.style.display = 'flex';
+    if (solutionView) solutionView.style.display = 'none';
     
-    // Show coaching guide for first-time users
-    checkAndShowCoachingGuide();
+    // Do not show swipe coaching in the new flow
+    // checkAndShowCoachingGuide();
 }
 
 // Handle image capture
@@ -284,8 +297,8 @@ async function handleImageCapture(event) {
 function categorizeQuestion(category) {
     if (!currentImageBlob) return;
 
-    // Determine pre-count of 0회독 items before adding
-    const preCountRound0 = questions.filter(q => q.round === 0).length;
+    // Determine pre-count of n회독 items (including round 0)
+    const preCountNRound = questions.filter(q => (q.round ?? -1) >= 0).length;
 
     // Convert image to base64 for storage immediately
     const reader = new FileReader();
@@ -300,7 +313,7 @@ function categorizeQuestion(category) {
             handwrittenNotes: '',
             imageUrl: e.target.result, // Base64 image data
             category: category,
-            round: 0, // Start in 0회독
+            round: 0, // Save into n회독 list with 0회독 tag
             timestamp: new Date().toISOString(),
             lastAccessed: new Date().toISOString(),
             solutionNotes: '' // For storing solution process
@@ -314,16 +327,13 @@ function categorizeQuestion(category) {
         const categoryText = category === 'ambiguous' ? '애매한 문제' : '틀린 문제';
         showToast(`${categoryText}로 저장되었습니다!`);
         
-        // Clean up and go back to 0회독 view
+        // Clean up and go back to n회독 view
         cleanupCurrentImage();
-        show0RoundView();
+        showNRoundView();
         
-        // Show list coaching the first time 0회독 transitions from 0 → 1
-        if (preCountRound0 === 0 && !sessionStorage.getItem('shownListCoach')) {
-            setTimeout(() => {
-                console.log('Triggering list coaching after first card created');
-                showListCoachingGuide();
-            }, 300); // small delay to ensure list rendered
+        // Show n회독 coaching the first time n회독 transitions from 0 → 1
+        if (preCountNRound === 0) {
+            sessionStorage.setItem('nListCoachPending', 'true');
         }
     };
     
@@ -339,85 +349,25 @@ function cleanupCurrentImage() {
     currentImageUrl = null;
 }
 
-// Display questions in 0회독 view
+// Display questions in 0회독 view (unused)
 function display0RoundQuestions() {
-    const round0Questions = questions.filter(q => q.round === 0);
-    
-    if (round0Questions.length === 0) {
-        round0List.style.display = 'none';
-        round0Empty.style.display = 'block';
-        return;
-    }
-
-    round0List.style.display = 'block';
-    round0Empty.style.display = 'none';
-
-    round0List.innerHTML = round0Questions.map(question => `
-        <div class="question-item" data-id="${question.id}">
-            <div class="question-with-image">
-                <div class="question-image">
-                    <img src="${question.imageUrl}" alt="문제 이미지" />
-                </div>
-                <div class="question-content">
-                    <div class="question-header">
-                        <span class="question-number">${question.questionNumber}</span>
-                        <div class="question-meta">
-                            <div class="source-category">
-                                <span class="question-source">${question.publisher}</span>
-                                ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매함' : '틀림'}</span>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="question-timestamp">
-                        ${new Date(question.lastAccessed || question.timestamp).toLocaleDateString('ko-KR', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                        })}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-
-    // Add click handlers and swipe functionality
-    document.querySelectorAll('#round0List .question-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Item clicked:', item.dataset.id);
-            
-            // Only open solution if not currently swiping
-            if (!item.classList.contains('swiping')) {
-                const questionId = parseInt(item.dataset.id);
-                console.log('Opening solution for question:', questionId);
-                showSolutionView(questionId, '0회독');
-            } else {
-                console.log('Item is swiping, ignoring click');
-            }
-        });
-        
-        // Add swipe functionality
-        console.log('Setting up 0회독 swipe for item:', item.dataset.id);
-        console.log('Item element:', item);
-        setupQuestionSwipe(item);
-    });
+    // Deprecated in new flow
 }
 
 // Display questions in n회독 view
 function displayNRoundQuestions() {
-    const roundNQuestions = questions.filter(q => q.round > 0);
+    const roundNQuestions = questions.filter(q => (q.round ?? -1) >= 0);
     
     if (roundNQuestions.length === 0) {
-        roundNList.style.display = 'none';
-        roundNEmpty.style.display = 'block';
+        if (roundNList) roundNList.style.display = 'none';
+        if (roundNEmpty) roundNEmpty.style.display = 'block';
         return;
     }
 
-    roundNList.style.display = 'block';
-    roundNEmpty.style.display = 'none';
+    if (roundNList) roundNList.style.display = 'block';
+    if (roundNEmpty) roundNEmpty.style.display = 'none';
 
+    if (!roundNList) return;
     roundNList.innerHTML = roundNQuestions.map(question => `
         <div class="question-item" data-id="${question.id}">
             <div class="question-with-image">
@@ -453,20 +403,15 @@ function displayNRoundQuestions() {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('N-round item clicked:', item.dataset.id);
             
             // Only open solution if not currently swiping
             if (!item.classList.contains('swiping')) {
                 const questionId = parseInt(item.dataset.id);
-                console.log('Opening solution for N-round question:', questionId);
                 showSolutionView(questionId, 'n회독');
-            } else {
-                console.log('N-round item is swiping, ignoring click');
             }
         });
         
         // Add swipe functionality for n회독 items
-        console.log('Setting up n회독 swipe for item:', item.dataset.id);
         setupNRoundSwipe(item);
     });
 
@@ -477,7 +422,6 @@ function displayNRoundQuestions() {
         !sessionStorage.getItem('shownNListCoach')
     ) {
         setTimeout(() => {
-            console.log('Triggering n회독 coaching after entering n회독 with first card');
             showNListCoachingGuide();
             sessionStorage.removeItem('nListCoachPending');
         }, 200);
@@ -486,14 +430,8 @@ function displayNRoundQuestions() {
 
 // Show solution view
 function showSolutionView(questionId, fromView) {
-    console.log('showSolutionView called with ID:', questionId, 'from:', fromView);
     const question = questions.find(q => q.id === questionId);
-    console.log('Found question:', question);
-    
-    if (!question) {
-        console.log('Question not found!');
-        return;
-    }
+    if (!question) return;
 
     // Update last accessed time
     question.lastAccessed = new Date().toISOString();
@@ -508,28 +446,25 @@ function showSolutionView(questionId, fromView) {
     solutionCategory.className = `solution-category ${question.category}`;
 
     document.getElementById('solutionImage').src = question.imageUrl;
+
+    // Expose current id for chat/delete handlers
+    solutionView.dataset.currentId = String(question.id);
     
     // Load existing solution notes (legacy)
     if (typeof solutionNotes !== 'undefined' && solutionNotes) {
         solutionNotes.value = question.solutionNotes || '';
     }
 
-    // Populate steps content removed
     // Render chat for this question
     renderChat(question);
 
-    // Store current question id and source view for navigation
-    solutionView.dataset.currentId = String(question.id);
-    solutionView.dataset.fromView = fromView;
-
-    // Show solution view
-    round0View.style.display = 'none';
-    roundNView.style.display = 'none';
-    settingsView.style.display = 'none';
-    imageReviewView.style.display = 'none';
-    solutionView.style.display = 'flex';
-    
-    console.log('Solution view should now be visible');
+    // Show view
+    if (round0View) round0View.style.display = 'none';
+    if (roundNView) roundNView.style.display = 'none';
+    if (settingsView) settingsView.style.display = 'none';
+    if (achievementView) achievementView.style.display = 'none';
+    if (imageReviewView) imageReviewView.style.display = 'none';
+    if (solutionView) solutionView.style.display = 'block';
 }
 
 function renderChat(question) {
@@ -635,15 +570,9 @@ function handleChatSend() {
     });
 }
 
-// Return to previous view
+// Return to previous view (n회독 in new flow)
 function returnToPreviousView() {
-    const fromView = solutionView.dataset.fromView;
-    
-    if (fromView === 'n회독') {
-        showNRoundView();
-    } else {
-        show0RoundView();
-    }
+    showNRoundView();
 }
 
 // Save solution notes
@@ -668,7 +597,7 @@ function handleDeleteCurrentSolution() {
         saveQuestions();
         updateQuestionCount();
         showToast('문제가 삭제되었습니다!');
-        returnToPreviousView();
+        showNRoundView();
     }
 }
 
@@ -756,18 +685,18 @@ function displayPopQuiz() {
     });
 
     if (readyItems.length === 0) {
-        popQuizContainer.style.display = 'none';
-        popQuizEmpty.style.display = 'block';
+        if (popQuizContainer) popQuizContainer.style.display = 'none';
+        if (popQuizEmpty) popQuizEmpty.style.display = 'block';
         return;
     }
 
-    // Show a single random ready card
+    if (popQuizContainer) popQuizContainer.style.display = 'block';
+    if (popQuizEmpty) popQuizEmpty.style.display = 'none';
+
+    if (!popQuizContainer) return;
     const randomIndexInReady = Math.floor(Math.random() * readyItems.length);
     const quizItem = readyItems[randomIndexInReady];
     const absoluteIndex = popQuizItems.findIndex(i => i.id === quizItem.id);
-
-    popQuizContainer.style.display = 'block';
-    popQuizEmpty.style.display = 'none';
 
     popQuizContainer.innerHTML = `
         <div class="pop-quiz-card" data-id="${quizItem.id}" data-index="${absoluteIndex}">
@@ -1162,7 +1091,7 @@ function moveToNRound(questionId) {
     const questionIndex = questions.findIndex(q => q.id === questionId);
     if (questionIndex !== -1) {
         // Capture pre-count of n회독 items
-        const preCountNRound = questions.filter(q => q.round > 0).length;
+        const preCountNRound = questions.filter(q => (q.round ?? -1) >= 0).length;
 
         questions[questionIndex].round = 1; // Move to 1회독
         saveQuestions();

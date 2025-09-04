@@ -27,28 +27,16 @@
     <!-- Main Content -->
     <main class="main-content">
         <!-- 0회독 View -->
-        <div class="round-view" id="round0View">
-            <div class="question-list" id="round0List">
-                <!-- 0회독 questions will be dynamically added here -->
-            </div>
-            
-            <div class="empty-state" id="round0Empty">
-                <i class="fas fa-inbox"></i>
-                <p>아직 저장된 문제가 없습니다</p>
-                <small>좌측 하단 카메라 버튼으로 문제를 촬영해보세요</small>
-            </div>
-            
+        <!-- Removed list UI; camera now lives in n회독 view -->
+        <!-- n회독 View -->
+        <div class="round-view" id="roundNView">
             <!-- Floating Camera Button -->
             <button class="floating-camera-btn" id="floatingCameraBtn">
                 <i class="fas fa-camera"></i>
             </button>
-            
             <!-- Hidden file input for camera -->
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
-        </div>
 
-        <!-- n회독 View -->
-        <div class="round-view" id="roundNView" style="display: none;">
             <div class="question-list" id="roundNList">
                 <!-- n회독 questions will be dynamically added here -->
             </div>
@@ -72,6 +60,14 @@
             </div>
         </div>
 
+        <!-- 성취도 View -->
+        <div class="round-view" id="achievementView" style="display: none;">
+            <div class="empty-state">
+                <i class="fas fa-trophy"></i>
+                <p>성취도가 곧 제공됩니다</p>
+            </div>
+        </div>
+
         <!-- Image Review View -->
         <div class="image-review-view" id="imageReviewView" style="display: none;">
             <div class="review-header">
@@ -85,7 +81,7 @@
             </div>
             
             <div class="swipe-container">
-                <!-- Swipe indicators -->
+                <!-- Swipe indicators (kept hidden by not enabling swipe) -->
                 <div class="swipe-indicator left" id="leftIndicator">
                     <div class="indicator-content">
                         <i class="fas fa-times-circle"></i>
@@ -106,7 +102,7 @@
                     <div class="image-overlay">
                         <div class="swipe-hint">
                             <i class="fas fa-hand-paper"></i>
-                            <p>좌우로 스와이프하여 분류</p>
+                            <p>버튼을 눌러 분류하세요</p>
                         </div>
                     </div>
                 </div>
@@ -125,7 +121,7 @@
             </div>
         </div>
 
-
+        
 
         <!-- Solution View -->
         <div class="solution-view" id="solutionView" style="display: none;">
@@ -261,37 +257,37 @@
             </div>
             
             <div class="coaching-steps">
-                <!-- Step 1: Left swipe explanation for list -->
+                <!-- Step 1: Left swipe explanation -->
                 <div class="coaching-step active" id="listStep1">
                     <div class="step-icon">
                         <i class="fas fa-redo"></i>
                     </div>
                     <h3>왼쪽으로 스와이프</h3>
-                    <p>왼쪽으로 스와이프하면<br>n회독으로 이동합니다</p>
+                    <p>왼쪽으로 스와이프하면<br>회독 수가 +1 증가합니다</p>
                     <div class="swipe-demo">
                         <div class="demo-card">
                             <div class="demo-arrow left">
                                 <i class="fas fa-arrow-left"></i>
-                                <span>n회독</span>
+                                <span>+1회독</span>
                             </div>
                             <div class="demo-image">📝</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Step 2: Right swipe explanation for list -->
+                <!-- Step 2: Right swipe explanation -->
                 <div class="coaching-step" id="listStep2">
                     <div class="step-icon">
-                        <i class="fas fa-trash"></i>
+                        <i class="fas fa-question-circle"></i>
                     </div>
                     <h3>오른쪽으로 스와이프</h3>
-                    <p>오른쪽으로 스와이프하면<br>문제가 삭제됩니다</p>
+                    <p>오른쪽으로 스와이프하면<br>팝퀴즈로 이동합니다</p>
                     <div class="swipe-demo">
                         <div class="demo-card">
                             <div class="demo-image">📝</div>
                             <div class="demo-arrow right">
                                 <i class="fas fa-arrow-right"></i>
-                                <span>삭제</span>
+                                <span>팝퀴즈</span>
                             </div>
                         </div>
                     </div>
@@ -309,7 +305,7 @@
         </div>
     </div>
 
-    <!-- N회독 Coaching Guide Overlay -->
+    <!-- n회독 Coaching Guide Overlay -->
     <div class="coaching-overlay" id="nListCoachingOverlay" style="display: none;">
         <div class="coaching-content">
             <div class="coaching-header">
@@ -320,28 +316,30 @@
             </div>
             
             <div class="coaching-steps">
+                <!-- Step 1: Left swipe explanation -->
                 <div class="coaching-step active" id="nListStep1">
                     <div class="step-icon">
                         <i class="fas fa-redo"></i>
                     </div>
-                    <h3>회독 수 올리기</h3>
+                    <h3>왼쪽으로 스와이프</h3>
                     <p>왼쪽으로 스와이프하면<br>회독 수가 +1 증가합니다</p>
                     <div class="swipe-demo">
                         <div class="demo-card">
                             <div class="demo-arrow left">
                                 <i class="fas fa-arrow-left"></i>
-                                <span>+1 회독</span>
+                                <span>+1회독</span>
                             </div>
                             <div class="demo-image">📝</div>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Step 2: Right swipe explanation -->
                 <div class="coaching-step" id="nListStep2">
                     <div class="step-icon">
                         <i class="fas fa-question-circle"></i>
                     </div>
-                    <h3>팝퀴즈로 이동</h3>
+                    <h3>오른쪽으로 스와이프</h3>
                     <p>오른쪽으로 스와이프하면<br>팝퀴즈로 이동합니다</p>
                     <div class="swipe-demo">
                         <div class="demo-card">
@@ -376,11 +374,7 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-        <button class="nav-item active" id="nav0Round">
-            <i class="fas fa-book-open"></i>
-            <span>0회독</span>
-        </button>
-        <button class="nav-item" id="navNRound">
+        <button class="nav-item active" id="navNRound">
             <i class="fas fa-redo"></i>
             <span>n회독</span>
         </button>
@@ -388,6 +382,10 @@
             <i class="fas fa-question-circle"></i>
             <span>팝퀴즈</span>
             <span class="quiz-badge" id="quizBadge" style="display: none;"></span>
+        </button>
+        <button class="nav-item" id="navAchievement">
+            <i class="fas fa-trophy"></i>
+            <span>성취도</span>
         </button>
     </nav>
 

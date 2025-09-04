@@ -1379,3 +1379,29 @@ body {
 .pop-quiz-card + .pop-quiz-card {
     margin-top: 10px;
 } 
+
+/* Pop quiz status panel */
+.pop-quiz-status {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 12px;
+}
+.pop-quiz-status .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+.pop-quiz-status .status-row + .status-row {
+    margin-top: 8px;
+}
+.pop-quiz-status span {
+    color: #555;
+    font-size: 0.95rem;
+}
+.pop-quiz-status strong {
+    color: #111;
+    font-size: 1rem;
+} 

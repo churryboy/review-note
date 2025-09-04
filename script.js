@@ -731,6 +731,28 @@ function updateQuestionCount() {
     }
 }
 
+function updatePopQuizStatusPanel() {
+    const waitingEl = document.getElementById('popQuizWaitingCountStat');
+    const avgEl = document.getElementById('popQuizAvgRoundStat');
+    if (!waitingEl || !avgEl) return;
+
+    const now = Date.now();
+    const fiveMinutesMs = 5 * 60 * 1000;
+    const ready = popQuizItems.filter(item => {
+        const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
+        return added > 0 && (now - added) >= fiveMinutesMs;
+    });
+    waitingEl.textContent = `${ready.length}개`;
+
+    if (ready.length === 0) {
+        avgEl.textContent = '0.00회독';
+        return;
+    }
+    const sumRounds = ready.reduce((sum, item) => sum + (item.round || 0), 0);
+    const avg = sumRounds / ready.length;
+    avgEl.textContent = `${avg.toFixed(2)}회독`;
+}
+
 // Update pop quiz badge
 function updatePopQuizBadge() {
     // Badge shows only when ready (matured) items exist
@@ -747,14 +769,12 @@ function updatePopQuizBadge() {
     } else {
         quizBadge.style.display = 'none';
     }
-    
-    // Update waiting count if present (optional, may not exist)
     if (popQuizWaitingCount) {
         popQuizWaitingCount.textContent = readyCount + '개';
     }
+    updatePopQuizStatusPanel();
 }
 
-// Display pop quiz
 function displayPopQuiz() {
     const now = Date.now();
     const fiveMinutesMs = 5 * 60 * 1000;
@@ -764,6 +784,8 @@ function displayPopQuiz() {
             const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
             return added > 0 && (now - added) >= fiveMinutesMs;
         });
+
+    updatePopQuizStatusPanel();
 
     if (readyItems.length === 0) {
         if (popQuizContainer) popQuizContainer.style.display = 'none';
@@ -1389,15 +1411,12 @@ function moveToPopQuiz(questionId) {
 
 // Start pop quiz timer
 function startPopQuizTimer() {
-    // Poll periodically to refresh pop quiz readiness
     setInterval(() => {
-        // Update badge regardless of current view
         updatePopQuizBadge();
-        // Only update the UI if the pop quiz page is visible
         if (settingsView.style.display !== 'none') {
             displayPopQuiz();
         }
-    }, 15000); // check every 15s
+    }, 15000);
 }
 
 // Check if we should show a pop quiz (kept for compatibility)

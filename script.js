@@ -4,6 +4,9 @@ let popQuizItems = [];
 let currentImageBlob = null;
 let currentImageUrl = null;
 
+// Constants
+const POP_QUIZ_DELAY_MS = 10 * 1000; // 10 seconds readiness delay
+
 // DOM elements
 // Removed 0회독 view (list) from UI; keep references guarded
 const round0View = document.getElementById('round0View');
@@ -737,10 +740,9 @@ function updatePopQuizStatusPanel() {
     if (!waitingEl || !avgEl) return;
 
     const now = Date.now();
-    const fiveMinutesMs = 5 * 60 * 1000;
     const ready = popQuizItems.filter(item => {
         const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
-        return added > 0 && (now - added) >= fiveMinutesMs;
+        return added > 0 && (now - added) >= POP_QUIZ_DELAY_MS;
     });
     waitingEl.textContent = `${ready.length}개`;
 
@@ -755,12 +757,10 @@ function updatePopQuizStatusPanel() {
 
 // Update pop quiz badge
 function updatePopQuizBadge() {
-    // Badge shows only when ready (matured) items exist
     const now = Date.now();
-    const fiveMinutesMs = 5 * 60 * 1000;
     const readyCount = popQuizItems.filter(item => {
         const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
-        return added > 0 && (now - added) >= fiveMinutesMs;
+        return added > 0 && (now - added) >= POP_QUIZ_DELAY_MS;
     }).length;
 
     if (readyCount > 0) {
@@ -777,12 +777,11 @@ function updatePopQuizBadge() {
 
 function displayPopQuiz() {
     const now = Date.now();
-    const fiveMinutesMs = 5 * 60 * 1000;
     const readyItems = popQuizItems
         .map((item, idx) => ({ item, idx }))
         .filter(({ item }) => {
             const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
-            return added > 0 && (now - added) >= fiveMinutesMs;
+            return added > 0 && (now - added) >= POP_QUIZ_DELAY_MS;
         });
 
     updatePopQuizStatusPanel();
@@ -1416,7 +1415,7 @@ function startPopQuizTimer() {
         if (settingsView.style.display !== 'none') {
             displayPopQuiz();
         }
-    }, 15000);
+    }, 2000); // poll every 2s for snappier 10s readiness
 }
 
 // Check if we should show a pop quiz (kept for compatibility)

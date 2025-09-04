@@ -166,9 +166,21 @@ function setupEventListeners() {
     }
     const solutionAnswerSubmit = document.getElementById('solutionAnswerSubmit');
     if (solutionAnswerSubmit) {
-        solutionAnswerSubmit.addEventListener('click', (e) => {
+        solutionAnswerSubmit.addEventListener('click', async (e) => {
             e.preventDefault();
-            persistSolutionAnswer();
+            await persistSolutionAnswer();
+            // Send to backend for durable storage
+            const questionId = parseInt(solutionView.dataset.currentId);
+            const question = questions.find(q => q.id === questionId);
+            if (question && question.imageHash) {
+                try {
+                    await fetch('/api/answers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ imageHash: question.imageHash, answer: solutionAnswerInput.value || '' })
+                    });
+                } catch (_) {}
+            }
             showToast('정답이 저장되었습니다!');
         });
     }
@@ -484,9 +496,23 @@ function showSolutionView(questionId, fromView) {
     // Populate answer input from mapping by image hash (fallback to userAnswer)
     if (solutionAnswerInput) {
         solutionAnswerInput.value = question.userAnswer || '';
-        ensureQuestionImageHash(question).then((hash) => {
-            if (hash && typeof answerByHash[hash] === 'string') {
-                solutionAnswerInput.value = answerByHash[hash];
+        ensureQuestionImageHash(question).then(async (hash) => {
+            if (hash) {
+                // Try backend first
+                try {
+                    const r = await fetch(`/api/answers/${hash}`);
+                    if (r.ok) {
+                        const j = await r.json();
+                        if (typeof j.answer === 'string' && j.answer.length > 0) {
+                            solutionAnswerInput.value = j.answer;
+                            return;
+                        }
+                    }
+                } catch (_) {}
+                // Fallback to local map
+                if (typeof answerByHash[hash] === 'string') {
+                    solutionAnswerInput.value = answerByHash[hash];
+                }
             }
         });
     }

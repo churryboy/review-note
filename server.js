@@ -72,12 +72,75 @@ const anthropic = new Anthropic({ apiKey: claudeApiKey });
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Simple file-backed answers store
+const DATA_DIR = path.join(__dirname, 'data');
+const ANSWERS_FILE = path.join(DATA_DIR, 'answers.json');
+let answersByHash = {};
+
+async function ensureDataDir() {
+    try {
+        if (!fsSync.existsSync(DATA_DIR)) {
+            await fs.mkdir(DATA_DIR, { recursive: true });
+        }
+    } catch (e) {
+        console.warn('Failed to ensure data directory:', e.message);
+    }
+}
+async function loadAnswers() {
+    try {
+        await ensureDataDir();
+        if (fsSync.existsSync(ANSWERS_FILE)) {
+            const raw = await fs.readFile(ANSWERS_FILE, 'utf8');
+            answersByHash = JSON.parse(raw || '{}') || {};
+        }
+    } catch (e) {
+        console.warn('Failed to load answers file:', e.message);
+        answersByHash = {};
+    }
+}
+async function saveAnswers() {
+    try {
+        await ensureDataDir();
+        await fs.writeFile(ANSWERS_FILE, JSON.stringify(answersByHash, null, 2), 'utf8');
+    } catch (e) {
+        console.warn('Failed to save answers file:', e.message);
+    }
+}
+
+// Load answers on startup
+loadAnswers();
+
 // Middleware
 app.use(express.static('.'));
 
 // Serve the main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Answers API
+app.get('/api/answers/:hash', async (req, res) => {
+    try {
+        const hash = (req.params.hash || '').trim();
+        if (!hash) return res.status(400).json({ error: 'hash required' });
+        const answer = typeof answersByHash[hash] === 'string' ? answersByHash[hash] : null;
+        return res.json({ answer });
+    } catch (e) {
+        return res.status(500).json({ error: 'failed to load answer' });
+    }
+});
+app.post('/api/answers', async (req, res) => {
+    try {
+        const { imageHash, answer } = req.body || {};
+        if (!imageHash || typeof answer !== 'string') {
+            return res.status(400).json({ error: 'imageHash and answer are required' });
+        }
+        answersByHash[imageHash] = answer;
+        await saveAnswers();
+        return res.json({ ok: true });
+    } catch (e) {
+        return res.status(500).json({ error: 'failed to save answer' });
+    }
 });
 
 // OpenAI LLM chat with image context
@@ -198,20 +261,15 @@ ${ocrText}
         if (!jsonMatch) {
             throw new Error('No JSON found in Claude response');
         }
-        const result = JSON.parse(jsonMatch[0]);
-        result.category = category;
-        return result;
 
+        try {
+            return JSON.parse(jsonMatch[0]);
+        } catch (e) {
+            throw new Error('Failed to parse JSON from Claude response');
+        }
     } catch (error) {
-        console.error('Claude processing error:', error);
-        return {
-            questionNumber: null,
-            publisher: "출처모름",
-            questionText: ocrText,
-            answerChoices: [],
-            handwrittenNotes: "",
-            category: category
-        };
+        console.error('LLM processing error:', error);
+        return { error: 'Failed to process with LLM' };
     }
 }
 
@@ -231,10 +289,10 @@ app.use((error, req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
+// Start the server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log('Environment variables needed:');
-    console.log('- OPENAI_API_KEY: OpenAI API key for chat (required)');
-    console.log('- GOOGLE_CLOUD_KEYFILE: Path to GCP service account key file (optional, only for legacy OCR)');
+    console.log('Make sure to set the following environment variables:');
+    console.log('- CLAUDE_API_KEY: Your Anthropic Claude API key');
+    console.log('- GOOGLE_CLOUD_KEYFILE: Path to your Google Cloud service account key file');
 }); 

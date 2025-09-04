@@ -231,7 +231,8 @@ function setupEventListeners() {
             await saveAnswerForHash(currentImageHash, reviewAnswerInput.value || '');
             const dbg = document.getElementById('reviewDebugHash');
             if (dbg) {
-                dbg.textContent = `${currentImageHash} - ${(reviewAnswerInput.value || '').trim()}`;
+                const sid = shortIdFromHash(currentImageHash);
+                dbg.textContent = `${sid} - ${(reviewAnswerInput.value || '').trim()}`;
                 dbg.style.display = 'block';
             }
         };
@@ -325,17 +326,27 @@ function showImageReviewView() {
     // checkAndShowCoachingGuide();
 }
 
-// Handle image capture
+// Helper: derive a 9-digit short id from a hash (display only)
+function shortIdFromHash(hash) {
+    if (!hash || typeof hash !== 'string') return '';
+    let acc = 5381;
+    for (let i = 0; i < hash.length; i++) {
+        acc = ((acc << 5) + acc) ^ hash.charCodeAt(i);
+        acc >>>= 0;
+    }
+    const num = acc % 1000000000;
+    return String(num).padStart(9, '0');
+}
+
+// After computing currentImageHash on capture, render debug line
 async function handleImageCapture(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Store the image file and create URL for display
     currentImageBlob = file;
     currentImageUrl = URL.createObjectURL(file);
     currentImageHash = null;
 
-    // Compute image hash early so review input can save by hash
     try {
         const fr = new FileReader();
         fr.onload = async (e) => {
@@ -344,21 +355,18 @@ async function handleImageCapture(event) {
             const dbg = document.getElementById('reviewDebugHash');
             if (dbg && currentImageHash) {
                 const ans = answerByHash[currentImageHash] || '';
-                dbg.textContent = `${currentImageHash} - ${ans}`;
+                const sid = shortIdFromHash(currentImageHash);
+                dbg.textContent = `${sid} - ${ans}`;
                 dbg.style.display = 'block';
             }
         };
         fr.readAsDataURL(file);
     } catch (_) {}
     
-    // Show the image in review view
     reviewImage.src = currentImageUrl;
-    // Clear prior review answer input if present
     const reviewAnswerInput = document.getElementById('reviewAnswerInput');
     if (reviewAnswerInput) reviewAnswerInput.value = '';
     showImageReviewView();
-    
-    // Clear the input
     cameraInput.value = '';
 }
 
@@ -594,7 +602,8 @@ function showSolutionView(questionId, fromView) {
             const dbg = document.getElementById('solutionDebugHash');
             if (dbg) {
                 const ans = (solutionAnswerInput.value || '').trim();
-                dbg.textContent = `${hash} - ${ans}`;
+                const sid = shortIdFromHash(hash);
+                dbg.textContent = `${sid} - ${ans}`;
                 dbg.style.display = 'block';
             }
         });

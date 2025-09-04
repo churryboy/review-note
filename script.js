@@ -4,9 +4,11 @@ let popQuizItems = [];
 let currentImageBlob = null;
 let currentImageUrl = null;
 let currentImageHash = null;
+let achievements = [];
 
 // Constants
 const POP_QUIZ_DELAY_MS = 10 * 1000; // 10 seconds readiness delay
+const POP_QUIZ_REAPPEAR_MS = 24 * 60 * 60 * 1000; // 1 day for wrong answers
 
 // DOM elements
 // Removed 0회독 view (list) from UI; keep references guarded
@@ -121,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadQuestions();
     loadPopQuizItems();
     loadAnswerByHash();
+    loadAchievements();
     updateQuestionCount();
     updatePopQuizBadge();
     setupEventListeners();
@@ -826,10 +829,7 @@ function updatePopQuizStatusPanel() {
 // Update pop quiz badge
 function updatePopQuizBadge() {
     const now = Date.now();
-    const readyCount = popQuizItems.filter(item => {
-        const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
-        return added > 0 && (now - added) >= POP_QUIZ_DELAY_MS;
-    }).length;
+    const readyCount = popQuizItems.filter(item => isPopQuizReady(item, now)).length;
 
     if (readyCount > 0) {
         quizBadge.textContent = String(readyCount);
@@ -847,10 +847,7 @@ function displayPopQuiz() {
     const now = Date.now();
     const readyItems = popQuizItems
         .map((item, idx) => ({ item, idx }))
-        .filter(({ item }) => {
-            const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
-            return added > 0 && (now - added) >= POP_QUIZ_DELAY_MS;
-        });
+        .filter(({ item }) => isPopQuizReady(item, now));
 
     updatePopQuizStatusPanel();
 
@@ -918,21 +915,34 @@ function handleQuizSubmit() {
 
         quizResult.style.display = 'block';
         quizResult.textContent = isCorrect
-            ? '✅ 정답입니다! 이제 이 문제를 완벽히 이해하신 것 같네요!'
+            ? '✅ 정답입니다! 이제 이 문제를 완벽히 이해하신 것 같네요! 이 문제는 성취도 메뉴 에서 확인하실 수 있어요'
             : '❌ 틀렸습니다ㅠ 다음에 또 시도해보아요!';
         quizResult.className = `quiz-result ${isCorrect ? 'correct' : 'wrong'}`;
 
         if (isCorrect) {
             setTimeout(() => {
                 closeQuizModal();
+                // Move to achievements and remove from pop quiz
                 const removed = popQuizItems.splice(index, 1)[0];
                 if (removed) {
                     removed.round = (removed.round || 0) + 1;
                     removed.lastAccessed = new Date().toISOString();
-                    questions.unshift(removed);
-                    saveQuestions();
+                    achievements.unshift({ ...removed, achievedAt: new Date().toISOString() });
+                    saveAchievements();
                     savePopQuizItems();
                     updatePopQuizBadge();
+                }
+            }, 800);
+        } else {
+            // Schedule reappearance after 1 day, and hide immediately
+            setTimeout(() => {
+                closeQuizModal();
+                if (popQuizItems[index]) {
+                    popQuizItems[index].reappearAt = new Date(Date.now() + POP_QUIZ_REAPPEAR_MS).toISOString();
+                    savePopQuizItems();
+                    updatePopQuizBadge();
+                    // Refresh list if viewing
+                    if (settingsView.style.display !== 'none') displayPopQuiz();
                 }
             }, 800);
         }
@@ -973,6 +983,30 @@ function loadPopQuizItems() {
             popQuizItems = [];
         }
     }
+}
+
+function saveAchievements() {
+    localStorage.setItem('reviewNoteAchievements', JSON.stringify(achievements));
+}
+
+function loadAchievements() {
+    const saved = localStorage.getItem('reviewNoteAchievements');
+    if (saved) {
+        try {
+            achievements = JSON.parse(saved) || [];
+        } catch (_) {
+            achievements = [];
+        }
+    }
+}
+
+function isPopQuizReady(item, nowTs) {
+    const now = nowTs || Date.now();
+    if (item.reappearAt) {
+        return now >= new Date(item.reappearAt).getTime();
+    }
+    const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
+    return added > 0 && (now - added) >= POP_QUIZ_DELAY_MS;
 }
 
 // Save/load answers mapped by image hash

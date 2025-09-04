@@ -276,6 +276,24 @@ function setupEventListeners() {
 
     // Disable image swipe gestures per new spec
     // setupSwipeGestures();
+
+    // Image review actions
+    if (wrongBtn) {
+        wrongBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            wrongBtn.disabled = true;
+            setTimeout(() => { wrongBtn.disabled = false; }, 300);
+            categorizeQuestion('wrong');
+        });
+    }
+    if (ambiguousBtn) {
+        ambiguousBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            ambiguousBtn.disabled = true;
+            setTimeout(() => { ambiguousBtn.disabled = false; }, 300);
+            categorizeQuestion('ambiguous');
+        });
+    }
 }
 
 // Replace persistSolutionAnswer with async version mapping by image hash
@@ -377,7 +395,19 @@ async function handleImageCapture(event) {
 
 // Categorize question and store locally
 function categorizeQuestion(category) {
-    if (!currentImageBlob) return;
+    if (!currentImageBlob) {
+        const sys = document.getElementById('solutionSystemMsg');
+        if (sys) {
+            sys.textContent = '이미지가 없습니다. 먼저 이미지를 촬영/업로드 해주세요.';
+            sys.style.display = 'block';
+            sys.classList.add('show');
+            setTimeout(() => {
+                sys.classList.remove('show');
+                setTimeout(() => { sys.style.display = 'none'; }, 180);
+            }, 1500);
+        }
+        return;
+    }
 
     // Determine pre-count of n회독 items (including round 0)
     const preCountNRound = questions.filter(q => (q.round ?? -1) >= 0).length;
@@ -411,8 +441,16 @@ function categorizeQuestion(category) {
         updateQuestionCount();
 
         // Show success feedback
-        const categoryText = category === 'ambiguous' ? '애매한 문제' : '틀린 문제';
-        showToast(`${categoryText}로 저장되었습니다!`);
+        const sys = document.getElementById('solutionSystemMsg');
+        if (sys) {
+            sys.textContent = (category === 'ambiguous') ? '애매한 문제로 저장되었습니다' : '틀린 문제로 저장되었습니다';
+            sys.style.display = 'block';
+            sys.classList.add('show');
+            setTimeout(() => {
+                sys.classList.remove('show');
+                setTimeout(() => { sys.style.display = 'none'; }, 180);
+            }, 1500);
+        }
         
         // Clean up and go back to n회독 view
         cleanupCurrentImage();

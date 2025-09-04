@@ -1246,6 +1246,7 @@ body {
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 .quiz-answer-panel input {
     flex: 1;
@@ -1254,7 +1255,12 @@ body {
     padding: 12px;
     font-size: 0.95rem;
 }
+.quiz-answer-panel .save-solution-btn { /* submit button */
+    flex: 0 0 auto;
+}
 .quiz-result {
+    flex: 1 0 100%;
+    width: 100%;
     margin-top: 10px;
     font-weight: 600;
 }

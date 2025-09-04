@@ -917,13 +917,14 @@ function handleQuizSubmit() {
         const isCorrect = userAnswer.length > 0 && correctAnswer.length > 0 && (userAnswer === correctAnswer);
 
         quizResult.style.display = 'block';
-        quizResult.textContent = isCorrect ? '정답입니다! 이제 이 문제를 완벽히 이해하신 것 같네요!' : '틀렸습니다ㅠ 다음에 또 시도해보아요!';
+        quizResult.textContent = isCorrect
+            ? '✅ 정답입니다! 이제 이 문제를 완벽히 이해하신 것 같네요!'
+            : '❌ 틀렸습니다ㅠ 다음에 또 시도해보아요!';
         quizResult.className = `quiz-result ${isCorrect ? 'correct' : 'wrong'}`;
 
         if (isCorrect) {
             setTimeout(() => {
                 closeQuizModal();
-                // Remove from pop quiz and return to questions, increment round
                 const removed = popQuizItems.splice(index, 1)[0];
                 if (removed) {
                     removed.round = (removed.round || 0) + 1;

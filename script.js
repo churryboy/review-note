@@ -92,6 +92,8 @@ const chatInput = document.getElementById('chatInput');
 const chatSend = document.getElementById('chatSend');
 let chatIsComposing = false;
 let chatSendLocked = false;
+// New: simple answer input
+const solutionAnswerInput = document.getElementById('solutionAnswerInput');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -147,52 +149,19 @@ function setupEventListeners() {
         });
     }
 
-    // Toggle solution steps dropdown
-    if (stepsHeader) {
-        stepsHeader.addEventListener('click', () => {
-            if (!stepsContent) return;
-            const isHidden = stepsContent.style.display === 'none';
-            stepsContent.style.display = isHidden ? 'block' : 'none';
-            if (stepsChevron) stepsChevron.className = `fas fa-chevron-${isHidden ? 'up' : 'down'}`;
+    // Simple answer input persistence
+    if (solutionAnswerInput) {
+        solutionAnswerInput.addEventListener('change', persistSolutionAnswer);
+        solutionAnswerInput.addEventListener('blur', persistSolutionAnswer);
+        solutionAnswerInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                persistSolutionAnswer();
+            }
         });
     }
 
-    // Image popup (remove unused popup functionality)
-    // popupClose.addEventListener('click', closeImagePopup);
-    // imagePopupOverlay.addEventListener('click', (e) => {
-    //     if (e.target === imagePopupOverlay) {
-    //         closeImagePopup();
-    //     }
-    // });
-
-    // Image review actions
-    wrongBtn.addEventListener('click', () => categorizeQuestion('wrong'));
-    ambiguousBtn.addEventListener('click', () => categorizeQuestion('ambiguous'));
-
-    // Coaching guide
-    coachingSkip.addEventListener('click', closeCoachingGuide);
-    coachingNext.addEventListener('click', nextCoachingStep);
-    coachingDone.addEventListener('click', closeCoachingGuide);
-
-    // List coaching guide
-    listCoachingSkip.addEventListener('click', closeListCoachingGuide);
-    listCoachingNext.addEventListener('click', nextListCoachingStep);
-    listCoachingDone.addEventListener('click', closeListCoachingGuide);
-
-    // N-round coaching guide
-    nListCoachingSkip.addEventListener('click', closeNListCoachingGuide);
-    nListCoachingNext.addEventListener('click', nextNListCoachingStep);
-    nListCoachingDone.addEventListener('click', closeNListCoachingGuide);
-
-    // Quiz modal
-    quizClose.addEventListener('click', () => {
-        quizModal.style.display = 'none';
-        quizResult.style.display = 'none';
-        quizAnswer.value = '';
-    });
-    quizSubmit.addEventListener('click', handleQuizSubmit);
-
-    // Chat input listeners
+    // Disable legacy chat listeners if elements are absent
     if (chatSend) {
         chatSend.addEventListener('click', handleChatSend);
     }
@@ -201,7 +170,7 @@ function setupEventListeners() {
         chatInput.addEventListener('compositionend', () => { chatIsComposing = false; });
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
-                if (chatIsComposing) return; // ignore Enter while composing (IME)
+                if (chatIsComposing) return;
                 e.preventDefault();
                 handleChatSend();
             }
@@ -210,6 +179,15 @@ function setupEventListeners() {
 
     // Disable image swipe gestures per new spec
     // setupSwipeGestures();
+}
+
+function persistSolutionAnswer() {
+    const questionId = parseInt(solutionView.dataset.currentId);
+    if (!questionId) return;
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+    question.userAnswer = (solutionAnswerInput && solutionAnswerInput.value) || '';
+    saveQuestions();
 }
 
 // Show 0회독 view (deprecated): redirect to n회독
@@ -478,14 +456,14 @@ function showSolutionView(questionId, fromView) {
 
     // Expose current id for chat/delete handlers
     solutionView.dataset.currentId = String(question.id);
-    
-    // Load existing solution notes (legacy)
-    if (typeof solutionNotes !== 'undefined' && solutionNotes) {
-        solutionNotes.value = question.solutionNotes || '';
+
+    // Populate answer input
+    if (solutionAnswerInput) {
+        solutionAnswerInput.value = question.userAnswer || '';
     }
 
-    // Render chat for this question
-    renderChat(question);
+    // Render chat removed in new flow (leave no-op if functions exist)
+    // renderChat(question);
 
     // Show view
     if (round0View) round0View.style.display = 'none';

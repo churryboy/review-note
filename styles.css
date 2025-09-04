@@ -441,6 +441,8 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    flex: 1;
+    text-align: center;
 }
 
 .solution-title h2 {

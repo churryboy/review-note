@@ -140,7 +140,24 @@ function setupEventListeners() {
 
     // Solution navigation
     backFromSolution.addEventListener('click', returnToPreviousView);
-    deleteSolutionQuestion.addEventListener('click', handleDeleteCurrentSolution);
+    // Repurposed header button may be absent now; guard before attaching
+    if (deleteSolutionQuestion) {
+        deleteSolutionQuestion.addEventListener('click', async () => {
+            const questionId = parseInt(solutionView.dataset.currentId);
+            if (!questionId) return;
+            const idx = questions.findIndex(q => q.id === questionId);
+            if (idx === -1) return;
+            const q = questions[idx];
+            q.round = (q.round || 0) + 1;
+            q.lastAccessed = new Date().toISOString();
+            saveQuestions();
+            const solutionCategory = document.getElementById('solutionCategory');
+            solutionCategory.textContent = q.category === 'ambiguous' ? '애매함' : '틀림';
+            solutionCategory.className = `solution-category ${q.category}`;
+            displayNRoundQuestions();
+            showToast('+1 회독이 추가되었습니다');
+        });
+    }
     if (saveSolutionBtn) {
         saveSolutionBtn.addEventListener('click', saveSolutionNotes);
     }
@@ -182,6 +199,44 @@ function setupEventListeners() {
                 } catch (_) {}
             }
             showToast('정답이 저장되었습니다!');
+        });
+    }
+
+    // Add Count and Quiz buttons
+    const addCountBtn = document.getElementById('addCountBtn');
+    if (addCountBtn) {
+        addCountBtn.addEventListener('click', () => {
+            const questionId = parseInt(solutionView.dataset.currentId);
+            if (!questionId) return;
+            const idx = questions.findIndex(q => q.id === questionId);
+            if (idx === -1) return;
+            const q = questions[idx];
+            q.round = (q.round || 0) + 1;
+            q.lastAccessed = new Date().toISOString();
+            saveQuestions();
+            displayNRoundQuestions();
+            showToast('+1 회독이 추가되었습니다');
+        });
+    }
+    const addQuizBtn = document.getElementById('addQuizBtn');
+    if (addQuizBtn) {
+        addQuizBtn.addEventListener('click', () => {
+            const questionId = parseInt(solutionView.dataset.currentId);
+            if (!questionId) return;
+            // Move to pop quiz using existing function
+            const index = questions.findIndex(q => q.id === questionId);
+            if (index !== -1) {
+                const question = questions[index];
+                question.popQuizAdded = new Date().toISOString();
+                popQuizItems.push(question);
+                questions.splice(index, 1);
+                saveQuestions();
+                savePopQuizItems();
+                updatePopQuizBadge();
+                displayNRoundQuestions();
+                showToast('팝퀴즈로 이동했습니다!');
+                showSettingsView();
+            }
         });
     }
 

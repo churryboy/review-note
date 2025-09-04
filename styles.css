@@ -1375,3 +1375,7 @@ body {
     opacity: 1;
     transform: translateY(0);
 } 
+
+.pop-quiz-card + .pop-quiz-card {
+    margin-top: 10px;
+} 

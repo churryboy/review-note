@@ -805,13 +805,14 @@ function updatePopQuizBadge() {
 
 // Display pop quiz
 function displayPopQuiz() {
-    // Determine which items are ready (>= 5 minutes since added)
     const now = Date.now();
     const fiveMinutesMs = 5 * 60 * 1000;
-    const readyItems = popQuizItems.filter(item => {
-        const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
-        return added > 0 && (now - added) >= fiveMinutesMs;
-    });
+    const readyItems = popQuizItems
+        .map((item, idx) => ({ item, idx }))
+        .filter(({ item }) => {
+            const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
+            return added > 0 && (now - added) >= fiveMinutesMs;
+        });
 
     if (readyItems.length === 0) {
         if (popQuizContainer) popQuizContainer.style.display = 'none';
@@ -821,24 +822,22 @@ function displayPopQuiz() {
 
     if (popQuizContainer) popQuizContainer.style.display = 'block';
     if (popQuizEmpty) popQuizEmpty.style.display = 'none';
-
     if (!popQuizContainer) return;
-    const randomIndexInReady = Math.floor(Math.random() * readyItems.length);
-    const quizItem = readyItems[randomIndexInReady];
-    const absoluteIndex = popQuizItems.findIndex(i => i.id === quizItem.id);
 
-    popQuizContainer.innerHTML = `
-        <div class="pop-quiz-card" data-id="${quizItem.id}" data-index="${absoluteIndex}">
-            <img src="${quizItem.imageUrl}" alt="팝퀴즈 이미지" />
+    popQuizContainer.innerHTML = readyItems.map(({ item, idx }) => `
+        <div class="pop-quiz-card" data-id="${item.id}" data-index="${idx}">
+            <img src="${item.imageUrl}" alt="팝퀴즈 이미지" />
             <div class="meta">
-                <div class="question-number">${quizItem.questionNumber || '문제'}</div>
-                <div class="question-source">${quizItem.publisher || '출처모름'}</div>
+                <div class="question-number">${item.questionNumber || '문제'}</div>
+                <div class="question-source">${item.publisher || '출처모름'}</div>
             </div>
         </div>
-    `;
+    `).join('');
 
-    const card = popQuizContainer.querySelector('.pop-quiz-card');
-    card.addEventListener('click', () => openQuizModal(absoluteIndex));
+    popQuizContainer.querySelectorAll('.pop-quiz-card').forEach(card => {
+        const index = parseInt(card.getAttribute('data-index'));
+        card.addEventListener('click', () => openQuizModal(index));
+    });
 }
 
 function openQuizModal(index) {

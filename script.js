@@ -157,7 +157,16 @@ function setupEventListeners() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 persistSolutionAnswer();
+                showToast('정답이 저장되었습니다!');
             }
+        });
+    }
+    const solutionAnswerSubmit = document.getElementById('solutionAnswerSubmit');
+    if (solutionAnswerSubmit) {
+        solutionAnswerSubmit.addEventListener('click', (e) => {
+            e.preventDefault();
+            persistSolutionAnswer();
+            showToast('정답이 저장되었습니다!');
         });
     }
 

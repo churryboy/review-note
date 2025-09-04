@@ -214,6 +214,8 @@ function setupEventListeners() {
             q.round = (q.round || 0) + 1;
             q.lastAccessed = new Date().toISOString();
             saveQuestions();
+            // Prevent coaching from auto-showing after return
+            sessionStorage.removeItem('nListCoachPending');
             displayNRoundQuestions();
             const sys = document.getElementById('solutionSystemMsg');
             if (sys) {
@@ -549,7 +551,8 @@ function displayNRoundQuestions() {
     if (
         roundNQuestions.length === 1 &&
         sessionStorage.getItem('nListCoachPending') === 'true' &&
-        !sessionStorage.getItem('shownNListCoach')
+        !sessionStorage.getItem('shownNListCoach') &&
+        roundNView && roundNView.style.display !== 'none'
     ) {
         setTimeout(() => {
             showNListCoachingGuide();

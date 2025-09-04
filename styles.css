@@ -1352,9 +1352,9 @@ body {
 /* Inline system message as tooltip */
 .system-msg {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     right: 0;
-    margin-top: 8px;
+    margin-bottom: 8px;
     padding: 8px 10px;
     background: rgba(33, 37, 41, 0.92);
     color: white;
@@ -1363,7 +1363,7 @@ body {
     line-height: 1.2;
     box-shadow: 0 6px 18px rgba(0,0,0,0.15);
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(4px);
     transition: opacity 160ms ease, transform 160ms ease;
     pointer-events: none;
 }

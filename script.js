@@ -1404,7 +1404,9 @@ function moveToPopQuiz(questionId) {
         questions.splice(questionIndex, 1); // Remove from main questions
         saveQuestions();
         savePopQuizItems();
-        showToast('팝퀴즈로 이동했습니다!');
+        // Update status immediately so stats reflect at swipe time
+        updatePopQuizBadge();
+        displayPopQuiz();
     }
 }
 

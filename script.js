@@ -302,7 +302,44 @@ function showSettingsView() {
     displayPopQuiz();
 }
 
-// Show 성취도 view
+function displayAchievements() {
+    const list = document.getElementById('achievementList');
+    const empty = document.getElementById('achievementEmpty');
+    if (!list || !empty) return;
+
+    if (!achievements || achievements.length === 0) {
+        list.style.display = 'none';
+        empty.style.display = 'block';
+        list.innerHTML = '';
+        return;
+    }
+    list.style.display = 'block';
+    empty.style.display = 'none';
+    list.innerHTML = achievements.map(q => `
+        <div class="question-item" data-id="${q.id}">
+            <div class="question-with-image">
+                <div class="question-image">
+                    <img src="${q.imageUrl}" alt="문제 이미지" />
+                </div>
+                <div class="question-content">
+                    <div class="question-header">
+                        <span class="question-number">${q.questionNumber}</span>
+                        <div class="question-meta">
+                            <div class="source-category">
+                                <span class="question-source">${q.publisher}</span>
+                                <span class="question-round">${q.round}회독</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="question-timestamp">
+                        ${new Date(q.achievedAt || q.lastAccessed || q.timestamp).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
 function showAchievementView() {
     if (round0View) round0View.style.display = 'none';
     if (roundNView) roundNView.style.display = 'none';
@@ -314,6 +351,8 @@ function showAchievementView() {
     if (navNRound) navNRound.classList.remove('active');
     if (navSettings) navSettings.classList.remove('active');
     if (navAchievement) navAchievement.classList.add('active');
+
+    displayAchievements();
 }
 
 // Show image review view
@@ -931,6 +970,7 @@ function handleQuizSubmit() {
                     saveAchievements();
                     savePopQuizItems();
                     updatePopQuizBadge();
+                    if (achievementView && achievementView.style.display !== 'none') displayAchievements();
                 }
             }, 800);
         } else {

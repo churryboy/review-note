@@ -99,11 +99,10 @@ let answerByHash = {};
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-    // Always treat as first-time user on refresh
+    // Disable all coaching: clear and do not set again
     localStorage.removeItem('hasSeenCoaching');
     localStorage.removeItem('hasSeenListCoaching');
     sessionStorage.removeItem('shownListCoach');
-    // Reset n회독 coaching flags for testing on every refresh
     sessionStorage.removeItem('shownNListCoach');
     sessionStorage.removeItem('nListCoachPending');
 
@@ -113,8 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQuestionCount();
     updatePopQuizBadge();
     setupEventListeners();
-    showNRoundView(); // Default to n회독 view
-    startPopQuizTimer(); // Start random pop quiz timer
+    showNRoundView();
+    startPopQuizTimer();
 });
 
 // Set up event listeners
@@ -128,7 +127,6 @@ function setupEventListeners() {
     cameraInput.addEventListener('change', handleImageCapture);
 
     // Bottom navigation
-    // Removed nav0Round
     navNRound.addEventListener('click', showNRoundView);
     navSettings.addEventListener('click', showSettingsView);
     if (navAchievement) {
@@ -140,33 +138,9 @@ function setupEventListeners() {
 
     // Solution navigation
     backFromSolution.addEventListener('click', returnToPreviousView);
-    // Repurposed header button may be absent now; guard before attaching
-    if (deleteSolutionQuestion) {
-        deleteSolutionQuestion.addEventListener('click', async () => {
-            const questionId = parseInt(solutionView.dataset.currentId);
-            if (!questionId) return;
-            const idx = questions.findIndex(q => q.id === questionId);
-            if (idx === -1) return;
-            const q = questions[idx];
-            q.round = (q.round || 0) + 1;
-            q.lastAccessed = new Date().toISOString();
-            saveQuestions();
-            const solutionCategory = document.getElementById('solutionCategory');
-            solutionCategory.textContent = q.category === 'ambiguous' ? '애매함' : '틀림';
-            solutionCategory.className = `solution-category ${q.category}`;
-            displayNRoundQuestions();
-            showToast('+1 회독이 추가되었습니다');
-        });
-    }
+    // Header button removed/unused guarded elsewhere
     if (saveSolutionBtn) {
         saveSolutionBtn.addEventListener('click', saveSolutionNotes);
-    }
-    // Avoid null errors if button exists
-    if (viewSolutionStepsBtn) {
-        viewSolutionStepsBtn.addEventListener('click', () => {
-            // Placeholder: could open a steps modal or navigate later
-            showToast('준비 중입니다', 'error');
-        });
     }
 
     // Simple answer input persistence
@@ -177,7 +151,7 @@ function setupEventListeners() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 persistSolutionAnswer();
-                showToast('정답이 저장되었습니다!');
+                // no toast
             }
         });
     }
@@ -186,7 +160,6 @@ function setupEventListeners() {
         solutionAnswerSubmit.addEventListener('click', async (e) => {
             e.preventDefault();
             await persistSolutionAnswer();
-            // Send to backend for durable storage
             const questionId = parseInt(solutionView.dataset.currentId);
             const question = questions.find(q => q.id === questionId);
             if (question && question.imageHash) {
@@ -198,7 +171,6 @@ function setupEventListeners() {
                     });
                 } catch (_) {}
             }
-            showToast('정답이 저장되었습니다!');
         });
     }
 
@@ -214,14 +186,12 @@ function setupEventListeners() {
             q.round = (q.round || 0) + 1;
             q.lastAccessed = new Date().toISOString();
             saveQuestions();
-            // Prevent coaching from auto-showing after return
             sessionStorage.removeItem('nListCoachPending');
             displayNRoundQuestions();
             const sys = document.getElementById('solutionSystemMsg');
             if (sys) {
                 sys.textContent = '1회독 추가되었습니다';
                 sys.style.display = 'block';
-                // Tooltip show/hide
                 sys.classList.add('show');
                 setTimeout(() => {
                     sys.classList.remove('show');
@@ -255,28 +225,11 @@ function setupEventListeners() {
                         setTimeout(() => { sys.style.display = 'none'; }, 180);
                     }, 1500);
                 }
-                // Do not navigate to pop quiz per request
             }
         });
     }
 
-    // Disable legacy chat listeners if elements are absent
-    if (chatSend) {
-        chatSend.addEventListener('click', handleChatSend);
-    }
-    if (chatInput) {
-        chatInput.addEventListener('compositionstart', () => { chatIsComposing = true; });
-        chatInput.addEventListener('compositionend', () => { chatIsComposing = false; });
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                if (chatIsComposing) return;
-                e.preventDefault();
-                handleChatSend();
-            }
-        });
-    }
-
-    // Disable image swipe gestures per new spec
+    // Disable image swipe gestures
     // setupSwipeGestures();
 
     // Image review actions
@@ -1507,119 +1460,15 @@ function showRandomPopQuiz() {
     // No-op: display is handled via displayPopQuiz filtering by readiness
 }
 
-// Check and show coaching guide for first-time users
-function checkAndShowCoachingGuide() {
-    const hasSeenCoaching = localStorage.getItem('hasSeenCoaching');
-    if (!hasSeenCoaching) {
-        showCoachingGuide();
-    }
-}
-
-// Show coaching guide
-function showCoachingGuide() {
-    coachingOverlay.style.display = 'flex';
-    // Reset to first step
-    document.querySelectorAll('.coaching-step').forEach(step => step.classList.remove('active'));
-    document.getElementById('step1').classList.add('active');
-    document.querySelectorAll('.step-dot').forEach(dot => dot.classList.remove('active'));
-    document.querySelector('.step-dot[data-step="1"]').classList.add('active');
-    coachingNext.style.display = 'block';
-    coachingDone.style.display = 'none';
-}
-
-// Close coaching guide
-function closeCoachingGuide() {
-    coachingOverlay.style.display = 'none';
-    localStorage.setItem('hasSeenCoaching', 'true');
-}
-
-// Next coaching step
-function nextCoachingStep() {
-    const currentStep = document.querySelector('.coaching-step.active');
-    const currentStepId = currentStep.id;
-    
-    if (currentStepId === 'step1') {
-        // Move to step 2
-        document.getElementById('step1').classList.remove('active');
-        document.getElementById('step2').classList.add('active');
-        document.querySelector('.step-dot[data-step="1"]').classList.remove('active');
-        document.querySelector('.step-dot[data-step="2"]').classList.add('active');
-                 coachingNext.style.display = 'none';
-         coachingDone.style.display = 'block';
-     }
-}
-
-// Check and show list coaching guide
-function checkAndShowListCoaching() {
-    const hasSeenListCoaching = localStorage.getItem('hasSeenListCoaching');
-    if (!hasSeenListCoaching) {
-        showListCoachingGuide();
-    }
-}
-
-// Show list coaching guide
-function showListCoachingGuide() {
-    listCoachingOverlay.style.display = 'flex';
-    // Reset to first step
-    document.querySelectorAll('#listCoachingOverlay .coaching-step').forEach(step => step.classList.remove('active'));
-    document.getElementById('listStep1').classList.add('active');
-    document.querySelectorAll('#listCoachingOverlay .step-dot').forEach(dot => dot.classList.remove('active'));
-    document.querySelector('#listCoachingOverlay .step-dot[data-step="1"]').classList.add('active');
-    listCoachingNext.style.display = 'block';
-    listCoachingDone.style.display = 'none';
-    // Mark shown for this session to avoid duplicates until refresh
-    sessionStorage.setItem('shownListCoach', 'true');
-}
-
-// Close list coaching guide
-function closeListCoachingGuide() {
-    listCoachingOverlay.style.display = 'none';
-    localStorage.setItem('hasSeenListCoaching', 'true');
-}
-
-// Next list coaching step
-function nextListCoachingStep() {
-    const currentStep = document.querySelector('#listCoachingOverlay .coaching-step.active');
-    const currentStepId = currentStep.id;
-    
-    if (currentStepId === 'listStep1') {
-        // Move to step 2
-        document.getElementById('listStep1').classList.remove('active');
-        document.getElementById('listStep2').classList.add('active');
-        document.querySelector('#listCoachingOverlay .step-dot[data-step="1"]').classList.remove('active');
-        document.querySelector('#listCoachingOverlay .step-dot[data-step="2"]').classList.add('active');
-        listCoachingNext.style.display = 'none';
-        listCoachingDone.style.display = 'block';
-    }
-} 
-
-// N-round coaching helpers
-function showNListCoachingGuide() {
-    nListCoachingOverlay.style.display = 'flex';
-    document.querySelectorAll('#nListCoachingOverlay .coaching-step').forEach(step => step.classList.remove('active'));
-    document.getElementById('nListStep1').classList.add('active');
-    document.querySelectorAll('#nListCoachingOverlay .step-dot').forEach(dot => dot.classList.remove('active'));
-    document.querySelector('#nListCoachingOverlay .step-dot[data-step="1"]').classList.add('active');
-    nListCoachingNext.style.display = 'block';
-    nListCoachingDone.style.display = 'none';
-    sessionStorage.setItem('shownNListCoach', 'true');
-}
-
-function closeNListCoachingGuide() {
-    nListCoachingOverlay.style.display = 'none';
-    localStorage.setItem('hasSeenNListCoaching', 'true');
-}
-
-function nextNListCoachingStep() {
-    const currentStep = document.querySelector('#nListCoachingOverlay .coaching-step.active');
-    const currentStepId = currentStep.id;
-    
-    if (currentStepId === 'nListStep1') {
-        document.getElementById('nListStep1').classList.remove('active');
-        document.getElementById('nListStep2').classList.add('active');
-        document.querySelector('#nListCoachingOverlay .step-dot[data-step="1"]').classList.remove('active');
-        document.querySelector('#nListCoachingOverlay .step-dot[data-step="2"]').classList.add('active');
-        nListCoachingNext.style.display = 'none';
-        nListCoachingDone.style.display = 'block';
-    }
-} 
+// Remove all coaching features: make functions no-ops
+function checkAndShowCoachingGuide() {}
+function showCoachingGuide() {}
+function closeCoachingGuide() {}
+function nextCoachingStep() {}
+function checkAndShowListCoaching() {}
+function showListCoachingGuide() {}
+function closeListCoachingGuide() {}
+function nextListCoachingStep() {}
+function showNListCoachingGuide() {}
+function closeNListCoachingGuide() {}
+function nextNListCoachingStep() {} 

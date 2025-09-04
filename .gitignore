@@ -34,3 +34,5 @@ build/
 # Temporary files
 *.tmp
 temp/ 
+# Backup env files
+.env.bak

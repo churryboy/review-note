@@ -68,6 +68,28 @@ const detailCategory = document.getElementById('detailCategory');
 const detailPublisher = document.getElementById('detailPublisher');
 const detailTimestamp = document.getElementById('detailTimestamp');
 
+// Quiz modal elements
+const quizModal = document.getElementById('quizModal');
+const quizImage = document.getElementById('quizImage');
+const quizClose = document.getElementById('quizClose');
+const quizAnswer = document.getElementById('quizAnswer');
+const quizSubmit = document.getElementById('quizSubmit');
+const quizResult = document.getElementById('quizResult');
+
+// New: solution steps button
+const viewSolutionStepsBtn = document.getElementById('viewSolutionStepsBtn');
+const stepsHeader = document.getElementById('stepsHeader');
+const stepsContent = document.getElementById('stepsContent');
+const stepsChevron = document.getElementById('stepsChevron');
+const renderedSolution = document.getElementById('renderedSolution');
+
+// Chat elements
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+let chatIsComposing = false;
+let chatSendLocked = false;
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     // Always treat as first-time user on refresh
@@ -108,7 +130,26 @@ function setupEventListeners() {
     // Solution navigation
     backFromSolution.addEventListener('click', returnToPreviousView);
     deleteSolutionQuestion.addEventListener('click', handleDeleteCurrentSolution);
-    saveSolutionBtn.addEventListener('click', saveSolutionNotes);
+    if (saveSolutionBtn) {
+        saveSolutionBtn.addEventListener('click', saveSolutionNotes);
+    }
+    // Avoid null errors if button exists
+    if (viewSolutionStepsBtn) {
+        viewSolutionStepsBtn.addEventListener('click', () => {
+            // Placeholder: could open a steps modal or navigate later
+            showToast('준비 중입니다', 'error');
+        });
+    }
+
+    // Toggle solution steps dropdown
+    if (stepsHeader) {
+        stepsHeader.addEventListener('click', () => {
+            if (!stepsContent) return;
+            const isHidden = stepsContent.style.display === 'none';
+            stepsContent.style.display = isHidden ? 'block' : 'none';
+            if (stepsChevron) stepsChevron.className = `fas fa-chevron-${isHidden ? 'up' : 'down'}`;
+        });
+    }
 
     // Image popup (remove unused popup functionality)
     // popupClose.addEventListener('click', closeImagePopup);
@@ -136,6 +177,30 @@ function setupEventListeners() {
     nListCoachingSkip.addEventListener('click', closeNListCoachingGuide);
     nListCoachingNext.addEventListener('click', nextNListCoachingStep);
     nListCoachingDone.addEventListener('click', closeNListCoachingGuide);
+
+    // Quiz modal
+    quizClose.addEventListener('click', () => {
+        quizModal.style.display = 'none';
+        quizResult.style.display = 'none';
+        quizAnswer.value = '';
+    });
+    quizSubmit.addEventListener('click', handleQuizSubmit);
+
+    // Chat input listeners
+    if (chatSend) {
+        chatSend.addEventListener('click', handleChatSend);
+    }
+    if (chatInput) {
+        chatInput.addEventListener('compositionstart', () => { chatIsComposing = true; });
+        chatInput.addEventListener('compositionend', () => { chatIsComposing = false; });
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                if (chatIsComposing) return; // ignore Enter while composing (IME)
+                e.preventDefault();
+                handleChatSend();
+            }
+        });
+    }
 
     // Set up swipe gestures
     setupSwipeGestures();
@@ -436,8 +501,7 @@ function showSolutionView(questionId, fromView) {
 
     // Populate solution view
     document.getElementById('solutionQuestionNumber').textContent = question.questionNumber;
-    document.getElementById('solutionPublisher').textContent = question.publisher || '출처모름';
-    document.getElementById('solutionTimestamp').textContent = new Date(question.lastAccessed).toLocaleString('ko-KR');
+    // Removed: solutionPublisher and solutionTimestamp UI
 
     const solutionCategory = document.getElementById('solutionCategory');
     solutionCategory.textContent = question.category === 'ambiguous' ? '애매함' : '틀림';
@@ -445,8 +509,14 @@ function showSolutionView(questionId, fromView) {
 
     document.getElementById('solutionImage').src = question.imageUrl;
     
-    // Load existing solution notes
-    solutionNotes.value = question.solutionNotes || '';
+    // Load existing solution notes (legacy)
+    if (typeof solutionNotes !== 'undefined' && solutionNotes) {
+        solutionNotes.value = question.solutionNotes || '';
+    }
+
+    // Populate steps content removed
+    // Render chat for this question
+    renderChat(question);
 
     // Store current question id and source view for navigation
     solutionView.dataset.currentId = String(question.id);
@@ -460,6 +530,109 @@ function showSolutionView(questionId, fromView) {
     solutionView.style.display = 'flex';
     
     console.log('Solution view should now be visible');
+}
+
+function renderChat(question) {
+    if (!chatMessages) return;
+    chatMessages.innerHTML = '';
+    const messages = question.chat || [];
+    messages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = `chat-message ${m.role}`;
+        if (m.role === 'assistant') {
+            div.innerHTML = formatAssistantText(m.content);
+        } else {
+            div.textContent = m.content;
+        }
+        chatMessages.appendChild(div);
+    });
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        setTimeout(() => window.MathJax.typesetPromise([chatMessages]), 0);
+    }
+}
+
+function formatAssistantText(text) {
+    const lines = (text || '').split(/\r?\n/);
+    let html = '';
+    let inUl = false;
+    let inOl = false;
+    const closeLists = () => {
+        if (inUl) { html += '</ul>'; inUl = false; }
+        if (inOl) { html += '</ol>'; inOl = false; }
+    };
+
+    for (const line of lines) {
+        if (/^\s*$/.test(line)) { closeLists(); html += '<br/>'; continue; }
+        const h3 = line.match(/^\s*###\s+(.*)$/);
+        if (h3) { closeLists(); html += `<h4>${escapeHtml(h3[1])}</h4>`; continue; }
+        const ol = line.match(/^\s*(\d+)\.\s+(.*)$/);
+        if (ol) { if (!inOl) { closeLists(); html += '<ol>'; inOl = true; } html += `<li>${escapeHtml(ol[2])}</li>`; continue; }
+        const ul = line.match(/^\s*[-*]\s+(.*)$/);
+        if (ul) { if (!inUl) { closeLists(); html += '<ul>'; inUl = true; } html += `<li>${escapeHtml(ul[1])}</li>`; continue; }
+        closeLists();
+        html += `<div>${escapeHtml(line)}</div>`;
+    }
+    closeLists();
+    return html;
+}
+
+function escapeHtml(s){
+    return (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+function handleChatSend() {
+    if (chatSendLocked) return; // prevent double send
+    const questionId = parseInt(solutionView.dataset.currentId);
+    if (!questionId) return;
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+
+    const text = (chatInput.value || '').trim();
+    if (!text) return;
+
+    chatSendLocked = true;
+    question.chat = question.chat || [];
+    question.chat.push({ role: 'user', content: text });
+    saveQuestions();
+
+    chatInput.value = '';
+    renderChat(question);
+
+    // Show typing indicator
+    const typing = document.createElement('div');
+    typing.className = 'chat-message assistant';
+    typing.innerHTML = '<div class="typing"><span>생각 중...</span><div class="dots"><span></span><span></span><span></span></div></div>';
+    chatMessages.appendChild(typing);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Send to backend LLM with image context
+    fetch('/api/llm-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            message: text,
+            imageDataUrl: question.imageUrl // already base64 data URL
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        typing.remove();
+        const raw = data.reply || '답변을 생성하지 못했습니다.';
+        question.chat.push({ role: 'assistant', content: raw });
+        saveQuestions();
+        renderChat(question);
+    })
+    .catch(err => {
+        typing.remove();
+        console.error('LLM error:', err);
+        question.chat.push({ role: 'assistant', content: 'LLM 호출 중 오류가 발생했습니다.' });
+        saveQuestions();
+        renderChat(question);
+    })
+    .finally(() => {
+        chatSendLocked = false;
+    });
 }
 
 // Return to previous view
@@ -478,7 +651,7 @@ function saveSolutionNotes() {
     const questionId = parseInt(solutionView.dataset.currentId);
     const question = questions.find(q => q.id === questionId);
     
-    if (question) {
+    if (question && typeof solutionNotes !== 'undefined' && solutionNotes) {
         question.solutionNotes = solutionNotes.value;
         saveQuestions();
         showToast('풀이 과정이 저장되었습니다!');
@@ -544,36 +717,130 @@ function handleDeleteCurrentDetail() {
 
 // Update question count
 function updateQuestionCount() {
-    totalQuestionCount.textContent = questions.length + '개';
+    if (totalQuestionCount) {
+        totalQuestionCount.textContent = questions.length + '개';
+    }
 }
 
 // Update pop quiz badge
 function updatePopQuizBadge() {
-    if (popQuizItems.length > 0) {
-        quizBadge.textContent = popQuizItems.length;
+    // Badge shows only when ready (matured) items exist
+    const now = Date.now();
+    const fiveMinutesMs = 5 * 60 * 1000;
+    const readyCount = popQuizItems.filter(item => {
+        const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
+        return added > 0 && (now - added) >= fiveMinutesMs;
+    }).length;
+
+    if (readyCount > 0) {
+        quizBadge.textContent = String(readyCount);
         quizBadge.style.display = 'flex';
     } else {
         quizBadge.style.display = 'none';
     }
     
-    // Update waiting count
+    // Update waiting count if present (optional, may not exist)
     if (popQuizWaitingCount) {
-        popQuizWaitingCount.textContent = popQuizItems.length + '개';
+        popQuizWaitingCount.textContent = readyCount + '개';
     }
 }
 
 // Display pop quiz
 function displayPopQuiz() {
-    // For now, show a simple message or random question
-    // This can be enhanced with actual random timing logic
-    if (popQuizItems.length === 0) {
+    // Determine which items are ready (>= 5 minutes since added)
+    const now = Date.now();
+    const fiveMinutesMs = 5 * 60 * 1000;
+    const readyItems = popQuizItems.filter(item => {
+        const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
+        return added > 0 && (now - added) >= fiveMinutesMs;
+    });
+
+    if (readyItems.length === 0) {
         popQuizContainer.style.display = 'none';
         popQuizEmpty.style.display = 'block';
+        return;
+    }
+
+    // Show a single random ready card
+    const randomIndexInReady = Math.floor(Math.random() * readyItems.length);
+    const quizItem = readyItems[randomIndexInReady];
+    const absoluteIndex = popQuizItems.findIndex(i => i.id === quizItem.id);
+
+    popQuizContainer.style.display = 'block';
+    popQuizEmpty.style.display = 'none';
+
+    popQuizContainer.innerHTML = `
+        <div class="pop-quiz-card" data-id="${quizItem.id}" data-index="${absoluteIndex}">
+            <img src="${quizItem.imageUrl}" alt="팝퀴즈 이미지" />
+            <div class="meta">
+                <div class="question-number">${quizItem.questionNumber || '문제'}</div>
+                <div class="question-source">${quizItem.publisher || '출처모름'}</div>
+            </div>
+        </div>
+    `;
+
+    const card = popQuizContainer.querySelector('.pop-quiz-card');
+    card.addEventListener('click', () => openQuizModal(absoluteIndex));
+}
+
+function openQuizModal(index) {
+    const quizItem = popQuizItems[index];
+    if (!quizItem) return;
+    quizModal.style.display = 'flex';
+    quizImage.src = quizItem.imageUrl;
+    quizModal.dataset.index = String(index);
+}
+
+function handleQuizSubmit() {
+    const indexStr = quizModal.dataset.index;
+    if (!indexStr) return;
+    const index = parseInt(indexStr);
+    const quizItem = popQuizItems[index];
+    if (!quizItem) return;
+
+    // Simple evaluation placeholder: compare to stored answer if exists
+    const userAnswer = (quizAnswer.value || '').trim();
+    const correctAnswer = (quizItem.correctAnswer || '').trim();
+
+    if (!userAnswer) {
+        showToast('정답을 입력하세요', 'error');
+        return;
+    }
+
+    // If no correctAnswer stored yet, accept as correct and store it for future
+    let isCorrect = true;
+    if (correctAnswer) {
+        isCorrect = userAnswer === correctAnswer;
     } else {
-        // Show a random question or just show that there are items waiting
-        popQuizContainer.style.display = 'none';
-        popQuizEmpty.style.display = 'block';
-        // The actual pop quiz will be triggered randomly, not when viewing this page
+        quizItem.correctAnswer = userAnswer;
+        savePopQuizItems();
+    }
+
+    quizResult.style.display = 'block';
+    quizResult.textContent = isCorrect ? '정답입니다!' : `오답입니다. 정답: ${correctAnswer}`;
+    quizResult.className = `quiz-result ${isCorrect ? 'correct' : 'wrong'}`;
+
+    // On correct, move item back to questions with incremented round
+    if (isCorrect) {
+        setTimeout(() => {
+            quizModal.style.display = 'none';
+            quizResult.style.display = 'none';
+            quizAnswer.value = '';
+
+            // Remove from pop quiz and return to questions, increment round
+            const item = popQuizItems.splice(index, 1)[0];
+            item.round = (item.round || 0) + 1;
+            item.lastAccessed = new Date().toISOString();
+            questions.unshift(item);
+            saveQuestions();
+            savePopQuizItems();
+            updatePopQuizBadge();
+
+            // Refresh views if on them
+            if (settingsView.style.display !== 'none') displayPopQuiz();
+            if (round0View.style.display !== 'none') display0RoundQuestions();
+            if (roundNView.style.display !== 'none') displayNRoundQuestions();
+        }, 800);
     }
 }
 
@@ -615,6 +882,10 @@ function loadPopQuizItems() {
 
 // Show toast notification
 function showToast(message, type = 'success') {
+    // Suppress green success system messages globally
+    if (type === 'success') {
+        return;
+    }
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `
@@ -1053,57 +1324,25 @@ function moveToPopQuiz(questionId) {
 
 // Start pop quiz timer
 function startPopQuizTimer() {
-    // Check for pop quiz every 30 seconds to 2 minutes (random interval)
-    function scheduleNextCheck() {
-        const minInterval = 30000; // 30 seconds
-        const maxInterval = 120000; // 2 minutes
-        const interval = Math.random() * (maxInterval - minInterval) + minInterval;
-        
-        setTimeout(() => {
-            checkForPopQuiz();
-            scheduleNextCheck(); // Schedule next check
-        }, interval);
-    }
-    
-    scheduleNextCheck();
+    // Poll periodically to refresh pop quiz readiness
+    setInterval(() => {
+        // Update badge regardless of current view
+        updatePopQuizBadge();
+        // Only update the UI if the pop quiz page is visible
+        if (settingsView.style.display !== 'none') {
+            displayPopQuiz();
+        }
+    }, 15000); // check every 15s
 }
 
-// Check if we should show a pop quiz
+// Check if we should show a pop quiz (kept for compatibility)
 function checkForPopQuiz() {
-    if (popQuizItems.length === 0) return;
-    
-    // 20% chance to show a pop quiz when there are items available
-    if (Math.random() < 0.2) {
-        showRandomPopQuiz();
-    }
+    // No-op: display is handled in displayPopQuiz with 5-minute readiness
 }
 
-// Show a random pop quiz
+// Show a random pop quiz (kept for compatibility)
 function showRandomPopQuiz() {
-    if (popQuizItems.length === 0) return;
-    
-    const randomIndex = Math.floor(Math.random() * popQuizItems.length);
-    const quizItem = popQuizItems[randomIndex];
-    
-    // Remove from pop quiz items and add back to questions with higher round
-    popQuizItems.splice(randomIndex, 1);
-    quizItem.round += 1;
-    quizItem.lastAccessed = new Date().toISOString();
-    questions.unshift(quizItem);
-    
-    saveQuestions();
-    savePopQuizItems();
-    updatePopQuizBadge();
-    
-    // Show notification
-    showToast(`팝퀴즈! ${quizItem.questionNumber}이 나타났습니다!`, 'success');
-    
-    // Update displays if currently viewing relevant pages
-    if (round0View.style.display !== 'none') {
-        display0RoundQuestions();
-    } else if (roundNView.style.display !== 'none') {
-                 displayNRoundQuestions();
-     }
+    // No-op: display is handled via displayPopQuiz filtering by readiness
 }
 
 // Check and show coaching guide for first-time users

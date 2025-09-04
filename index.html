@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
     <!-- App Header -->
@@ -58,28 +62,13 @@
         <!-- Pop Quiz View -->
         <div class="round-view" id="settingsView" style="display: none;">
             <div class="pop-quiz-container" id="popQuizContainer">
-                <!-- Pop quiz content will be displayed here -->
+                <!-- Pop quiz content will be displayed here (blank until quiz appears) -->
             </div>
             
             <div class="empty-state" id="popQuizEmpty">
                 <i class="fas fa-clock"></i>
                 <p>팝퀴즈 대기 중...</p>
                 <small>n회독에서 스와이프한 문제들이 랜덤하게 나타납니다</small>
-            </div>
-            
-            <div class="settings-content">
-                <div class="setting-item">
-                    <span>버전 정보</span>
-                    <span>v1.0.0</span>
-                </div>
-                <div class="setting-item">
-                    <span>저장된 문제 수</span>
-                    <span id="totalQuestionCount">0개</span>
-                </div>
-                <div class="setting-item">
-                    <span>팝퀴즈 대기</span>
-                    <span id="popQuizWaitingCount">0개</span>
-                </div>
             </div>
         </div>
 
@@ -161,28 +150,16 @@
                 
                 <!-- Solution Process -->
                 <div class="solution-process">
-                    <div class="solution-meta">
-                        <div class="meta-row">
-                            <span class="meta-label">출처:</span>
-                            <span class="meta-value" id="solutionPublisher">출처모름</span>
-                        </div>
-                        <div class="meta-row">
-                            <span class="meta-label">마지막 확인:</span>
-                            <span class="meta-value" id="solutionTimestamp"></span>
-                        </div>
-                    </div>
                     
                     <div class="solution-notes">
-                        <h3>풀이 과정</h3>
-                        <textarea 
-                            id="solutionNotes" 
-                            placeholder="문제의 풀이 과정을 작성해보세요..."
-                            rows="8"
-                        ></textarea>
-                        <button class="save-solution-btn" id="saveSolutionBtn">
-                            <i class="fas fa-save"></i>
-                            <span>저장</span>
-                        </button>
+                        <h3>풀이 질문하기</h3>
+                        <div class="chat-container">
+                            <div id="chatMessages" class="chat-messages"></div>
+                            <div class="chat-input-row">
+                                <input id="chatInput" type="text" placeholder="질문을 입력하세요..." />
+                                <button id="chatSend" class="save-solution-btn"><i class="fas fa-paper-plane"></i><span>보내기</span></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -196,6 +173,21 @@
                 <i class="fas fa-times"></i>
             </button>
             <img id="popupImage" src="" alt="문제 이미지">
+        </div>
+    </div>
+
+    <!-- Pop Quiz Modal -->
+    <div class="image-popup-overlay" id="quizModal" style="display: none;">
+        <div class="image-popup-content">
+            <button class="popup-close" id="quizClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="quizImage" src="" alt="문제 이미지">
+            <div class="quiz-answer-panel">
+                <input id="quizAnswer" type="text" placeholder="정답을 입력하세요" />
+                <button id="quizSubmit" class="save-solution-btn"><i class="fas fa-paper-plane"></i><span>제출</span></button>
+                <div id="quizResult" class="quiz-result" style="display:none;"></div>
+            </div>
         </div>
     </div>
 

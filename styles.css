@@ -789,18 +789,27 @@ body {
     color: #FF5500;
 }
 
+/* Ensure badge anchors to the icon */
+.nav-item {
+    position: relative;
+}
+
+.nav-item i {
+    position: relative;
+}
+
 .quiz-badge {
     position: absolute;
-    top: 4px;
-    right: 8px;
+    top: -2px;
+    right: 28px; /* align to top-right of the icon, not the whole container */
     background: #ff4444;
     color: white;
     font-size: 0.6rem;
     font-weight: 600;
     padding: 2px 4px;
     border-radius: 50%;
-    min-width: 12px;
-    height: 12px;
+    min-width: 14px;
+    height: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1175,3 +1184,136 @@ body {
         padding-bottom: calc(70px + env(safe-area-inset-bottom));
     }
 } 
+
+/* Pop Quiz additions */
+.pop-quiz-card {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    cursor: pointer;
+}
+.pop-quiz-card img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+.pop-quiz-card .meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.quiz-answer-panel {
+    padding: 16px;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.quiz-answer-panel input {
+    flex: 1;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.95rem;
+}
+.quiz-result {
+    margin-top: 10px;
+    font-weight: 600;
+}
+.quiz-result.correct { color: #4CAF50; }
+.quiz-result.wrong { color: #f44336; } 
+
+/* Solution steps dropdown */
+.solution-steps {
+    margin-bottom: 12px;
+    background: #f8f9fa; /* section separation */
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+.steps-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    padding: 6px 0;
+}
+.steps-content {
+    background: transparent;
+    border-radius: 6px;
+    padding: 8px 0 0;
+}
+.rendered-solution {
+    font-size: 0.95rem;
+    color: #444;
+    white-space: pre-wrap;
+    line-height: 1.5;
+} 
+
+/* Chat UI for solution */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.chat-messages {
+    max-height: 40vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+}
+.chat-message {
+    display: inline-block;
+    max-width: 80%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    line-height: 1.4;
+    font-size: 0.95rem;
+}
+.chat-message.user {
+    align-self: flex-end;
+    background: #FFEEE6;
+    color: #333;
+    border-top-right-radius: 4px;
+}
+.chat-message.assistant {
+    align-self: flex-start;
+    background: #f1f3f5;
+    color: #333;
+    border-top-left-radius: 4px;
+}
+.chat-input-row {
+    display: flex;
+    gap: 8px;
+}
+.chat-input-row input {
+    flex: 1;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.95rem;
+} 
+
+/* Chat typing/loading */
+.typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #666;
+    font-size: 0.9rem;
+}
+.dots span { display:inline-block; width:6px; height:6px; background:#bbb; border-radius:50%; margin-right:3px; animation: blink 1.2s infinite; }
+.dots span:nth-child(2){ animation-delay:.2s }
+.dots span:nth-child(3){ animation-delay:.4s }
+@keyframes blink { 0%,80%,100%{ opacity:.2 } 40%{ opacity:1 } }
+
+.chat-message.assistant ul { margin: 6px 0 6px 20px; }
+.chat-message.assistant li { list-style: disc; margin: 2px 0; } 

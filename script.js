@@ -94,6 +94,8 @@ let chatIsComposing = false;
 let chatSendLocked = false;
 // New: simple answer input
 const solutionAnswerInput = document.getElementById('solutionAnswerInput');
+// New: answers mapped by image hash
+let answerByHash = {};
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -107,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadQuestions();
     loadPopQuizItems();
+    loadAnswerByHash();
     updateQuestionCount();
     updatePopQuizBadge();
     setupEventListeners();
@@ -190,12 +193,19 @@ function setupEventListeners() {
     // setupSwipeGestures();
 }
 
-function persistSolutionAnswer() {
+// Replace persistSolutionAnswer with async version mapping by image hash
+async function persistSolutionAnswer() {
     const questionId = parseInt(solutionView.dataset.currentId);
     if (!questionId) return;
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
-    question.userAnswer = (solutionAnswerInput && solutionAnswerInput.value) || '';
+    const answer = (solutionAnswerInput && solutionAnswerInput.value) || '';
+    question.userAnswer = answer;
+    const hash = question.imageHash || (await ensureQuestionImageHash(question));
+    if (hash) {
+        answerByHash[hash] = answer;
+        saveAnswerByHash();
+    }
     saveQuestions();
 }
 
@@ -289,7 +299,11 @@ function categorizeQuestion(category) {
 
     // Convert image to base64 for storage immediately
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
+        const dataUrl = e.target.result;
+        // Compute a stable hash for the image
+        const imageHash = await computeSHA256HexFromDataUrl(dataUrl);
+        
         // Create new question entry
         const newQuestion = {
             id: Date.now(),
@@ -298,7 +312,8 @@ function categorizeQuestion(category) {
             questionText: '이미지 문제',
             answerChoices: [],
             handwrittenNotes: '',
-            imageUrl: e.target.result, // Base64 image data
+            imageUrl: dataUrl, // Base64 image data
+            imageHash: imageHash || null,
             category: category,
             round: 0, // Save into n회독 list with 0회독 tag
             timestamp: new Date().toISOString(),
@@ -466,9 +481,14 @@ function showSolutionView(questionId, fromView) {
     // Expose current id for chat/delete handlers
     solutionView.dataset.currentId = String(question.id);
 
-    // Populate answer input
+    // Populate answer input from mapping by image hash (fallback to userAnswer)
     if (solutionAnswerInput) {
         solutionAnswerInput.value = question.userAnswer || '';
+        ensureQuestionImageHash(question).then((hash) => {
+            if (hash && typeof answerByHash[hash] === 'string') {
+                solutionAnswerInput.value = answerByHash[hash];
+            }
+        });
     }
 
     // Render chat removed in new flow (leave no-op if functions exist)
@@ -823,6 +843,63 @@ function loadPopQuizItems() {
             popQuizItems = [];
         }
     }
+}
+
+// New: Save/load answers mapped by image hash
+function saveAnswerByHash() {
+    try {
+        localStorage.setItem('reviewNoteAnswerByHash', JSON.stringify(answerByHash));
+    } catch (_) {}
+}
+function loadAnswerByHash() {
+    const saved = localStorage.getItem('reviewNoteAnswerByHash');
+    if (saved) {
+        try {
+            answerByHash = JSON.parse(saved) || {};
+        } catch (e) {
+            answerByHash = {};
+        }
+    }
+}
+
+// New: Compute SHA-256 hex of a Data URL (fallbacks to simple hash)
+async function computeSHA256HexFromDataUrl(dataUrl) {
+    try {
+        const match = dataUrl.match(/^data:.*?;base64,(.*)$/);
+        if (!match) return null;
+        const bytes = base64ToUint8Array(match[1]);
+        if (window.crypto && window.crypto.subtle) {
+            const digest = await crypto.subtle.digest('SHA-256', bytes);
+            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } else {
+            return simpleHash(match[1]);
+        }
+    } catch (e) {
+        return simpleHash(dataUrl.slice(0, 2048));
+    }
+}
+function base64ToUint8Array(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+}
+function simpleHash(str) {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+        h = ((h << 5) + h) ^ str.charCodeAt(i);
+    }
+    return (h >>> 0).toString(16);
+}
+async function ensureQuestionImageHash(question) {
+    if (question.imageHash) return question.imageHash;
+    if (!question.imageUrl) return null;
+    const hash = await computeSHA256HexFromDataUrl(question.imageUrl);
+    if (hash) {
+        question.imageHash = hash;
+        saveQuestions();
+    }
+    return hash;
 }
 
 // Show toast notification

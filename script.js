@@ -342,6 +342,9 @@ async function handleImageCapture(event) {
     
     // Show the image in review view
     reviewImage.src = currentImageUrl;
+    // Clear prior review answer input if present
+    const reviewAnswerInput = document.getElementById('reviewAnswerInput');
+    if (reviewAnswerInput) reviewAnswerInput.value = '';
     showImageReviewView();
     
     // Clear the input
@@ -364,17 +367,15 @@ function categorizeQuestion(category) {
         return;
     }
 
-    // Determine pre-count of n회독 items (including round 0)
     const preCountNRound = questions.filter(q => (q.round ?? -1) >= 0).length;
 
-    // Convert image to base64 for storage immediately
     const reader = new FileReader();
     reader.onload = async function(e) {
         const dataUrl = e.target.result;
-        // Compute a stable hash for the image
         const imageHash = await computeSHA256HexFromDataUrl(dataUrl);
+        const reviewAnswerInput = document.getElementById('reviewAnswerInput');
+        const initialAnswer = reviewAnswerInput ? (reviewAnswerInput.value || '') : '';
         
-        // Create new question entry
         const newQuestion = {
             id: Date.now(),
             questionNumber: '문제 ' + (questions.length + 1),
@@ -382,20 +383,24 @@ function categorizeQuestion(category) {
             questionText: '이미지 문제',
             answerChoices: [],
             handwrittenNotes: '',
-            imageUrl: dataUrl, // Base64 image data
+            imageUrl: dataUrl,
             imageHash: imageHash || null,
             category: category,
-            round: 0, // Save into n회독 list with 0회독 tag
+            round: 0,
             timestamp: new Date().toISOString(),
             lastAccessed: new Date().toISOString(),
-            solutionNotes: '' // For storing solution process
+            solutionNotes: '',
+            userAnswer: initialAnswer
         };
 
-        questions.unshift(newQuestion); // Add to beginning of array
+        questions.unshift(newQuestion);
+        if (newQuestion.imageHash && initialAnswer) {
+            answerByHash[newQuestion.imageHash] = initialAnswer;
+            saveAnswerByHash();
+        }
         saveQuestions();
         updateQuestionCount();
 
-        // Show success feedback
         const sys = document.getElementById('solutionSystemMsg');
         if (sys) {
             sys.textContent = (category === 'ambiguous') ? '애매한 문제로 저장되었습니다' : '틀린 문제로 저장되었습니다';
@@ -407,13 +412,11 @@ function categorizeQuestion(category) {
             }, 1500);
         }
         
-        // Clean up and go back to n회독 view
         cleanupCurrentImage();
         showNRoundView();
         
-        // Show n회독 coaching the first time n회독 transitions from 0 → 1
         if (preCountNRound === 0) {
-            sessionStorage.setItem('nListCoachPending', 'true');
+            sessionStorage.removeItem('nListCoachPending');
         }
     };
     

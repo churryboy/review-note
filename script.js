@@ -175,59 +175,7 @@ function setupEventListeners() {
     }
 
     // Add Count and Quiz buttons
-    const addCountBtn = document.getElementById('addCountBtn');
-    if (addCountBtn) {
-        addCountBtn.addEventListener('click', () => {
-            const questionId = parseInt(solutionView.dataset.currentId);
-            if (!questionId) return;
-            const idx = questions.findIndex(q => q.id === questionId);
-            if (idx === -1) return;
-            const q = questions[idx];
-            q.round = (q.round || 0) + 1;
-            q.lastAccessed = new Date().toISOString();
-            saveQuestions();
-            sessionStorage.removeItem('nListCoachPending');
-            displayNRoundQuestions();
-            const sys = document.getElementById('solutionSystemMsg');
-            if (sys) {
-                sys.textContent = '1회독 추가되었습니다';
-                sys.style.display = 'block';
-                sys.classList.add('show');
-                setTimeout(() => {
-                    sys.classList.remove('show');
-                    setTimeout(() => { sys.style.display = 'none'; }, 180);
-                }, 1500);
-            }
-        });
-    }
-    const addQuizBtn = document.getElementById('addQuizBtn');
-    if (addQuizBtn) {
-        addQuizBtn.addEventListener('click', () => {
-            const questionId = parseInt(solutionView.dataset.currentId);
-            if (!questionId) return;
-            const index = questions.findIndex(q => q.id === questionId);
-            if (index !== -1) {
-                const question = questions[index];
-                question.popQuizAdded = new Date().toISOString();
-                popQuizItems.push(question);
-                questions.splice(index, 1);
-                saveQuestions();
-                savePopQuizItems();
-                updatePopQuizBadge();
-                displayNRoundQuestions();
-                const sys = document.getElementById('solutionSystemMsg');
-                if (sys) {
-                    sys.textContent = '퀴즈에 추가되었습니다. 까먹을 때 쯤 제시해 드리겠습니다';
-                    sys.style.display = 'block';
-                    sys.classList.add('show');
-                    setTimeout(() => {
-                        sys.classList.remove('show');
-                        setTimeout(() => { sys.style.display = 'none'; }, 180);
-                    }, 1500);
-                }
-            }
-        });
-    }
+    // Removed solution action row buttons
 
     // Disable image swipe gestures
     // setupSwipeGestures();

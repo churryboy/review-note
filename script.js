@@ -739,19 +739,16 @@ function updatePopQuizStatusPanel() {
     const avgEl = document.getElementById('popQuizAvgRoundStat');
     if (!waitingEl || !avgEl) return;
 
-    const now = Date.now();
-    const ready = popQuizItems.filter(item => {
-        const added = item.popQuizAdded ? new Date(item.popQuizAdded).getTime() : 0;
-        return added > 0 && (now - added) >= POP_QUIZ_DELAY_MS;
-    });
-    waitingEl.textContent = `${ready.length}개`;
+    // Use entire queue, not only matured items, so stats update at swipe time
+    const queued = popQuizItems || [];
+    waitingEl.textContent = `${queued.length}개`;
 
-    if (ready.length === 0) {
+    if (queued.length === 0) {
         avgEl.textContent = '0.00회독';
         return;
     }
-    const sumRounds = ready.reduce((sum, item) => sum + (item.round || 0), 0);
-    const avg = sumRounds / ready.length;
+    const sumRounds = queued.reduce((sum, item) => sum + (item.round || 0), 0);
+    const avg = sumRounds / queued.length;
     avgEl.textContent = `${avg.toFixed(2)}회독`;
 }
 

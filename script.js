@@ -82,6 +82,14 @@ const quizAnswer = document.getElementById('quizAnswer');
 const quizSubmit = document.getElementById('quizSubmit');
 const quizResult = document.getElementById('quizResult');
 
+function closeQuizModal() {
+    if (!quizModal) return;
+    quizModal.style.display = 'none';
+    if (quizResult) quizResult.style.display = 'none';
+    if (quizAnswer) quizAnswer.value = '';
+    delete quizModal.dataset.index;
+}
+
 // New: solution steps button
 const viewSolutionStepsBtn = document.getElementById('viewSolutionStepsBtn');
 const stepsHeader = document.getElementById('stepsHeader');
@@ -200,6 +208,19 @@ function setupEventListeners() {
             categorizeQuestion('ambiguous');
         });
     }
+
+    // Quiz modal
+    if (quizClose) {
+        quizClose.addEventListener('click', closeQuizModal);
+    }
+    if (quizModal) {
+        quizModal.addEventListener('click', (e) => {
+            if (e.target === quizModal) {
+                closeQuizModal();
+            }
+        });
+    }
+    quizSubmit.addEventListener('click', handleQuizSubmit);
 }
 
 // Replace persistSolutionAnswer with async version mapping by image hash

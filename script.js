@@ -392,6 +392,7 @@ function display0RoundQuestions() {
 function displayNRoundQuestions() {
     let roundNQuestions = questions.filter(q => (q.round ?? -1) >= 0);
 
+    // Apply sorting based on dropdown
     const sortSelect = document.getElementById('nSortSelect');
     const sortValue = sortSelect ? sortSelect.value : 'round_desc';
     roundNQuestions = sortNRoundQuestions(roundNQuestions, sortValue);
@@ -431,52 +432,29 @@ function displayNRoundQuestions() {
                             minute: '2-digit' 
                         })}
                     </div>
-                    <div class="confirm-actions">
-                        <button class="confirm-btn add" data-action="add">회독 추가</button>
-                        <button class="confirm-btn quiz" data-action="quiz">퀴즈로 보내기</button>
-                    </div>
                 </div>
             </div>
         </div>
     `).join('');
 
+    // Add click handlers and swipe functionality
     document.querySelectorAll('#roundNList .question-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            
+            // Only open solution if not currently swiping
             if (!item.classList.contains('swiping')) {
                 const questionId = parseInt(item.dataset.id);
                 showSolutionView(questionId, 'n회독');
             }
         });
+        
+        // Add swipe functionality for n회독 items
         setupNRoundSwipe(item);
-        const actions = item.querySelector('.confirm-actions');
-        const addBtn = item.querySelector('.confirm-btn.add');
-        const quizBtn = item.querySelector('.confirm-btn.quiz');
-        if (addBtn) {
-            addBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const qid = parseInt(item.dataset.id);
-                incrementRound(qid);
-                actions.style.display = 'none';
-                displayNRoundQuestions();
-            });
-        }
-        if (quizBtn) {
-            quizBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const qid = parseInt(item.dataset.id);
-                moveToPopQuiz(qid);
-                item.style.transform = 'translateX(100%)';
-                item.style.opacity = '0';
-                setTimeout(() => {
-                    displayNRoundQuestions();
-                    updatePopQuizBadge();
-                }, 200);
-            });
-        }
     });
 
+    // Show n회독 coaching only when: first n회독 card exists AND user is on n회독 page
     if (
         roundNQuestions.length === 1 &&
         sessionStorage.getItem('nListCoachPending') === 'true' &&
@@ -1370,30 +1348,34 @@ function setupNRoundSwipe(item) {
             item.classList.remove('swiping');
         }, 100);
 
-        const actions = item.querySelector('.confirm-actions');
-
         if (deltaX < -threshold) {
-            // Reveal confirm for +1 회독
-            item.style.transform = 'translateX(-40px)';
-            item.style.opacity = '1';
-            item.style.backgroundColor = '';
-            if (actions) {
-                actions.style.display = 'flex';
-            }
-        } else if (deltaX > threshold) {
-            // Reveal confirm for pop quiz
-            item.style.transform = 'translateX(40px)';
-            item.style.opacity = '1';
-            item.style.backgroundColor = '';
-            if (actions) {
-                actions.style.display = 'flex';
-            }
-        } else {
-            // Snap back to original position and hide actions
+            // Swiped left - Increment round count
+            console.log('n회독 Swiped left - incrementing round');
+            incrementRound(parseInt(item.dataset.id));
             item.style.transform = 'translateX(0)';
             item.style.opacity = '1';
             item.style.backgroundColor = '';
-            if (actions) actions.style.display = 'none';
+            
+            setTimeout(() => {
+                displayNRoundQuestions(); // Refresh n회독 list
+            }, 100);
+        } else if (deltaX > threshold) {
+            // Swiped right - Move to 팝퀴즈
+            console.log('n회독 Swiped right - moving to pop quiz');
+            moveToPopQuiz(parseInt(item.dataset.id));
+            item.style.transform = 'translateX(100%)';
+            item.style.opacity = '0';
+            
+            setTimeout(() => {
+                displayNRoundQuestions(); // Refresh n회독 list
+                updatePopQuizBadge(); // Update notification badge
+            }, 300);
+        } else {
+            // Snap back to original position
+            console.log('n회독 Snapping back to center');
+            item.style.transform = 'translateX(0)';
+            item.style.opacity = '1';
+            item.style.backgroundColor = '';
         }
     }
 }

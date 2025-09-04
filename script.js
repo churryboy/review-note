@@ -888,6 +888,20 @@ function openQuizModal(index) {
     quizModal.dataset.index = String(index);
 }
 
+// Helper to retrieve saved answer by image hash
+async function getAnswerForHash(imageHash) {
+    if (!imageHash) return '';
+    try {
+        const r = await fetch(`/api/answers/${imageHash}`);
+        if (r.ok) {
+            const j = await r.json();
+            if (typeof j.answer === 'string') return j.answer.trim();
+        }
+    } catch (_) {}
+    const local = (answerByHash && typeof answerByHash[imageHash] === 'string') ? answerByHash[imageHash] : '';
+    return (local || '').trim();
+}
+
 function handleQuizSubmit() {
     const indexStr = quizModal.dataset.index;
     if (!indexStr) return;
@@ -895,50 +909,33 @@ function handleQuizSubmit() {
     const quizItem = popQuizItems[index];
     if (!quizItem) return;
 
-    // Simple evaluation placeholder: compare to stored answer if exists
-    const userAnswer = (quizAnswer.value || '').trim();
-    const correctAnswer = (quizItem.correctAnswer || '').trim();
+    (async () => {
+        const userAnswer = (quizAnswer.value || '').trim();
+        const hash = quizItem.imageHash || (await ensureQuestionImageHash(quizItem));
+        const correctAnswer = await getAnswerForHash(hash);
 
-    if (!userAnswer) {
-        showToast('정답을 입력하세요', 'error');
-        return;
-    }
+        const isCorrect = userAnswer.length > 0 && correctAnswer.length > 0 && (userAnswer === correctAnswer);
 
-    // If no correctAnswer stored yet, accept as correct and store it for future
-    let isCorrect = true;
-    if (correctAnswer) {
-        isCorrect = userAnswer === correctAnswer;
-    } else {
-        quizItem.correctAnswer = userAnswer;
-        savePopQuizItems();
-    }
+        quizResult.style.display = 'block';
+        quizResult.textContent = isCorrect ? '정답입니다! 이제 이 문제를 완벽히 이해하신 것 같네요!' : '틀렸습니다ㅠ 다음에 또 시도해보아요!';
+        quizResult.className = `quiz-result ${isCorrect ? 'correct' : 'wrong'}`;
 
-    quizResult.style.display = 'block';
-    quizResult.textContent = isCorrect ? '정답입니다!' : `오답입니다. 정답: ${correctAnswer}`;
-    quizResult.className = `quiz-result ${isCorrect ? 'correct' : 'wrong'}`;
-
-    // On correct, move item back to questions with incremented round
-    if (isCorrect) {
-        setTimeout(() => {
-            quizModal.style.display = 'none';
-            quizResult.style.display = 'none';
-            quizAnswer.value = '';
-
-            // Remove from pop quiz and return to questions, increment round
-            const item = popQuizItems.splice(index, 1)[0];
-            item.round = (item.round || 0) + 1;
-            item.lastAccessed = new Date().toISOString();
-            questions.unshift(item);
-            saveQuestions();
-            savePopQuizItems();
-            updatePopQuizBadge();
-
-            // Refresh views if on them
-            if (settingsView.style.display !== 'none') displayPopQuiz();
-            if (round0View.style.display !== 'none') display0RoundQuestions();
-            if (roundNView.style.display !== 'none') displayNRoundQuestions();
-        }, 800);
-    }
+        if (isCorrect) {
+            setTimeout(() => {
+                closeQuizModal();
+                // Remove from pop quiz and return to questions, increment round
+                const removed = popQuizItems.splice(index, 1)[0];
+                if (removed) {
+                    removed.round = (removed.round || 0) + 1;
+                    removed.lastAccessed = new Date().toISOString();
+                    questions.unshift(removed);
+                    saveQuestions();
+                    savePopQuizItems();
+                    updatePopQuizBadge();
+                }
+            }, 800);
+        }
+    })();
 }
 
 // Save questions to localStorage

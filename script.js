@@ -215,7 +215,12 @@ function setupEventListeners() {
             q.lastAccessed = new Date().toISOString();
             saveQuestions();
             displayNRoundQuestions();
-            showToast('+1 회독이 추가되었습니다');
+            // Inline system message
+            const sys = document.getElementById('solutionSystemMsg');
+            if (sys) {
+                sys.textContent = '1회독 추가되었습니다';
+                sys.style.display = 'block';
+            }
         });
     }
     const addQuizBtn = document.getElementById('addQuizBtn');
@@ -234,7 +239,12 @@ function setupEventListeners() {
                 savePopQuizItems();
                 updatePopQuizBadge();
                 displayNRoundQuestions();
-                showToast('팝퀴즈로 이동했습니다!');
+                // Inline system message
+                const sys = document.getElementById('solutionSystemMsg');
+                if (sys) {
+                    sys.textContent = '퀴즈에 추가되었습니다. 까먹을 때 쯤 제시해 드리겠습니다';
+                    sys.style.display = 'block';
+                }
                 showSettingsView();
             }
         });

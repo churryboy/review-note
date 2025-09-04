@@ -466,24 +466,37 @@ body {
     background: #FF5500;
 }
 
-.delete-btn {
-    background: rgba(255, 85, 0, 0.1);
-    border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
+/* Solution actions row */
+.solution-actions-row {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #FF5500;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    gap: 10px;
+    margin-top: 14px;
 }
 
-.delete-btn:hover {
-    background: rgba(255, 85, 0, 0.2);
-    transform: scale(1.05);
+.addCount, .quiz-add-btn {
+    background: linear-gradient(135deg, #FF5500, #FF8A00);
+    border: none;
+    border-radius: 999px;
+    height: 40px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.quiz-add-btn {
+    background: linear-gradient(135deg, #6C63FF, #8A85FF);
+}
+
+.addCount:hover, .quiz-add-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .solution-content {
@@ -1334,3 +1347,14 @@ body {
 
 .chat-message.assistant ul { margin: 6px 0 6px 20px; }
 .chat-message.assistant li { list-style: disc; margin: 2px 0; } 
+
+/* Inline system message under solution actions */
+.system-msg {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #f1f3f5;
+    color: #333;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    line-height: 1.3;
+} 

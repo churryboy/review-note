@@ -13,6 +13,26 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Enforce HTTPS and HSTS in production/Render
+const IS_PROD = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
+if (IS_PROD) {
+  app.enable('trust proxy');
+  // Redirect http -> https when behind proxy
+  app.use((req, res, next) => {
+    const proto = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+    if (proto !== 'https') {
+      const host = req.headers.host;
+      return res.redirect(301, `https://${host}${req.originalUrl}`);
+    }
+    return next();
+  });
+  // HSTS header
+  app.use((req, res, next) => {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    next();
+  });
+}
+
 // Attempt to load API key from common sibling folders if not set
 (function tryLoadAltEnv() {
     if (process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY) return;
@@ -118,6 +138,16 @@ loadAnswers();
 app.use(express.static('.'));
 // Serve uploaded images from persistent disk
 app.use('/uploads', express.static(UPLOADS_DIR));
+
+// Basic security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  // Minimal CSP allowing self, inline styles for this app, and images/uploads
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' https:; connect-src 'self' https:; font-src 'self' https: data:;");
+  next();
+});
 
 // Serve the main page
 app.get('/', (req, res) => {

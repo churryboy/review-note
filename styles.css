@@ -1589,4 +1589,8 @@ body {
 .encourage-body h3 { margin: 0 0 8px; font-size: 1.3rem; }
 .encourage-body p { margin: 0; color:#555; }
 .encourage-actions { padding: 12px 16px 20px; }
-.encourage-actions #failAcknowledgeBtn { width: 100%; display: block; } 
+.encourage-actions #failAcknowledgeBtn { width: 100%; display: block; }
+.encourage-actions #fail5mBtn,
+.encourage-actions #fail1hBtn,
+.encourage-actions #fail1dBtn { width: 100%; display: block; margin-top: 8px; }
+.encourage-actions #fail5mBtn:first-child { margin-top: 0; } 

@@ -180,6 +180,9 @@ if (successUnderstoodBtn) successUnderstoodBtn.addEventListener('click', () => {
 const failModal = document.getElementById('failModal');
 const failClose = document.getElementById('failClose');
 const failAcknowledgeBtn = document.getElementById('failAcknowledgeBtn');
+const fail5mBtn = document.getElementById('fail5mBtn');
+const fail1hBtn = document.getElementById('fail1hBtn');
+const fail1dBtn = document.getElementById('fail1dBtn');
 
 function openFailModal() { if (failModal) failModal.style.display = 'flex'; }
 function closeFailModal() { if (failModal) failModal.style.display = 'none'; }
@@ -198,6 +201,25 @@ if (failAcknowledgeBtn) failAcknowledgeBtn.addEventListener('click', () => {
         closeFailModal();
     }
 });
+
+function rescheduleCurrentQuiz(delayMs) {
+    const indexStr = quizModal && quizModal.dataset.index;
+    const index = indexStr ? parseInt(indexStr) : undefined;
+    if (typeof index === 'number' && popQuizItems[index]) {
+        popQuizItems[index].reappearAt = new Date(Date.now() + delayMs).toISOString();
+        savePopQuizItems();
+        updatePopQuizBadge();
+        closeFailModal();
+        closeQuizModal();
+        if (settingsView.style.display !== 'none') displayPopQuiz();
+    } else {
+        closeFailModal();
+    }
+}
+
+if (fail5mBtn) fail5mBtn.addEventListener('click', () => rescheduleCurrentQuiz(5 * 60 * 1000));
+if (fail1hBtn) fail1hBtn.addEventListener('click', () => rescheduleCurrentQuiz(60 * 60 * 1000));
+if (fail1dBtn) fail1dBtn.addEventListener('click', () => rescheduleCurrentQuiz(24 * 60 * 60 * 1000));
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {

@@ -11,6 +11,7 @@ const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 dotenv.config();
 
@@ -309,7 +310,7 @@ app.post('/api/auth/anon', async (req, res) => {
     if (prisma) {
       const rnd = crypto.randomBytes(10).toString('hex');
       const email = `anon-${Date.now()}-${rnd}@anon.local`;
-      const user = await prisma.user.create({ data: { email, name: 'Anonymous', role: 'user' } });
+      const user = await prisma.user.create({ data: { email, name: 'Anonymous', role: 'user', authProvider: 'anon' } });
       userId = user.id;
     } else {
       // Memory-only fallback
@@ -324,6 +325,49 @@ app.post('/api/auth/anon', async (req, res) => {
   } catch (e) {
     console.error('anon auth error:', e);
     return res.status(500).json({ error: 'anon auth failed' });
+  }
+});
+
+// PIN registration: create or update a user with nickname/phone4 and hashed pin
+app.post('/api/auth/register-pin', async (req, res) => {
+  try {
+    if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+    const Body = z.object({ nickname: z.string().min(1).max(40), phone4: z.string().regex(/^\d{4}$/), pin: z.string().min(4).max(12) });
+    const b = Body.safeParse(req.body);
+    if (!b.success) return res.status(400).json({ error: 'invalid' });
+    const { nickname, phone4, pin } = b.data;
+    const pinHash = await bcrypt.hash(pin, 10);
+    const publicId = 'u_' + crypto.randomBytes(6).toString('hex');
+    // Use a synthetic email index for uniqueness
+    const email = `pin-${phone4}-${publicId}@pin.local`;
+    const user = await prisma.user.create({ data: { email, name: nickname, nickname, phone4, pinHash, publicId, authProvider: 'pin', role: 'user' } });
+    const token = signSession({ id: user.id, role: 'user' });
+    res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
+    return res.json({ ok: true, user: { id: user.id, publicId: user.publicId, nickname: user.nickname } });
+  } catch (e) {
+    console.error('register-pin error:', e);
+    return res.status(500).json({ error: 'register failed' });
+  }
+});
+
+// PIN login: find by phone4 + nickname, verify pin
+app.post('/api/auth/login-pin', async (req, res) => {
+  try {
+    if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+    const Body = z.object({ nickname: z.string().min(1).max(40), phone4: z.string().regex(/^\d{4}$/), pin: z.string().min(4).max(12) });
+    const b = Body.safeParse(req.body);
+    if (!b.success) return res.status(400).json({ error: 'invalid' });
+    const { nickname, phone4, pin } = b.data;
+    const user = await prisma.user.findFirst({ where: { nickname, phone4, authProvider: 'pin' } });
+    if (!user || !user.pinHash) return res.status(401).json({ error: 'invalid credentials' });
+    const ok = await bcrypt.compare(pin, user.pinHash);
+    if (!ok) return res.status(401).json({ error: 'invalid credentials' });
+    const token = signSession({ id: user.id, role: user.role || 'user' });
+    res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
+    return res.json({ ok: true, user: { id: user.id, publicId: user.publicId, nickname: user.nickname } });
+  } catch (e) {
+    console.error('login-pin error:', e);
+    return res.status(500).json({ error: 'login failed' });
   }
 });
 

@@ -15,6 +15,28 @@
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
+    <!-- Sign-in Overlay -->
+    <div id="pinOverlay" class="pin-overlay" style="display:none;">
+        <div class="pin-card">
+            <h3>시작하기</h3>
+            <p class="pin-desc">닉네임과 휴대폰 끝 4자리, 그리고 간단한 PIN을 입력해 주세요.</p>
+            <div class="pin-row">
+                <input id="pinNickname" type="text" maxlength="40" placeholder="닉네임" />
+            </div>
+            <div class="pin-row">
+                <input id="pinPhone4" type="text" inputmode="numeric" pattern="\\d{4}" maxlength="4" placeholder="휴대폰 끝 4자리" />
+            </div>
+            <div class="pin-row">
+                <input id="pinCode" type="password" inputmode="numeric" maxlength="12" placeholder="PIN (4~12자리)" />
+            </div>
+            <div class="pin-actions">
+                <button id="pinLoginBtn" class="save-solution-btn" style="flex:1;background:#f0f0f0;color:#333;">로그인</button>
+                <button id="pinRegisterBtn" class="save-solution-btn" style="flex:1;">가입</button>
+            </div>
+            <div id="pinError" class="pin-error" style="display:none;"></div>
+        </div>
+    </div>
+
     <!-- App Header -->
     <header class="app-header">
         <div class="header-content">

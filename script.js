@@ -357,14 +357,16 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePopQuizBadge();
     setupEventListeners();
     refreshAuthUi();
-    ensureSession();
+    ensureSession().then(showPinOverlayIfNeeded);
     document.addEventListener('click', hideProfileDropdownOnOutsideClick, true);
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-    if (loginStartBtn) loginStartBtn.addEventListener('click', (e) => {
+    if (loginStartBtn) loginStartBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-        const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
-        sessionStorage.setItem('googleLoginTriggeredOnce', 'true');
-        location.href = base + '/api/auth/google';
+        try {
+            await fetch('/api/auth/anon', { method: 'POST' });
+            await refreshAuthUi();
+            if (profileDropdown) profileDropdown.style.display = 'none';
+        } catch (_) {}
     });
     showNRoundView();
     startPopQuizTimer();
@@ -378,6 +380,58 @@ async function ensureSession() {
         await refreshAuthUi();
     } catch (_) {}
 }
+
+function showPinOverlayIfNeeded() {
+    const overlay = document.getElementById('pinOverlay');
+    if (!overlay) return;
+    fetch('/api/auth/me').then(r => r.json()).then(j => {
+        if (!j || !j.user) return; // session exists
+        // Do not show if already verified nickname provider later; for now, skip
+    }).catch(()=>{});
+    // We only show overlay when user clicks login, to avoid blocking flow
+}
+
+// PIN overlay handlers
+(function initPinOverlay(){
+    const overlay = document.getElementById('pinOverlay');
+    const loginBtn = document.getElementById('pinLoginBtn');
+    const regBtn = document.getElementById('pinRegisterBtn');
+    const nn = document.getElementById('pinNickname');
+    const ph = document.getElementById('pinPhone4');
+    const pc = document.getElementById('pinCode');
+    const err = document.getElementById('pinError');
+
+    function openOverlay(){ if (overlay) overlay.style.display = 'flex'; }
+    function closeOverlay(){ if (overlay) overlay.style.display = 'none'; if (err) err.style.display = 'none'; }
+    if (loginStartBtn) {
+        loginStartBtn.addEventListener('click', (e)=>{ e.preventDefault(); openOverlay(); });
+    }
+
+    async function handle(path){
+        if (!nn || !ph || !pc) return;
+        const nickname = (nn.value || '').trim();
+        const phone4 = (ph.value || '').trim();
+        const pin = (pc.value || '').trim();
+        if (!nickname || !/^\d{4}$/.test(phone4) || pin.length < 4) {
+            if (err) { err.textContent = '입력을 확인해 주세요.'; err.style.display = 'block'; }
+            return;
+        }
+        try {
+            const res = await fetch(path, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname, phone4, pin })
+            });
+            if (!res.ok) throw new Error('failed');
+            await refreshAuthUi();
+            closeOverlay();
+        } catch (_e) {
+            if (err) { err.textContent = '로그인/가입에 실패했습니다.'; err.style.display = 'block'; }
+        }
+    }
+
+    if (loginBtn) loginBtn.addEventListener('click', ()=> handle('/api/auth/login-pin'));
+    if (regBtn) regBtn.addEventListener('click', ()=> handle('/api/auth/register-pin'));
+})();
 
 // Set up event listeners
 function setupEventListeners() {

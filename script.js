@@ -1679,9 +1679,9 @@ function nextNListCoachingStep() {}
 
 function computeRoundColor(round) {
     const r = Math.max(0, Math.min(10, round));
-    // Interpolate from gray (#8e8e8e) to blue (#1e88e5)
-    const from = { r: 0x8e, g: 0x8e, b: 0x8e };
-    const to   = { r: 0x1e, g: 0x88, b: 0xe5 };
+    // Interpolate from blue (#1e88e5) to red (#e53935)
+    const from = { r: 0x1e, g: 0x88, b: 0xe5 };
+    const to   = { r: 0xe5, g: 0x39, b: 0x35 };
     const t = r / 10;
     const mix = (a, b) => Math.round(a + (b - a) * t);
     const rr = mix(from.r, to.r);

@@ -492,7 +492,7 @@ function displayAchievements() {
         const nextText = info.rank >= info.maxRank ? '최고 등급 도달' : `${info.remaining}개 남음`;
         status.innerHTML = `
             <div class="rank-panel fun">
-                <div class="rank-tier-title">${info.title.e} ${info.title.t}</div>
+                <div class="rank-tier-title"><span class="rank-emoji">${info.title.e}</span>${info.title.t}</div>
                 <div class="rank-badges">${badges}</div>
                 <div class="rank-stats">
                     <span>${info.nextTitle ? info.nextTitle.t : '다음 등급'}까지: <strong>${nextText}</strong></span>

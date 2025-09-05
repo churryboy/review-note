@@ -1948,13 +1948,21 @@ function closeNListCoachingGuide() {
 function nextNListCoachingStep() {
     const s1 = document.getElementById('nListStep1');
     const s2 = document.getElementById('nListStep2');
+    const s3 = document.getElementById('nListStep3');
     const onStep1 = s1 && s1.classList.contains('active');
+    const onStep2 = s2 && s2.classList.contains('active');
     if (onStep1) {
         s1.classList.remove('active');
         if (s2) s2.classList.add('active');
         const dots = document.querySelectorAll('#nListCoachingOverlay .step-dot');
         dots.forEach(d => d.classList.remove('active'));
         if (dots[1]) dots[1].classList.add('active');
+    } else if (onStep2) {
+        s2.classList.remove('active');
+        if (s3) s3.classList.add('active');
+        const dots = document.querySelectorAll('#nListCoachingOverlay .step-dot');
+        dots.forEach(d => d.classList.remove('active'));
+        if (dots[2]) dots[2].classList.add('active');
         const nextBtn = document.getElementById('nListCoachingNext');
         const doneBtn = document.getElementById('nListCoachingDone');
         if (nextBtn) nextBtn.style.display = 'none';

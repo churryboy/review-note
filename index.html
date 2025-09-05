@@ -61,6 +61,9 @@
 
         <!-- Pop Quiz View -->
         <div class="round-view" id="settingsView" style="display: none;">
+            <div class="pop-quiz-desc" id="popQuizDesc" style="margin-bottom:8px; color:#495057; font-size:0.92rem;">
+                팝퀴즈는 잊을만할 때 쯤 뜬금없이 제시되는 퀴즈입니다. 당장 목록에는 보이지 않고, 적절한 시점에 노출된다는 점 참고바랍니다.
+            </div>
             <div class="pop-quiz-status" id="popQuizStatus">
                 <div class="status-row">
                     <span>팝퀴즈 대기중인 문제</span>
@@ -440,12 +443,22 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Step 3: Pop quiz timing explanation -->
+                <div class="coaching-step" id="nListStep3">
+                    <div class="step-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3>팝퀴즈 안내</h3>
+                    <p>팝퀴즈는 잊을만할 때 쯤 뜬금없이 제시되는 퀴즈입니다.<br>당장 목록에는 보이지 않고, 적절한 시점에 노출된다는 점 참고바랍니다.</p>
+                </div>
             </div>
             
             <div class="coaching-footer">
                 <div class="step-indicators">
                     <span class="step-dot active" data-step="1"></span>
                     <span class="step-dot" data-step="2"></span>
+                    <span class="step-dot" data-step="3"></span>
                 </div>
                 <button class="coaching-next" id="nListCoachingNext">다음</button>
                 <button class="coaching-done" id="nListCoachingDone" style="display: none;">확인</button>

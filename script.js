@@ -300,6 +300,11 @@ function setupEventListeners() {
                     });
                 } catch (_) {}
             }
+            // Clear input to signal it has been saved
+            if (solutionAnswerInput) {
+                solutionAnswerInput.value = '';
+                solutionAnswerInput.blur();
+            }
             const sys = document.getElementById('solutionSystemMsg');
             if (sys) {
                 sys.textContent = '정답이 저장되었습니다';

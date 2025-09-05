@@ -7,6 +7,7 @@ const vision = require('@google-cloud/vision');
 const Anthropic = require('@anthropic-ai/sdk');
 const OpenAI = require('openai');
 const dotenv = require('dotenv');
+const { z } = require('zod');
 
 dotenv.config();
 
@@ -157,8 +158,10 @@ app.get('/', (req, res) => {
 // Answers API
 app.get('/api/answers/:hash', async (req, res) => {
     try {
-        const hash = (req.params.hash || '').trim();
-        if (!hash) return res.status(400).json({ error: 'hash required' });
+        const ParamsSchema = z.object({ hash: z.string().min(1).max(256) });
+        const parse = ParamsSchema.safeParse(req.params);
+        if (!parse.success) return res.status(400).json({ error: 'hash required' });
+        const { hash } = parse.data;
         const answer = typeof answersByHash[hash] === 'string' ? answersByHash[hash] : null;
         return res.json({ answer });
     } catch (e) {
@@ -167,10 +170,10 @@ app.get('/api/answers/:hash', async (req, res) => {
 });
 app.post('/api/answers', async (req, res) => {
     try {
-        const { imageHash, answer } = req.body || {};
-        if (!imageHash || typeof answer !== 'string') {
-            return res.status(400).json({ error: 'imageHash and answer are required' });
-        }
+        const BodySchema = z.object({ imageHash: z.string().min(1).max(256), answer: z.string().max(10000) });
+        const parse = BodySchema.safeParse(req.body);
+        if (!parse.success) return res.status(400).json({ error: 'imageHash and answer are required' });
+        const { imageHash, answer } = parse.data;
         answersByHash[imageHash] = answer;
         await saveAnswers();
         return res.json({ ok: true });
@@ -182,10 +185,10 @@ app.post('/api/answers', async (req, res) => {
 // Upload image from data URL and return a public URL
 app.post('/api/upload-image', async (req, res) => {
     try {
-        const { imageDataUrl } = req.body || {};
-        if (typeof imageDataUrl !== 'string') {
-            return res.status(400).json({ error: 'imageDataUrl is required' });
-        }
+        const BodySchema = z.object({ imageDataUrl: z.string().min(50) });
+        const parsed = BodySchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ error: 'imageDataUrl is required' });
+        const { imageDataUrl } = parsed.data;
         const match = imageDataUrl.match(/^data:(.*?);base64,(.*)$/);
         if (!match) {
             return res.status(400).json({ error: 'Invalid data URL' });
@@ -211,10 +214,10 @@ app.post('/api/llm-chat', async (req, res) => {
         if (!process.env.OPENAI_API_KEY) {
             return res.status(500).json({ error: 'OPENAI_API_KEY가 설정되어 있지 않습니다.' });
         }
-        const { message, imageDataUrl } = req.body;
-        if (!message || !imageDataUrl) {
-            return res.status(400).json({ error: 'message and imageDataUrl are required' });
-        }
+        const BodySchema = z.object({ message: z.string().min(1).max(8000), imageDataUrl: z.string().min(10) });
+        const parsed = BodySchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ error: 'Invalid request body' });
+        const { message, imageDataUrl } = parsed.data;
 
         const match = imageDataUrl.match(/^data:(.*?);base64,(.*)$/);
         if (!match) {
@@ -275,7 +278,10 @@ app.post('/api/process-image', upload.single('image'), async (req, res) => {
         console.log('OCR Result:', fullText);
 
         // Get category from form data
-        const category = req.body.category || 'unknown';
+        const BodySchema = z.object({ category: z.string().max(32).optional() });
+        const parsed = BodySchema.safeParse(req.body || {});
+        if (!parsed.success) return res.status(400).json({ error: 'Invalid category' });
+        const category = parsed.data.category || 'unknown';
 
         // Process with LLM to extract structured information
         const llmResponse = await processWithLLM(fullText, category);

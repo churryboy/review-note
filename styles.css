@@ -1439,3 +1439,78 @@ body {
     color: #111;
     font-size: 1rem;
 } 
+
+/* Success Modal */
+.success-content {
+    max-width: 420px;
+    width: 100%;
+    padding-top: 40px;
+}
+
+.success-body {
+    text-align: center;
+    padding: 24px 20px 12px;
+}
+
+.success-body h3 {
+    margin: 10px 0 8px;
+    font-size: 1.4rem;
+}
+
+.success-body p {
+    color: #555;
+    margin: 0;
+}
+
+.success-emoji {
+    font-size: 48px;
+}
+
+.success-actions {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px 20px;
+}
+
+.success-actions .save-solution-btn {
+    flex: 1 1 0;
+}
+
+/* Simple confetti animation */
+.celebration {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.confetti {
+    position: absolute;
+    top: -10px;
+    width: 8px;
+    height: 12px;
+    background: hsl(var(--h, 0) 90% 60%);
+    opacity: 0.9;
+    transform: translateY(-100%);
+    animation: drop 1.2s ease-out forwards;
+}
+
+/* generate multiple pieces with different positions/colors/delays */
+.confetti:nth-child(1) { left: 10%; --h: 10; animation-delay: 0s; }
+.confetti:nth-child(2) { left: 20%; --h: 45; animation-delay: 0.05s; }
+.confetti:nth-child(3) { left: 30%; --h: 90; animation-delay: 0.1s; }
+.confetti:nth-child(4) { left: 40%; --h: 135; animation-delay: 0.15s; }
+.confetti:nth-child(5) { left: 50%; --h: 180; animation-delay: 0.2s; }
+.confetti:nth-child(6) { left: 60%; --h: 225; animation-delay: 0.25s; }
+.confetti:nth-child(7) { left: 70%; --h: 270; animation-delay: 0.3s; }
+.confetti:nth-child(8) { left: 80%; --h: 315; animation-delay: 0.35s; }
+.confetti:nth-child(9) { left: 15%; --h: 30; animation-delay: 0.12s; }
+.confetti:nth-child(10){ left: 35%; --h: 75; animation-delay: 0.22s; }
+.confetti:nth-child(11){ left: 65%; --h: 200; animation-delay: 0.28s; }
+.confetti:nth-child(12){ left: 85%; --h: 340; animation-delay: 0.32s; }
+
+@keyframes drop {
+    0% { transform: translateY(-100%) rotate(0deg); }
+    70% { transform: translateY(70vh) rotate(240deg); }
+    100% { transform: translateY(92vh) rotate(360deg); opacity: 0; }
+} 

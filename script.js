@@ -111,6 +111,62 @@ const solutionAnswerInput = document.getElementById('solutionAnswerInput');
 // New: answers mapped by image hash
 let answerByHash = {};
 
+// Success modal controls
+const successModal = document.getElementById('successModal');
+const successClose = document.getElementById('successClose');
+const successLaterBtn = document.getElementById('successLaterBtn');
+const successUnderstoodBtn = document.getElementById('successUnderstoodBtn');
+
+function openSuccessModal() {
+    if (successModal) successModal.style.display = 'flex';
+}
+function closeSuccessModal() {
+    if (successModal) successModal.style.display = 'none';
+}
+
+if (successClose) successClose.addEventListener('click', closeSuccessModal);
+
+function handleSuccessLater(index) {
+    // Reschedule after 1 day; leave it in popQuizItems with new reappear time
+    if (typeof index === 'number' && popQuizItems[index]) {
+        popQuizItems[index].reappearAt = new Date(Date.now() + POP_QUIZ_REAPPEAR_MS).toISOString();
+        savePopQuizItems();
+        updatePopQuizBadge();
+        closeSuccessModal();
+        closeQuizModal();
+        if (settingsView.style.display !== 'none') displayPopQuiz();
+    } else {
+        closeSuccessModal();
+    }
+}
+
+function handleSuccessUnderstood(index) {
+    // Move to achievements and remove from pop quiz
+    if (typeof index === 'number') {
+        const removed = popQuizItems.splice(index, 1)[0];
+        if (removed) {
+            removed.round = (removed.round || 0) + 1;
+            removed.lastAccessed = new Date().toISOString();
+            achievements.unshift({ ...removed, achievedAt: new Date().toISOString() });
+            saveAchievements();
+            savePopQuizItems();
+            updatePopQuizBadge();
+            if (achievementView && achievementView.style.display !== 'none') displayAchievements();
+        }
+    }
+    closeSuccessModal();
+    closeQuizModal();
+}
+
+if (successLaterBtn) successLaterBtn.addEventListener('click', () => {
+    const idx = quizModal && quizModal.dataset.index ? parseInt(quizModal.dataset.index) : undefined;
+    handleSuccessLater(idx);
+});
+if (successUnderstoodBtn) successUnderstoodBtn.addEventListener('click', () => {
+    const idx = quizModal && quizModal.dataset.index ? parseInt(quizModal.dataset.index) : undefined;
+    handleSuccessUnderstood(idx);
+});
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     // Disable all coaching: clear and do not set again
@@ -942,6 +998,7 @@ async function getAnswerForHash(imageHash) {
     return (local || '').trim();
 }
 
+// Update quiz submit to open success modal
 function handleQuizSubmit() {
     const indexStr = quizModal.dataset.index;
     if (!indexStr) return;
@@ -963,20 +1020,8 @@ function handleQuizSubmit() {
         quizResult.className = `quiz-result ${isCorrect ? 'correct' : 'wrong'}`;
 
         if (isCorrect) {
-            setTimeout(() => {
-                closeQuizModal();
-                // Move to achievements and remove from pop quiz
-                const removed = popQuizItems.splice(index, 1)[0];
-                if (removed) {
-                    removed.round = (removed.round || 0) + 1;
-                    removed.lastAccessed = new Date().toISOString();
-                    achievements.unshift({ ...removed, achievedAt: new Date().toISOString() });
-                    saveAchievements();
-                    savePopQuizItems();
-                    updatePopQuizBadge();
-                    if (achievementView && achievementView.style.display !== 'none') displayAchievements();
-                }
-            }, 800);
+            // Show success modal with celebration and two choices
+            openSuccessModal();
         } else {
             // Schedule reappearance after 1 day, and hide immediately
             setTimeout(() => {
@@ -985,7 +1030,6 @@ function handleQuizSubmit() {
                     popQuizItems[index].reappearAt = new Date(Date.now() + POP_QUIZ_REAPPEAR_MS).toISOString();
                     savePopQuizItems();
                     updatePopQuizBadge();
-                    // Refresh list if viewing
                     if (settingsView.style.display !== 'none') displayPopQuiz();
                 }
             }, 800);

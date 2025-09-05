@@ -219,6 +219,38 @@
         </div>
     </div>
 
+    <!-- Success Modal for Correct Answer -->
+    <div class="image-popup-overlay" id="successModal" style="display: none;">
+        <div class="image-popup-content success-content">
+            <button class="popup-close" id="successClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="celebration" aria-hidden="true">
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+                <span class="confetti"></span>
+            </div>
+            <div class="success-body">
+                <div class="success-emoji">🎉</div>
+                <h3>정답입니다!</h3>
+                <p>이제 이 문제를 완벽히 이해하신 것 같네요!</p>
+            </div>
+            <div class="success-actions">
+                <button id="successLaterBtn" class="save-solution-btn" style="background:#f0f0f0; color:#333;"><span>나중에 또 퀴즈로 풀어볼래요</span></button>
+                <button id="successUnderstoodBtn" class="save-solution-btn"><span>이 문제는 완전히 이해했어요!</span></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Coaching Guide Overlay -->
     <div class="coaching-overlay" id="coachingOverlay" style="display: none;">
         <div class="coaching-content">

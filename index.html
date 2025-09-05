@@ -223,9 +223,6 @@
     <!-- Success Modal for Correct Answer -->
     <div class="image-popup-overlay" id="successModal" style="display: none;">
         <div class="image-popup-content success-content">
-            <button class="popup-close" id="successClose">
-                <i class="fas fa-times"></i>
-            </button>
             <div class="celebration" aria-hidden="true">
                 <span class="confetti"></span>
                 <span class="confetti"></span>
@@ -245,9 +242,14 @@
                 <h3>정답입니다!</h3>
                 <p>이제 이 문제를 완벽히 이해하신 것 같네요!</p>
             </div>
-            <div class="success-actions">
+            <div class="success-actions" id="successMainActions">
                 <button id="successLaterBtn" class="save-solution-btn" style="background:#f0f0f0; color:#333;"><span>나중에 또 퀴즈로 풀어볼래요</span></button>
                 <button id="successUnderstoodBtn" class="save-solution-btn"><span>이 문제는 완전히 이해했어요!</span></button>
+            </div>
+            <div class="success-actions" id="successDelayOptions" style="display:none; flex-direction:column; gap:8px;">
+                <button id="success5mBtn" class="save-solution-btn" style="width:100%;"><span>5분뒤에 다시 풀래요</span></button>
+                <button id="success1hBtn" class="save-solution-btn" style="width:100%;"><span>1시간 뒤에 다시 풀래요</span></button>
+                <button id="success1dBtn" class="save-solution-btn" style="width:100%;"><span>내일 다시 풀래요</span></button>
             </div>
         </div>
     </div>

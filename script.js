@@ -168,9 +168,33 @@ function handleSuccessUnderstood(index) {
 }
 
 if (successLaterBtn) successLaterBtn.addEventListener('click', () => {
-    const idx = quizModal && quizModal.dataset.index ? parseInt(quizModal.dataset.index) : undefined;
-    handleSuccessLater(idx);
+    const main = document.getElementById('successMainActions');
+    const opts = document.getElementById('successDelayOptions');
+    if (main) main.style.display = 'none';
+    if (opts) opts.style.display = 'flex';
 });
+
+const success5mBtn = document.getElementById('success5mBtn');
+const success1hBtn = document.getElementById('success1hBtn');
+const success1dBtn = document.getElementById('success1dBtn');
+
+function rescheduleFromSuccess(delayMs) {
+    const idx = quizModal && quizModal.dataset.index ? parseInt(quizModal.dataset.index) : undefined;
+    if (typeof idx === 'number' && popQuizItems[idx]) {
+        popQuizItems[idx].reappearAt = new Date(Date.now() + delayMs).toISOString();
+        savePopQuizItems();
+        updatePopQuizBadge();
+        closeSuccessModal();
+        closeQuizModal();
+        if (settingsView.style.display !== 'none') displayPopQuiz();
+    } else {
+        closeSuccessModal();
+    }
+}
+if (success5mBtn) success5mBtn.addEventListener('click', () => rescheduleFromSuccess(5 * 60 * 1000));
+if (success1hBtn) success1hBtn.addEventListener('click', () => rescheduleFromSuccess(60 * 60 * 1000));
+if (success1dBtn) success1dBtn.addEventListener('click', () => rescheduleFromSuccess(24 * 60 * 60 * 1000));
+
 if (successUnderstoodBtn) successUnderstoodBtn.addEventListener('click', () => {
     const idx = quizModal && quizModal.dataset.index ? parseInt(quizModal.dataset.index) : undefined;
     handleSuccessUnderstood(idx);

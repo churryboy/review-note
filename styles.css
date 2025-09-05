@@ -1660,3 +1660,7 @@ body {
 }
 .pop-quiz-card .question-badges .question-round { background: #1e88e5; }
 .pop-quiz-card .question-badges .quiz-count { background: #6c757d; } 
+
+/* Success modal stacked options spacing */
+#successDelayOptions .save-solution-btn { width: 100%; }
+#successMainActions { border-top: 1px solid #f3f3f3; } 

@@ -140,6 +140,28 @@ app.use(express.static('.'));
 // Serve uploaded images from persistent disk
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// Secure cookie defaults (applies to any future cookie usage)
+app.use((req, res, next) => {
+  const originalCookie = res.cookie.bind(res);
+  res.cookie = (name, value, options = {}) => {
+    const sameSitePref = (process.env.COOKIE_SAMESITE || 'lax').toLowerCase();
+    const sameSite = sameSitePref === 'strict' ? 'strict' : 'lax';
+    const secure = 'secure' in options ? options.secure : IS_PROD;
+    const httpOnly = 'httpOnly' in options ? options.httpOnly : true;
+    const patched = {
+      sameSite,
+      secure,
+      httpOnly,
+      ...options,
+      sameSite, // ensure not overridden later
+      secure,
+      httpOnly
+    };
+    return originalCookie(name, value, patched);
+  };
+  next();
+});
+
 // Basic security headers
 app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');

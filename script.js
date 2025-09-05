@@ -1580,14 +1580,15 @@ function setupNRoundSwipe(item) {
         if (deltaX < -threshold) {
             // Swiped left - Increment round count
             console.log('n회독 Swiped left - incrementing round');
-            incrementRound(parseInt(item.dataset.id));
+            const id = parseInt(item.dataset.id);
+            incrementRound(id);
             item.style.transform = 'translateX(0)';
             item.style.opacity = '1';
             item.style.backgroundColor = '';
-            
-            setTimeout(() => {
-                displayNRoundQuestions(); // Refresh n회독 list
-            }, 100);
+            // Update round label in-place without re-rendering the list
+            const roundEl = item.querySelector('.question-round');
+            const q = questions.find(q => q.id === id);
+            if (roundEl && q) roundEl.textContent = `${q.round}회독`;
         } else if (deltaX > threshold) {
             // Swiped right - Move to 팝퀴즈
             console.log('n회독 Swiped right - moving to pop quiz');

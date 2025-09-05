@@ -1563,4 +1563,5 @@ body {
 .encourage-body { text-align:center; padding: 18px 20px 10px; }
 .encourage-body h3 { margin: 0 0 8px; font-size: 1.3rem; }
 .encourage-body p { margin: 0; color:#555; }
-.encourage-actions { padding: 12px 16px 20px; } 
+.encourage-actions { padding: 12px 16px 20px; }
+.encourage-actions #failAcknowledgeBtn { width: 100%; display: block; } 

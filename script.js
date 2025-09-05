@@ -633,6 +633,21 @@ function categorizeQuestion(category) {
         let dataUrl = e.target.result;
         // Compress image to avoid localStorage quota issues
         try { dataUrl = await compressDataUrl(dataUrl, 1080, 0.82); } catch (_) {}
+        // Upload to server and keep URL only (reduces localStorage usage)
+        try {
+            const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+            const up = await fetch(base + '/api/upload-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageDataUrl: dataUrl })
+            });
+            if (up.ok) {
+                const j = await up.json();
+                if (j && j.url) {
+                    dataUrl = j.url;
+                }
+            }
+        } catch (_) {}
         const imageHash = currentImageHash || await computeSHA256HexFromDataUrl(dataUrl);
         const reviewAnswerInput = document.getElementById('reviewAnswerInput');
         const initialAnswer = reviewAnswerInput ? (reviewAnswerInput.value || '') : '';
@@ -1957,20 +1972,6 @@ async function compressDataUrl(dataUrl, maxWidth = 1080, quality = 0.8) {
         img.src = dataUrl;
     });
 } 
-
-// After compressing dataUrl, upload to server to store file and keep URL only
-try {
-    const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
-    const up = await fetch(base + '/api/upload-image', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageDataUrl: dataUrl })
-    });
-    if (up.ok) {
-        const j = await up.json();
-        if (j && j.url) {
-            dataUrl = j.url;
-        }
-    }
-} catch (_) {}
 
 // Ensure review image scales to fit fully
 const reviewImgEl = document.getElementById('reviewImage');

@@ -9,6 +9,19 @@ let achievements = [];
 // Constants
 const POP_QUIZ_DELAY_MS = 10 * 1000; // 10 seconds readiness delay
 const POP_QUIZ_REAPPEAR_MS = 24 * 60 * 60 * 1000; // 1 day for wrong answers
+// Default avatar (inline SVG data URI)
+const DEFAULT_AVATAR_DATA = "data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'>\
+ <defs>\
+  <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>\
+    <stop offset='0%' stop-color='%23FF8A00'/>\
+    <stop offset='100%' stop-color='%23FF5500'/>\
+  </linearGradient>\
+ </defs>\
+ <rect width='96' height='96' rx='48' fill='url(%23g)'/>\
+ <circle cx='48' cy='38' r='16' fill='white' opacity='0.9'/>\
+ <path d='M16 84c6-16 20-24 32-24s26 8 32 24' fill='white' opacity='0.9'/>\
+</svg>";
 
 // DOM elements
 // Removed 0회독 view (list) from UI; keep references guarded
@@ -91,6 +104,74 @@ function closeQuizModal() {
     if (quizResult) quizResult.style.display = 'none';
     if (quizAnswer) quizAnswer.value = '';
     delete quizModal.dataset.index;
+}
+
+// New: Profile dropdown elements
+const loginBtn = document.getElementById('loginBtn');
+const profileDropdown = document.getElementById('profileDropdown');
+const profileAvatar = document.getElementById('profileAvatar');
+const profileName = document.getElementById('profileName');
+const profileEmail = document.getElementById('profileEmail');
+const logoutBtn = document.getElementById('logoutBtn');
+const loginStartBtn = document.getElementById('loginStartBtn');
+
+async function refreshAuthUi() {
+    try {
+        const res = await fetch('/api/auth/me');
+        const j = await res.json();
+        const user = j && j.user;
+        if (user) {
+            if (loginBtn) {
+                loginBtn.title = '프로필';
+                const src = user.picture || DEFAULT_AVATAR_DATA;
+                // Inline onerror fallback for header image as HTML
+                const escaped = src.replace(/"/g, '&quot;');
+                const onerr = DEFAULT_AVATAR_DATA.replace(/"/g, '&quot;');
+                loginBtn.innerHTML = `<img src="${escaped}" alt="프로필" onerror="this.onerror=null;this.src='${onerr}';" style="width:24px;height:24px;border-radius:999px;object-fit:cover;" />`;
+            }
+            if (profileAvatar) {
+                profileAvatar.src = user.picture || DEFAULT_AVATAR_DATA;
+                profileAvatar.onerror = () => { profileAvatar.onerror = null; profileAvatar.src = DEFAULT_AVATAR_DATA; };
+            }
+            if (profileName) profileName.textContent = user.name || '사용자';
+            if (profileEmail) profileEmail.textContent = user.email || '';
+            if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+            if (loginStartBtn) loginStartBtn.style.display = 'none';
+        } else {
+            if (loginBtn) {
+                loginBtn.title = '로그인';
+                loginBtn.innerHTML = '<i class="fas fa-user-circle"></i>';
+            }
+            if (profileAvatar) { profileAvatar.src = DEFAULT_AVATAR_DATA; }
+            if (profileName) profileName.textContent = '게스트';
+            if (profileEmail) profileEmail.textContent = '';
+            if (logoutBtn) logoutBtn.style.display = 'none';
+            if (loginStartBtn) loginStartBtn.style.display = 'inline-flex';
+        }
+    } catch (_) {
+        // silent
+        if (profileAvatar) { profileAvatar.src = DEFAULT_AVATAR_DATA; }
+    }
+}
+
+function toggleProfileDropdown(e) {
+    if (!profileDropdown) return;
+    const isShown = profileDropdown.style.display !== 'none';
+    profileDropdown.style.display = isShown ? 'none' : 'block';
+}
+
+function hideProfileDropdownOnOutsideClick(e) {
+    if (!profileDropdown) return;
+    const within = profileDropdown.contains(e.target) || (loginBtn && loginBtn.contains(e.target));
+    if (!within) profileDropdown.style.display = 'none';
+}
+
+async function handleLogout() {
+    try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (_) {}
+    await refreshAuthUi();
+    if (profileDropdown) profileDropdown.style.display = 'none';
 }
 
 // New: solution steps button
@@ -250,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Keep previous disablements removed so we can show n회독 coaching again
     // localStorage.removeItem('hasSeenCoaching');
     // localStorage.removeItem('hasSeenListCoaching');
-    // sessionStorage.removeItem('shownListCoach');
+    // sessionStorage.removeItem('shownListCoaching');
     // sessionStorage.removeItem('shownNListCoach');
     // sessionStorage.removeItem('nListCoachPending');
 
@@ -261,6 +342,15 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQuestionCount();
     updatePopQuizBadge();
     setupEventListeners();
+    refreshAuthUi();
+    document.addEventListener('click', hideProfileDropdownOnOutsideClick, true);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    if (loginStartBtn) loginStartBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+        sessionStorage.setItem('googleLoginTriggeredOnce', 'true');
+        location.href = base + '/api/auth/google';
+    });
     showNRoundView();
     startPopQuizTimer();
 });
@@ -273,8 +363,23 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     // Floating camera button
     floatingCameraBtn.addEventListener('click', () => {
+        if (!sessionStorage.getItem('googleLoginTriggeredOnce')) {
+            sessionStorage.setItem('googleLoginTriggeredOnce', 'true');
+            const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+            location.href = base + '/api/auth/google';
+            return;
+        }
         cameraInput.click();
     });
+
+    // Login button (toggle dropdown, no direct login trigger)
+    if (loginBtn) {
+        loginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleProfileDropdown();
+        });
+    }
 
     // Camera input change
     cameraInput.addEventListener('change', handleImageCapture);

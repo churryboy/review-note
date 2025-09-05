@@ -16,6 +16,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Prisma (optional)
+let prisma = null;
+try {
+  // Lazy require to avoid install issues before prisma is added
+  const { PrismaClient } = require('@prisma/client');
+  prisma = new PrismaClient();
+} catch (_) {
+  prisma = null;
+}
+
+// Helper: extract authed user id (string) or return null
+function getAuthedUserId(req) {
+  try {
+    const token = req.cookies?.session || '';
+    if (!token) return null;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-change');
+    return decoded?.sub || null;
+  } catch (_) {
+    return null;
+  }
+}
+
 // Enforce HTTPS and HSTS in production/Render
 const IS_PROD = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
 if (IS_PROD) {
@@ -93,11 +115,11 @@ const visionClient = new vision.ImageAnnotatorClient({
 const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '';
 const anthropic = new Anthropic({ apiKey: claudeApiKey });
 
-// Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize OpenAI client (optional)
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 // Simple file-backed answers store
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const ANSWERS_FILE = path.join(DATA_DIR, 'answers.json');
 let answersByHash = {};
@@ -212,15 +234,34 @@ app.get('/api/auth/google/callback', async (req, res) => {
     const googleId = profile.sub;
     if (!googleId) return res.status(500).send('Invalid profile');
 
-    // Upsert user
-    let user = usersByGoogleId.get(googleId);
+    // Upsert user (DB if available, otherwise in-memory)
+    let user = null;
+    if (prisma) {
+      try {
+        user = await prisma.user.upsert({
+          where: { googleId: googleId },
+          update: { email: profile.email || '', name: profile.name || '', picture: profile.picture || '' },
+          create: { googleId: googleId, email: profile.email || `${googleId}@users.noreply`, name: profile.name || '', picture: profile.picture || '', role: 'user' }
+        });
+      } catch (e) {
+        console.warn('DB upsert user failed, falling back to memory:', e.message);
+      }
+    }
     if (!user) {
-      user = { id: googleId, email: profile.email, name: profile.name, role: 'user' };
-      usersByGoogleId.set(googleId, user);
+      user = usersByGoogleId.get(googleId);
+      if (!user) {
+        user = { id: googleId, email: profile.email, name: profile.name, picture: profile.picture, role: 'user' };
+        usersByGoogleId.set(googleId, user);
+      } else {
+        user.email = profile.email;
+        user.name = profile.name;
+        user.picture = profile.picture;
+      }
     }
 
-    // Issue session cookie
-    const token = signSession(user);
+    // Issue session cookie with user.id (DB id if available)
+    const sessionUser = { id: user.id || googleId, role: user.role || 'user' };
+    const token = signSession(sessionUser);
     res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 7 * 24 * 3600 * 1000 });
     return res.redirect('/');
   } catch (e) {
@@ -229,12 +270,21 @@ app.get('/api/auth/google/callback', async (req, res) => {
   }
 });
 
-app.get('/api/auth/me', (req, res) => {
+app.get('/api/auth/me', async (req, res) => {
   const token = req.cookies?.session || '';
   if (!token) return res.json({ user: null });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-change');
-    const user = { id: decoded.sub, role: decoded.role };
+    let user = { id: decoded.sub, role: decoded.role };
+    if (prisma) {
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: decoded.sub } });
+        if (dbUser) user = { id: dbUser.id, role: dbUser.role, name: dbUser.name, email: dbUser.email, picture: dbUser.picture };
+      } catch (_) {}
+    } else {
+      const u = usersByGoogleId.get(decoded.sub);
+      if (u) user = { id: u.id || decoded.sub, role: u.role || decoded.role, name: u.name, email: u.email, picture: u.picture };
+    }
     return res.json({ user });
   } catch (_) {
     return res.json({ user: null });
@@ -288,13 +338,22 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Answers API
+// Answers API (DB first, fallback to file)
 app.get('/api/answers/:hash', async (req, res) => {
     try {
         const ParamsSchema = z.object({ hash: z.string().min(1).max(256) });
         const parse = ParamsSchema.safeParse(req.params);
         if (!parse.success) return res.status(400).json({ error: 'hash required' });
         const { hash } = parse.data;
+
+        if (prisma) {
+          try {
+            const ans = await prisma.answer.findFirst({ where: { imageHash: hash } });
+            return res.json({ answer: ans?.value || null });
+          } catch (e) {
+            console.warn('DB read answer failed, falling back:', e.message);
+          }
+        }
         const answer = typeof answersByHash[hash] === 'string' ? answersByHash[hash] : null;
         return res.json({ answer });
     } catch (e) {
@@ -307,8 +366,26 @@ app.post('/api/answers', async (req, res) => {
         const parse = BodySchema.safeParse(req.body);
         if (!parse.success) return res.status(400).json({ error: 'imageHash and answer are required' });
         const { imageHash, answer } = parse.data;
-        answersByHash[imageHash] = answer;
-        await saveAnswers();
+
+        let ok = false;
+        if (prisma) {
+          try {
+            // Find question by image hash; if a dedicated mapping exists, use it directly
+            const existing = await prisma.answer.findFirst({ where: { imageHash } });
+            if (existing) {
+              await prisma.answer.update({ where: { id: existing.id }, data: { value: answer } });
+            } else {
+              await prisma.answer.create({ data: { imageHash, value: answer } });
+            }
+            ok = true;
+          } catch (e) {
+            console.warn('DB save answer failed, falling back:', e.message);
+          }
+        }
+        if (!ok) {
+          answersByHash[imageHash] = answer;
+          await saveAnswers();
+        }
         return res.json({ ok: true });
     } catch (e) {
         return res.status(500).json({ error: 'failed to save answer' });
@@ -341,11 +418,116 @@ app.post('/api/upload-image', async (req, res) => {
     }
 });
 
+// Questions API (DB only; require auth)
+app.get('/api/questions', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const items = await prisma.question.findMany({ where: { userId }, include: { image: true } });
+  return res.json({ items });
+});
+app.post('/api/questions', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const Body = z.object({ imageHash: z.string(), imageUrl: z.string(), questionNumber: z.string().optional(), publisher: z.string().optional(), category: z.string().optional(), round: z.number().int().optional() });
+  const parsed = Body.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'invalid body' });
+  const { imageHash, imageUrl, questionNumber, publisher, category, round } = parsed.data;
+  // Upsert image
+  const img = await prisma.image.upsert({ where: { hash: imageHash }, update: { url: imageUrl }, create: { hash: imageHash, url: imageUrl } });
+  const q = await prisma.question.create({ data: { userId, imageId: img.id, questionNumber: questionNumber || null, publisher: publisher || null, category: category || null, round: typeof round === 'number' ? round : 0 } });
+  return res.json({ item: q });
+});
+app.patch('/api/questions/:id', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const Params = z.object({ id: z.string() });
+  const Body = z.object({ round: z.number().int().optional(), lastAccessed: z.string().datetime().optional(), quizCount: z.number().int().optional(), category: z.string().optional() });
+  const p = Params.safeParse(req.params);
+  const b = Body.safeParse(req.body);
+  if (!p.success || !b.success) return res.status(400).json({ error: 'invalid' });
+  const q = await prisma.question.update({ where: { id: p.data.id }, data: { ...b.data } });
+  return res.json({ item: q });
+});
+app.delete('/api/questions/:id', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const p = z.object({ id: z.string() }).safeParse(req.params);
+  if (!p.success) return res.status(400).json({ error: 'invalid' });
+  await prisma.question.delete({ where: { id: p.data.id } });
+  return res.json({ ok: true });
+});
+
+// Pop Quiz Queue API (DB only; require auth)
+app.get('/api/pop-quiz-queue', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const items = await prisma.popQuizQueue.findMany({ where: { question: { userId } }, include: { question: true } });
+  return res.json({ items });
+});
+app.post('/api/pop-quiz-queue', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const Body = z.object({ questionId: z.string(), nextAt: z.coerce.date() });
+  const b = Body.safeParse(req.body);
+  if (!b.success) return res.status(400).json({ error: 'invalid' });
+  const existing = await prisma.popQuizQueue.findUnique({ where: { questionId: b.data.questionId } });
+  const item = existing
+    ? await prisma.popQuizQueue.update({ where: { id: existing.id }, data: { nextAt: b.data.nextAt } })
+    : await prisma.popQuizQueue.create({ data: { questionId: b.data.questionId, nextAt: b.data.nextAt } });
+  return res.json({ item });
+});
+app.patch('/api/pop-quiz-queue/:id', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const Params = z.object({ id: z.string() });
+  const Body = z.object({ nextAt: z.coerce.date() });
+  const p = Params.safeParse(req.params);
+  const b = Body.safeParse(req.body);
+  if (!p.success || !b.success) return res.status(400).json({ error: 'invalid' });
+  const item = await prisma.popQuizQueue.update({ where: { id: p.data.id }, data: { nextAt: b.data.nextAt } });
+  return res.json({ item });
+});
+app.delete('/api/pop-quiz-queue/:id', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const p = z.object({ id: z.string() }).safeParse(req.params);
+  if (!p.success) return res.status(400).json({ error: 'invalid' });
+  await prisma.popQuizQueue.delete({ where: { id: p.data.id } });
+  return res.json({ ok: true });
+});
+
+// Achievements API (DB only; require auth)
+app.get('/api/achievements', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const items = await prisma.achievement.findMany({ where: { userId }, include: { question: { include: { image: true } } } });
+  return res.json({ items });
+});
+app.post('/api/achievements', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const Body = z.object({ questionId: z.string() });
+  const b = Body.safeParse(req.body);
+  if (!b.success) return res.status(400).json({ error: 'invalid' });
+  const item = await prisma.achievement.create({ data: { userId, questionId: b.data.questionId } });
+  return res.json({ item });
+});
+
 // OpenAI LLM chat with image context
 app.post('/api/llm-chat', async (req, res) => {
     try {
-        if (!process.env.OPENAI_API_KEY) {
-            return res.status(500).json({ error: 'OPENAI_API_KEY가 설정되어 있지 않습니다.' });
+        if (!openai) {
+            return res.status(501).json({ error: 'LLM이 구성되어 있지 않습니다. OPENAI_API_KEY 누락.' });
         }
         const BodySchema = z.object({ message: z.string().min(1).max(8000), imageDataUrl: z.string().min(10) });
         const parsed = BodySchema.safeParse(req.body);
@@ -358,31 +540,19 @@ app.post('/api/llm-chat', async (req, res) => {
         }
         const mediaType = match[1];
         const base64Data = match[2];
-        const dataUri = `data:${mediaType};base64,${base64Data}`;
 
-        const response = await openai.chat.completions.create({
+        const result = await openai.chat.completions.create({
             model: 'gpt-4o-mini',
-            temperature: 0.2,
             messages: [
-                {
-                    role: 'system',
-                    content: 'You are a helpful math and science tutor. Use the attached image of the problem as the sole context. Answer in Korean with clear bullet points. Typeset math using LaTeX delimiters $...$.'
-                },
-                {
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: message },
-                        { type: 'image_url', image_url: { url: dataUri } }
-                    ]
-                }
+                { role: 'system', content: 'You are a helpful assistant that explains solutions clearly.' },
+                { role: 'user', content: message },
             ]
         });
-
-        const text = response.choices?.[0]?.message?.content || '답변을 생성하지 못했습니다.';
-        return res.json({ reply: text });
-    } catch (err) {
-        console.error('LLM chat error:', err);
-        return res.status(500).json({ error: 'LLM 요청에 실패했습니다.' });
+        const text = result.choices?.[0]?.message?.content || '';
+        return res.json({ answer: text });
+    } catch (e) {
+        console.error('LLM chat error:', e);
+        return res.status(500).json({ error: 'LLM error' });
     }
 });
 
@@ -474,10 +644,8 @@ ${ocrText}
     }
 }
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
+// Health check
+app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 // Error handling middleware
 app.use((error, req, res, next) => {
@@ -490,10 +658,6 @@ app.use((error, req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start the server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log('Make sure to set the following environment variables:');
-    console.log('- CLAUDE_API_KEY: Your Anthropic Claude API key');
-    console.log('- GOOGLE_CLOUD_KEYFILE: Path to your Google Cloud service account key file');
 }); 

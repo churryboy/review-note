@@ -21,7 +21,23 @@
                 <i class="fas fa-book"></i>
                 <span class="logo-text">스마트 오답노트</span>
             </div>
-
+            <button id="loginBtn" class="back-btn" title="로그인" style="margin-left:auto;">
+                <i class="fas fa-user-circle"></i>
+            </button>
+            <!-- Profile Dropdown -->
+            <div id="profileDropdown" class="profile-dropdown" style="display:none;">
+                <div class="profile-header">
+                    <img id="profileAvatar" alt="프로필" />
+                    <div class="profile-info">
+                        <div class="profile-name" id="profileName">게스트</div>
+                        <div class="profile-email" id="profileEmail"></div>
+                    </div>
+                </div>
+                <div class="profile-actions" style="gap:8px;">
+                    <button id="loginStartBtn" class="logout-btn" style="display:none;"><i class="fas fa-sign-in-alt"></i><span>로그인</span></button>
+                    <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i><span>로그아웃</span></button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -65,7 +81,7 @@
                 <div class="desc-icon">🎯</div>
                 <div class="desc-text">
                     <div class="desc-title">팝퀴즈 안내</div>
-                    <div class="desc-body">잊을만할 때 쯤 뜬금없이 제시되는 퀴즈예요. 당장 목록에는 보이지 않고, 적절한 시점에 자동으로 노출됩니다.</div>
+                    <div class="desc-body">n회독이 끝난 문제들이 뜬금없는 시점에 제시됩니다.<br/>한번 제시된 문제는 아래 목록에서 찾아보실 수 있어요.</div>
                 </div>
             </div>
             <div class="pop-quiz-status" id="popQuizStatus">
@@ -159,9 +175,8 @@
                 </button>
             </div>
         </div>
-
         
-
+        
         <!-- Solution View -->
         <div class="solution-view" id="solutionView" style="display: none;">
             <div class="solution-header">
@@ -213,7 +228,9 @@
     <!-- Pop Quiz Modal -->
     <div class="image-popup-overlay" id="quizModal" style="display: none;">
         <div class="image-popup-content">
-            <img id="quizImage" src="" alt="문제 이미지">
+            <div class="quiz-image-container">
+                <img id="quizImage" src="" alt="문제 이미지">
+            </div>
             <div class="quiz-answer-panel">
                 <input id="quizAnswer" type="text" placeholder="정답을 입력하세요" />
                 <button id="quizSubmit" class="save-solution-btn"><i class="fas fa-paper-plane"></i><span>제출</span></button>

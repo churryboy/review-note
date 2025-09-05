@@ -1594,3 +1594,38 @@ body {
 .encourage-actions #fail1hBtn,
 .encourage-actions #fail1dBtn { width: 100%; display: block; margin-top: 8px; }
 .encourage-actions #fail5mBtn:first-child { margin-top: 0; } 
+
+/* Achievement rank panel */
+#achievementStatus .rank-panel {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 12px;
+}
+#achievementStatus .rank-header {
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+#achievementStatus .rank-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: #444;
+    font-size: 0.92rem;
+    margin-bottom: 8px;
+}
+#achievementStatus .rank-stats span strong { font-weight: 800; }
+#achievementStatus .rank-progress {
+    height: 8px;
+    background: #f1f3f5;
+    border-radius: 999px;
+    overflow: hidden;
+}
+#achievementStatus .rank-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #1e88e5, #43a047);
+    width: 0%;
+    transition: width 300ms ease;
+} 

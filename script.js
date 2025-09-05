@@ -412,10 +412,82 @@ function showSettingsView() {
     displayPopQuiz();
 }
 
+function computeRankIncrements() {
+    const increments = [3];
+    for (let i = 1; i < 7; i++) {
+        increments[i] = Math.round(increments[i - 1] * 1.8);
+    }
+    return increments; // length 7 for 8 tiers
+}
+
+function computeRankTotals(increments) {
+    const totals = [];
+    let sum = 0;
+    for (let i = 0; i < increments.length; i++) {
+        sum += increments[i];
+        totals.push(sum);
+    }
+    return totals; // thresholds to reach tiers 2..8
+}
+
+function getAchievementRankInfo(achieveCount) {
+    const inc = computeRankIncrements();
+    const totals = computeRankTotals(inc);
+    let rank = 1;
+    let prevTotal = 0;
+    let stepIndex = 0;
+    for (; stepIndex < totals.length; stepIndex++) {
+        if (achieveCount >= totals[stepIndex]) {
+            rank += 1;
+            prevTotal = totals[stepIndex];
+        } else {
+            break;
+        }
+    }
+    const maxRank = 8;
+    if (rank > maxRank) rank = maxRank;
+    const nextStepSize = stepIndex < inc.length ? inc[stepIndex] : 0;
+    const inStepProgress = Math.max(0, achieveCount - prevTotal);
+    const remaining = Math.max(0, nextStepSize - inStepProgress);
+    const progressRatio = nextStepSize > 0 ? Math.min(1, inStepProgress / nextStepSize) : 1;
+    return { rank, maxRank, achieveCount, nextStepSize, inStepProgress, remaining, progressRatio };
+}
+
 function displayAchievements() {
     const list = document.getElementById('achievementList');
     const empty = document.getElementById('achievementEmpty');
+    const status = document.getElementById('achievementStatus');
     if (!list || !empty) return;
+
+    // Rank panel
+    if (status) {
+        const info = getAchievementRankInfo((achievements || []).length);
+        status.style.display = 'block';
+        if (info.rank >= info.maxRank) {
+            status.innerHTML = `
+                <div class="rank-panel">
+                    <div class="rank-header">오답노트 랭커</div>
+                    <div class="rank-stats">
+                        <span>현재 등급: <strong>${info.rank}/${info.maxRank}</strong></span>
+                        <span>총 성취: <strong>${info.achieveCount}개</strong></span>
+                        <span>다음 등급: <strong>최고 등급 도달</strong></span>
+                    </div>
+                    <div class="rank-progress"><div class="rank-progress-bar" style="width:100%"></div></div>
+                </div>`;
+        } else {
+            const percent = Math.round(info.progressRatio * 100);
+            status.innerHTML = `
+                <div class="rank-panel">
+                    <div class="rank-header">오답노트 랭커</div>
+                    <div class="rank-stats">
+                        <span>현재 등급: <strong>${info.rank}/${info.maxRank}</strong></span>
+                        <span>총 성취: <strong>${info.achieveCount}개</strong></span>
+                        <span>다음 등급까지: <strong>${info.remaining}개</strong></span>
+                    </div>
+                    <div class="rank-progress"><div class="rank-progress-bar" style="width:${percent}%"></div></div>
+                </div>`;
+        }
+    }
 
     if (!achievements || achievements.length === 0) {
         list.style.display = 'none';

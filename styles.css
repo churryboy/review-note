@@ -861,6 +861,20 @@ body {
     }
 }
 
+/* Achievement nav pulse feedback */
+.bottom-nav .nav-item.achieve-pulse i {
+    animation: achievePulse 900ms ease-out;
+    color: #f4b400;
+    text-shadow: 0 0 8px rgba(244, 180, 0, 0.6);
+}
+
+@keyframes achievePulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.25); }
+    60% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
 /* Image Popup */
 .image-popup-overlay {
     position: fixed;

@@ -152,6 +152,15 @@ function handleSuccessUnderstood(index) {
             savePopQuizItems();
             updatePopQuizBadge();
             if (achievementView && achievementView.style.display !== 'none') displayAchievements();
+            // Pulse the 성취도 icon to indicate new card
+            if (navAchievement) {
+                navAchievement.classList.add('achieve-pulse');
+                const removePulse = () => {
+                    navAchievement.classList.remove('achieve-pulse');
+                    navAchievement.removeEventListener('animationend', removePulse);
+                };
+                navAchievement.addEventListener('animationend', removePulse);
+            }
         }
     }
     closeSuccessModal();

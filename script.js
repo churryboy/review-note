@@ -300,6 +300,16 @@ function setupEventListeners() {
                     });
                 } catch (_) {}
             }
+            const sys = document.getElementById('solutionSystemMsg');
+            if (sys) {
+                sys.textContent = '정답이 저장되었습니다';
+                sys.style.display = 'block';
+                sys.classList.add('show');
+                setTimeout(() => {
+                    sys.classList.remove('show');
+                    setTimeout(() => { sys.style.display = 'none'; }, 180);
+                }, 1200);
+            }
         });
     }
 

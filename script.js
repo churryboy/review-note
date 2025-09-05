@@ -372,7 +372,15 @@ async function persistSolutionAnswer() {
     if (hash) {
         await saveAnswerForHash(hash, answer);
     }
-    saveQuestions();
+    try {
+        saveQuestions();
+    } catch (err) {
+        console.error('saveQuestions error:', err);
+        alert('저장 공간이 가득 찼습니다. 일부 항목을 삭제하거나 이미지 크기를 줄여주세요.');
+        // Rollback the push to avoid inconsistent state
+        questions.splice(questions.findIndex(q => q.id === questionId), 1);
+        return;
+    }
 }
 
 // Show 0회독 view (deprecated): redirect to n회독
@@ -618,7 +626,9 @@ function categorizeQuestion(category) {
 
     const reader = new FileReader();
     reader.onload = async function(e) {
-        const dataUrl = e.target.result;
+        let dataUrl = e.target.result;
+        // Compress image to avoid localStorage quota issues
+        try { dataUrl = await compressDataUrl(dataUrl, 1080, 0.82); } catch (_) {}
         const imageHash = currentImageHash || await computeSHA256HexFromDataUrl(dataUrl);
         const reviewAnswerInput = document.getElementById('reviewAnswerInput');
         const initialAnswer = reviewAnswerInput ? (reviewAnswerInput.value || '') : '';
@@ -644,7 +654,15 @@ function categorizeQuestion(category) {
         if (newQuestion.imageHash) {
             await saveAnswerForHash(newQuestion.imageHash, initialAnswer);
         }
-        saveQuestions();
+        try {
+            saveQuestions();
+        } catch (err) {
+            console.error('saveQuestions error:', err);
+            alert('저장 공간이 가득 찼습니다. 일부 항목을 삭제하거나 이미지 크기를 줄여주세요.');
+            // Rollback the push to avoid inconsistent state
+            questions.splice(questions.findIndex(q => q.id === newQuestion.id), 1);
+            return;
+        }
         updateQuestionCount();
 
         const sys = document.getElementById('solutionSystemMsg');
@@ -1245,7 +1263,8 @@ async function saveAnswerForHash(imageHash, answer) {
     answerByHash[imageHash] = val;
     saveAnswerByHash();
     try {
-        await fetch('/api/answers', {
+        const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+        await fetch(base + '/api/answers', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ imageHash, answer: val })
@@ -1808,5 +1827,28 @@ function applyRoundBadgeStyles(container) {
         if (q && el) {
             el.style.backgroundColor = computeRoundColor(q.round || 0);
         }
+    });
+} 
+
+async function compressDataUrl(dataUrl, maxWidth = 1080, quality = 0.8) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const scale = Math.min(1, maxWidth / img.width);
+            const w = Math.round(img.width * scale);
+            const h = Math.round(img.height * scale);
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            try {
+                const out = canvas.toDataURL('image/jpeg', quality);
+                resolve(out);
+            } catch (_) {
+                resolve(dataUrl);
+            }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
     });
 } 

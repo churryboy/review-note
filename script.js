@@ -176,6 +176,29 @@ if (successUnderstoodBtn) successUnderstoodBtn.addEventListener('click', () => {
     handleSuccessUnderstood(idx);
 });
 
+// Fail modal controls
+const failModal = document.getElementById('failModal');
+const failClose = document.getElementById('failClose');
+const failAcknowledgeBtn = document.getElementById('failAcknowledgeBtn');
+
+function openFailModal() { if (failModal) failModal.style.display = 'flex'; }
+function closeFailModal() { if (failModal) failModal.style.display = 'none'; }
+if (failClose) failClose.addEventListener('click', closeFailModal);
+if (failAcknowledgeBtn) failAcknowledgeBtn.addEventListener('click', () => {
+    const indexStr = quizModal && quizModal.dataset.index;
+    const index = indexStr ? parseInt(indexStr) : undefined;
+    if (typeof index === 'number' && popQuizItems[index]) {
+        popQuizItems[index].reappearAt = new Date(Date.now() + POP_QUIZ_REAPPEAR_MS).toISOString();
+        savePopQuizItems();
+        updatePopQuizBadge();
+        closeFailModal();
+        closeQuizModal();
+        if (settingsView.style.display !== 'none') displayPopQuiz();
+    } else {
+        closeFailModal();
+    }
+});
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     // Disable all coaching: clear and do not set again
@@ -1033,15 +1056,7 @@ function handleQuizSubmit() {
             openSuccessModal();
         } else {
             // Schedule reappearance after 1 day, and hide immediately
-            setTimeout(() => {
-                closeQuizModal();
-                if (popQuizItems[index]) {
-                    popQuizItems[index].reappearAt = new Date(Date.now() + POP_QUIZ_REAPPEAR_MS).toISOString();
-                    savePopQuizItems();
-                    updatePopQuizBadge();
-                    if (settingsView.style.display !== 'none') displayPopQuiz();
-                }
-            }, 800);
+            openFailModal();
         }
     })();
 }

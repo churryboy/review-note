@@ -251,6 +251,31 @@
         </div>
     </div>
 
+    <!-- Incorrect Answer Modal -->
+    <div class="image-popup-overlay" id="failModal" style="display: none;">
+        <div class="image-popup-content encourage-content">
+            <button class="popup-close" id="failClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="encourage-visual" aria-hidden="true">
+                <div class="encourage-emoji">💪</div>
+                <div class="sparkles">
+                    <span class="sparkle"></span>
+                    <span class="sparkle"></span>
+                    <span class="sparkle"></span>
+                    <span class="sparkle"></span>
+                </div>
+            </div>
+            <div class="encourage-body">
+                <h3>조금만 더!</h3>
+                <p>아쉽지만 정답이 아니네요.. 우리 조금 더 공부한 다음에 다시 풀어보도록 해요!</p>
+            </div>
+            <div class="encourage-actions">
+                <button id="failAcknowledgeBtn" class="save-solution-btn"><span>네 알겠습니다.</span></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Coaching Guide Overlay -->
     <div class="coaching-overlay" id="coachingOverlay" style="display: none;">
         <div class="coaching-content">

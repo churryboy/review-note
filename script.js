@@ -634,6 +634,7 @@ function displayNRoundQuestions() {
             </div>
         </div>
     `).join('');
+    applyRoundBadgeStyles(roundNList);
 
     // Add click handlers and swipe functionality
     document.querySelectorAll('#roundNList .question-item').forEach(item => {
@@ -664,6 +665,7 @@ function displayNRoundQuestions() {
             sessionStorage.removeItem('nListCoachPending');
         }, 200);
     }
+    applyRoundBadgeStyles(roundNList); // Apply gradient colors after rendering
 }
 
 function sortNRoundQuestions(items, mode) {
@@ -1588,7 +1590,12 @@ function setupNRoundSwipe(item) {
             // Update round label in-place without re-rendering the list
             const roundEl = item.querySelector('.question-round');
             const q = questions.find(q => q.id === id);
-            if (roundEl && q) roundEl.textContent = `${q.round}회독`;
+            if (roundEl && q) {
+                roundEl.textContent = `${q.round}회독`;
+                roundEl.style.backgroundColor = computeRoundColor(q.round || 0);
+                roundEl.classList.add('bump');
+                setTimeout(() => roundEl.classList.remove('bump'), 300);
+            }
         } else if (deltaX > threshold) {
             // Swiped right - Move to 팝퀴즈
             console.log('n회독 Swiped right - moving to pop quiz');
@@ -1669,3 +1676,29 @@ function nextListCoachingStep() {}
 function showNListCoachingGuide() {}
 function closeNListCoachingGuide() {}
 function nextNListCoachingStep() {} 
+
+function computeRoundColor(round) {
+    const r = Math.max(0, Math.min(10, round));
+    // Interpolate from gray (#8e8e8e) to blue (#1e88e5)
+    const from = { r: 0x8e, g: 0x8e, b: 0x8e };
+    const to   = { r: 0x1e, g: 0x88, b: 0xe5 };
+    const t = r / 10;
+    const mix = (a, b) => Math.round(a + (b - a) * t);
+    const rr = mix(from.r, to.r);
+    const gg = mix(from.g, to.g);
+    const bb = mix(from.b, to.b);
+    const hex = (n) => n.toString(16).padStart(2, '0');
+    return `#${hex(rr)}${hex(gg)}${hex(bb)}`;
+}
+
+function applyRoundBadgeStyles(container) {
+    if (!container) return;
+    container.querySelectorAll('.question-item').forEach(item => {
+        const id = parseInt(item.dataset.id);
+        const q = questions.find(x => x.id === id);
+        const el = item.querySelector('.question-round');
+        if (q && el) {
+            el.style.backgroundColor = computeRoundColor(q.round || 0);
+        }
+    });
+} 

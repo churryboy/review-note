@@ -737,12 +737,23 @@ body {
 }
 
 .question-round {
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 2px 5px;
-    border-radius: 3px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
     color: white;
-    background: #4CAF50;
+    background: #8e8e8e; /* default gray */
+    transition: background-color 240ms ease, transform 200ms ease;
+}
+
+/* bump animation */
+.question-round.bump {
+    animation: roundBump 260ms ease;
+}
+@keyframes roundBump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.18); }
+    100% { transform: scale(1); }
 }
 
 .question-preview {

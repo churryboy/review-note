@@ -223,12 +223,12 @@ if (fail1dBtn) fail1dBtn.addEventListener('click', () => rescheduleCurrentQuiz(2
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-    // Disable all coaching: clear and do not set again
-    localStorage.removeItem('hasSeenCoaching');
-    localStorage.removeItem('hasSeenListCoaching');
-    sessionStorage.removeItem('shownListCoach');
-    sessionStorage.removeItem('shownNListCoach');
-    sessionStorage.removeItem('nListCoachPending');
+    // Keep previous disablements removed so we can show n회독 coaching again
+    // localStorage.removeItem('hasSeenCoaching');
+    // localStorage.removeItem('hasSeenListCoaching');
+    // sessionStorage.removeItem('shownListCoach');
+    // sessionStorage.removeItem('shownNListCoach');
+    // sessionStorage.removeItem('nListCoachPending');
 
     loadQuestions();
     loadPopQuizItems();
@@ -240,6 +240,10 @@ document.addEventListener('DOMContentLoaded', () => {
     showNRoundView();
     startPopQuizTimer();
 });
+
+// After creating the very first n회독 card, set pending flag so displayNRoundQuestions shows overlay
+// In categorizeQuestion(), we already compute preCountNRound; when it was 0 before insertion, set flag
+// This ensures the guide shows right after first card appears
 
 // Set up event listeners
 function setupEventListeners() {
@@ -680,7 +684,7 @@ function categorizeQuestion(category) {
         showNRoundView();
         
         if (preCountNRound === 0) {
-            sessionStorage.removeItem('nListCoachPending');
+            sessionStorage.setItem('nListCoachPending', 'true');
         }
     };
     
@@ -1800,9 +1804,56 @@ function checkAndShowListCoaching() {}
 function showListCoachingGuide() {}
 function closeListCoachingGuide() {}
 function nextListCoachingStep() {}
-function showNListCoachingGuide() {}
-function closeNListCoachingGuide() {}
-function nextNListCoachingStep() {} 
+function showNListCoachingGuide() {
+    const overlay = document.getElementById('nListCoachingOverlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    // Reset to step 1
+    const s1 = document.getElementById('nListStep1');
+    const s2 = document.getElementById('nListStep2');
+    if (s1) s1.classList.add('active');
+    if (s2) s2.classList.remove('active');
+    const dots = document.querySelectorAll('#nListCoachingOverlay .step-dot');
+    dots.forEach(d => d.classList.remove('active'));
+    if (dots[0]) dots[0].classList.add('active');
+}
+function closeNListCoachingGuide() {
+    const overlay = document.getElementById('nListCoachingOverlay');
+    if (overlay) overlay.style.display = 'none';
+    sessionStorage.setItem('shownNListCoach', 'true');
+}
+function nextNListCoachingStep() {
+    const s1 = document.getElementById('nListStep1');
+    const s2 = document.getElementById('nListStep2');
+    const onStep1 = s1 && s1.classList.contains('active');
+    if (onStep1) {
+        s1.classList.remove('active');
+        if (s2) s2.classList.add('active');
+        const dots = document.querySelectorAll('#nListCoachingOverlay .step-dot');
+        dots.forEach(d => d.classList.remove('active'));
+        if (dots[1]) dots[1].classList.add('active');
+        const nextBtn = document.getElementById('nListCoachingNext');
+        const doneBtn = document.getElementById('nListCoachingDone');
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (doneBtn) doneBtn.style.display = 'inline-block';
+    } else {
+        closeNListCoachingGuide();
+    }
+}
+// Wire buttons once
+(function initNListCoachingButtons(){
+    document.addEventListener('click', (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLElement)) return;
+        if (t.id === 'nListCoachingSkip') {
+            closeNListCoachingGuide();
+        } else if (t.id === 'nListCoachingNext') {
+            nextNListCoachingStep();
+        } else if (t.id === 'nListCoachingDone') {
+            closeNListCoachingGuide();
+        }
+    });
+})(); 
 
 function computeRoundColor(round) {
     const r = Math.max(0, Math.min(10, round));

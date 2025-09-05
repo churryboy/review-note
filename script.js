@@ -700,6 +700,13 @@ function categorizeQuestion(category) {
         
         if (preCountNRound === 0) {
             sessionStorage.setItem('nListCoachPending', 'true');
+            setTimeout(() => {
+                if (!sessionStorage.getItem('shownNListCoach')) {
+                    showNListCoachingGuide();
+                    sessionStorage.setItem('shownNListCoach', 'true');
+                    sessionStorage.removeItem('nListCoachPending');
+                }
+            }, 300);
         }
     };
     

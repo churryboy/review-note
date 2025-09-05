@@ -1750,29 +1750,81 @@ function incrementRound(questionId) {
     }
 }
 
-// Move question to pop quiz
+// Answer-required modal controls
+const answerRequiredModal = document.getElementById('answerRequiredModal');
+const answerReqClose = document.getElementById('answerReqClose');
+const answerReqInput = document.getElementById('answerReqInput');
+const answerReqSubmit = document.getElementById('answerReqSubmit');
+let pendingMoveQuestionId = null;
+function openAnswerRequiredModal(questionId) {
+    pendingMoveQuestionId = questionId;
+    if (answerRequiredModal) answerRequiredModal.style.display = 'flex';
+    if (answerReqInput) answerReqInput.value = '';
+}
+function closeAnswerRequiredModal() {
+    if (answerRequiredModal) answerRequiredModal.style.display = 'none';
+    pendingMoveQuestionId = null;
+}
+if (answerReqClose) answerReqClose.addEventListener('click', closeAnswerRequiredModal);
+if (answerRequiredModal) answerRequiredModal.addEventListener('click', (e) => {
+    if (e.target === answerRequiredModal) closeAnswerRequiredModal();
+});
+if (answerReqSubmit) answerReqSubmit.addEventListener('click', async () => {
+    const qid = pendingMoveQuestionId;
+    if (!qid) return closeAnswerRequiredModal();
+    const q = questions.find(x => x.id === qid);
+    const val = (answerReqInput && answerReqInput.value || '').trim();
+    if (!val) {
+        if (answerReqInput) answerReqInput.focus();
+        return;
+    }
+    const hash = q.imageHash || await ensureQuestionImageHash(q);
+    if (hash) await saveAnswerForHash(hash, val);
+    closeAnswerRequiredModal();
+    // proceed moving to pop quiz
+    moveToPopQuiz(qid);
+});
+
+// Modify moveToPopQuiz to require answer
 function moveToPopQuiz(questionId) {
-    const questionIndex = questions.findIndex(q => q.id === questionId);
-    if (questionIndex !== -1) {
-        const question = questions[questionIndex];
-        question.popQuizAdded = new Date().toISOString();
-        popQuizItems.push(question);
-        questions.splice(questionIndex, 1); // Remove from main questions
+    const qIdx = questions.findIndex(q => q.id === questionId);
+    if (qIdx === -1) return;
+    const q = questions[qIdx];
+    (async () => {
+        const hash = q.imageHash || await ensureQuestionImageHash(q);
+        let savedAns = '';
+        if (hash) {
+            try {
+                const r = await fetch(((location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000') + `/api/answers/${hash}`);
+                if (r.ok) {
+                    const j = await r.json();
+                    savedAns = (j && j.answer) || '';
+                }
+            } catch (_) {}
+            if (!savedAns) savedAns = (answerByHash && answerByHash[hash]) || '';
+        }
+        if (!savedAns) {
+            // Require answer before moving
+            openAnswerRequiredModal(questionId);
+            return;
+        }
+        // proceed original move
+        const preCountNRound = questions.filter(q => (q.round ?? -1) >= 0).length;
+        q.popQuizAdded = new Date().toISOString();
+        popQuizItems.push(q);
+        questions.splice(qIdx, 1);
         saveQuestions();
         savePopQuizItems();
-        // Update status immediately so stats reflect at swipe time
         updatePopQuizBadge();
         displayPopQuiz();
-        // Pulse the 팝퀴즈 icon to indicate movement
+        // Pulse icon
         if (navSettings) {
             navSettings.classList.add('popquiz-pulse');
-            const removePulse = () => {
-                navSettings.classList.remove('popquiz-pulse');
-                navSettings.removeEventListener('animationend', removePulse);
-            };
+            const removePulse = () => { navSettings.classList.remove('popquiz-pulse'); navSettings.removeEventListener('animationend', removePulse); };
             navSettings.addEventListener('animationend', removePulse);
         }
-    }
+        // Coaching flag remains unchanged here
+    })();
 }
 
 // Start pop quiz timer

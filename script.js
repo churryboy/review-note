@@ -233,6 +233,20 @@ function handleSuccessUnderstood(index) {
             savePopQuizItems();
             updatePopQuizBadge();
             if (achievementView && achievementView.style.display !== 'none') displayAchievements();
+            // Persist to DB (best-effort)
+            (async () => {
+                try {
+                    const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+                    if (removed.dbId) {
+                        await fetch(base + '/api/achievements', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ questionId: removed.dbId })
+                        });
+                        await fetch(base + '/api/pop-quiz-queue/by-question/' + removed.dbId, { method: 'DELETE' });
+                    }
+                } catch (_) {}
+            })();
             // Pulse the 성취도 icon to indicate new card
             if (navAchievement) {
                 navAchievement.classList.add('achieve-pulse');
@@ -343,6 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePopQuizBadge();
     setupEventListeners();
     refreshAuthUi();
+    ensureSession();
     document.addEventListener('click', hideProfileDropdownOnOutsideClick, true);
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
     if (loginStartBtn) loginStartBtn.addEventListener('click', (e) => {
@@ -355,20 +370,19 @@ document.addEventListener('DOMContentLoaded', () => {
     startPopQuizTimer();
 });
 
-// After creating the very first n회독 card, set pending flag so displayNRoundQuestions shows overlay
-// In categorizeQuestion(), we already compute preCountNRound; when it was 0 before insertion, set flag
-// This ensures the guide shows right after first card appears
+async function ensureSession() {
+    try {
+        const me = await fetch('/api/auth/me').then(r => r.json()).catch(() => ({ user: null }));
+        if (me && me.user) return;
+        await fetch('/api/auth/anon', { method: 'POST' });
+        await refreshAuthUi();
+    } catch (_) {}
+}
 
 // Set up event listeners
 function setupEventListeners() {
     // Floating camera button
     floatingCameraBtn.addEventListener('click', () => {
-        if (!sessionStorage.getItem('googleLoginTriggeredOnce')) {
-            sessionStorage.setItem('googleLoginTriggeredOnce', 'true');
-            const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
-            location.href = base + '/api/auth/google';
-            return;
-        }
         cameraInput.click();
     });
 
@@ -528,6 +542,22 @@ async function persistSolutionAnswer() {
         questions.splice(questions.findIndex(q => q.id === questionId), 1);
         return;
     }
+    // Persist to DB (best-effort)
+    try {
+        const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+        const resp = await fetch(base + '/api/questions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageHash: imageHash, imageUrl: dataUrl, questionNumber: newQuestion.questionNumber, publisher: newQuestion.publisher, category, round: 0 })
+        });
+        if (resp.ok) {
+            const j = await resp.json();
+            if (j && j.item && j.item.id) {
+                newQuestion.dbId = j.item.id;
+            }
+        }
+    } catch (_) {}
+    updateQuestionCount();
 }
 
 // Show 0회독 view (deprecated): redirect to n회독
@@ -823,6 +853,21 @@ function categorizeQuestion(category) {
             questions.splice(questions.findIndex(q => q.id === newQuestion.id), 1);
             return;
         }
+        // Persist to DB (best-effort)
+        try {
+            const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+            const resp = await fetch(base + '/api/questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageHash: imageHash, imageUrl: dataUrl, questionNumber: newQuestion.questionNumber, publisher: newQuestion.publisher, category, round: 0 })
+            });
+            if (resp.ok) {
+                const j = await resp.json();
+                if (j && j.item && j.item.id) {
+                    newQuestion.dbId = j.item.id;
+                }
+            }
+        } catch (_) {}
         updateQuestionCount();
 
         const sys = document.getElementById('solutionSystemMsg');
@@ -1991,6 +2036,19 @@ function moveToPopQuiz(questionId) {
         questions.splice(qIdx, 1);
         saveQuestions();
         savePopQuizItems();
+        // Persist queue to DB (best-effort)
+        try {
+            const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+            const nextAt = new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString();
+            const questionIdDb = q.dbId; // set on create if DB exists
+            if (questionIdDb) {
+                await fetch(base + '/api/pop-quiz-queue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ questionId: questionIdDb, nextAt })
+                });
+            }
+        } catch (_) {}
         updatePopQuizBadge();
         displayPopQuiz();
         // Pulse icon

@@ -10,6 +10,7 @@ const dotenv = require('dotenv');
 const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
 
 dotenv.config();
 
@@ -296,6 +297,36 @@ app.post('/api/auth/logout', (req, res) => {
   return res.json({ ok: true });
 });
 
+// Anonymous auth: create a user row if DB exists; otherwise issue a random session id
+app.post('/api/auth/anon', async (req, res) => {
+  try {
+    // If already have a session, return current user
+    const existing = getAuthedUserId(req);
+    if (existing) {
+      return res.json({ ok: true, userId: existing });
+    }
+    let userId = null;
+    if (prisma) {
+      const rnd = crypto.randomBytes(10).toString('hex');
+      const email = `anon-${Date.now()}-${rnd}@anon.local`;
+      const user = await prisma.user.create({ data: { email, name: 'Anonymous', role: 'user' } });
+      userId = user.id;
+    } else {
+      // Memory-only fallback
+      const rnd = crypto.randomBytes(16).toString('hex');
+      const temp = { id: `anon_${rnd}`, email: `anon-${rnd}@anon.local`, name: 'Anonymous', role: 'user' };
+      usersByGoogleId.set(temp.id, temp);
+      userId = temp.id;
+    }
+    const token = signSession({ id: userId, role: 'user' });
+    res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
+    return res.json({ ok: true, userId });
+  } catch (e) {
+    console.error('anon auth error:', e);
+    return res.status(500).json({ error: 'anon auth failed' });
+  }
+});
+
 // Middleware
 app.use(express.static('.'));
 // Serve uploaded images from persistent disk
@@ -501,6 +532,19 @@ app.delete('/api/pop-quiz-queue/:id', async (req, res) => {
   const p = z.object({ id: z.string() }).safeParse(req.params);
   if (!p.success) return res.status(400).json({ error: 'invalid' });
   await prisma.popQuizQueue.delete({ where: { id: p.data.id } });
+  return res.json({ ok: true });
+});
+
+// Convenience: delete queue by questionId
+app.delete('/api/pop-quiz-queue/by-question/:questionId', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const p = z.object({ questionId: z.string() }).safeParse(req.params);
+  if (!p.success) return res.status(400).json({ error: 'invalid' });
+  try {
+    await prisma.popQuizQueue.delete({ where: { questionId: p.data.questionId } });
+  } catch (_) {}
   return res.json({ ok: true });
 });
 

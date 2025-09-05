@@ -8,6 +8,8 @@ const Anthropic = require('@anthropic-ai/sdk');
 const OpenAI = require('openai');
 const dotenv = require('dotenv');
 const { z } = require('zod');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 dotenv.config();
 
@@ -65,6 +67,7 @@ if (IS_PROD) {
 // Increase body parser limits for base64 images
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(cookieParser());
 
 // Configure multer for image uploads
 const storage = multer.memoryStorage();
@@ -134,6 +137,114 @@ async function saveAnswers() {
 
 // Load answers on startup
 loadAnswers();
+
+// Simple in-memory user store (replace with DB later)
+const usersByGoogleId = new Map();
+
+function signSession(user) {
+  const payload = { sub: user.id, role: user.role || 'user' };
+  const token = jwt.sign(payload, process.env.JWT_SECRET || 'dev-secret-change', { expiresIn: '7d' });
+  return token;
+}
+
+// Google OAuth endpoints
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
+
+function buildGoogleAuthUrl(state) {
+  const redirectUri = `${APP_BASE_URL}/api/auth/google/callback`;
+  const p = new URL(GOOGLE_AUTH_URL);
+  p.searchParams.set('client_id', GOOGLE_CLIENT_ID);
+  p.searchParams.set('redirect_uri', redirectUri);
+  p.searchParams.set('response_type', 'code');
+  p.searchParams.set('scope', 'openid email profile');
+  if (state) p.searchParams.set('state', state);
+  p.searchParams.set('access_type', 'online');
+  p.searchParams.set('prompt', 'consent');
+  return p.toString();
+}
+
+app.get('/api/auth/google', (req, res) => {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) return res.status(500).send('Google OAuth is not configured');
+  const url = buildGoogleAuthUrl('login');
+  return res.redirect(url);
+});
+
+app.get('/api/auth/google/callback', async (req, res) => {
+  try {
+    const redirectUri = `${APP_BASE_URL}/api/auth/google/callback`;
+    const code = (req.query.code || '').toString();
+    if (!code) return res.status(400).send('Missing code');
+
+    // Exchange code for tokens
+    const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri
+      })
+    });
+    if (!tokenRes.ok) {
+      const t = await tokenRes.text();
+      return res.status(500).send('Token exchange failed: ' + t);
+    }
+    const tokenJson = await tokenRes.json();
+    const accessToken = tokenJson.access_token;
+    if (!accessToken) return res.status(500).send('Missing access token');
+
+    // Fetch user info
+    const userRes = await fetch(GOOGLE_USERINFO_URL, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!userRes.ok) {
+      const t = await userRes.text();
+      return res.status(500).send('Failed to get userinfo: ' + t);
+    }
+    const profile = await userRes.json();
+    const googleId = profile.sub;
+    if (!googleId) return res.status(500).send('Invalid profile');
+
+    // Upsert user
+    let user = usersByGoogleId.get(googleId);
+    if (!user) {
+      user = { id: googleId, email: profile.email, name: profile.name, role: 'user' };
+      usersByGoogleId.set(googleId, user);
+    }
+
+    // Issue session cookie
+    const token = signSession(user);
+    res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 7 * 24 * 3600 * 1000 });
+    return res.redirect('/');
+  } catch (e) {
+    console.error('Google callback error:', e);
+    return res.status(500).send('OAuth error');
+  }
+});
+
+app.get('/api/auth/me', (req, res) => {
+  const token = req.cookies?.session || '';
+  if (!token) return res.json({ user: null });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-change');
+    const user = { id: decoded.sub, role: decoded.role };
+    return res.json({ user });
+  } catch (_) {
+    return res.json({ user: null });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.cookie('session', '', { path: '/', maxAge: 0 });
+  return res.json({ ok: true });
+});
 
 // Middleware
 app.use(express.static('.'));

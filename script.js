@@ -857,10 +857,8 @@ function showSolutionView(questionId, fromView) {
             }
             const dbg = document.getElementById('solutionDebugHash');
             if (dbg) {
-                const ans = (solutionAnswerInput.value || '').trim();
-                const sid = shortIdFromHash(hash);
-                dbg.textContent = `${sid} - ${ans}`;
-                dbg.style.display = 'block';
+                dbg.textContent = '';
+                dbg.style.display = 'none';
             }
         });
     }

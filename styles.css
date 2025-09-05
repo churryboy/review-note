@@ -648,6 +648,8 @@ body {
     transition: all 0.3s ease;
     cursor: pointer;
     margin-bottom: 8px;
+    touch-action: pan-y; /* allow vertical scroll, capture horizontal swipes */
+    -webkit-user-select: none; user-select: none;
 }
 
 .question-item:hover:not(.swiping) {
@@ -1645,3 +1647,16 @@ body {
     display: block;
     max-height: 70vh;
 } 
+
+/* Pop quiz card badges */
+.pop-quiz-card .question-badges { display:flex; gap:6px; align-items:center; margin-top:4px; }
+.pop-quiz-card .question-badges .question-round,
+.pop-quiz-card .question-badges .quiz-count {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    color: #fff;
+}
+.pop-quiz-card .question-badges .question-round { background: #1e88e5; }
+.pop-quiz-card .question-badges .quiz-count { background: #6c757d; } 

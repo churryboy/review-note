@@ -1152,7 +1152,10 @@ function displayPopQuiz() {
             <img src="${item.imageUrl}" alt="팝퀴즈 이미지" />
             <div class="meta">
                 <div class="question-number">${item.questionNumber || '문제'}</div>
-                <div class="question-source">${item.publisher || '출처모름'}</div>
+                <div class="question-badges">
+                    <span class="question-round">${item.round || 0}회독</span>
+                    <span class="quiz-count">퀴즈 ${(item.quizCount || 0)}회</span>
+                </div>
             </div>
         </div>
     `).join('');
@@ -1199,6 +1202,14 @@ function handleQuizSubmit() {
         const correctAnswer = await getAnswerForHash(hash);
 
         const isCorrect = userAnswer.length > 0 && correctAnswer.length > 0 && (userAnswer === correctAnswer);
+
+        // Increment quiz count for this item
+        quizItem.quizCount = (quizItem.quizCount || 0) + 1;
+        savePopQuizItems();
+        // Refresh visible badges if container is shown
+        if (settingsView && settingsView.style.display !== 'none') {
+            displayPopQuiz();
+        }
 
         quizResult.style.display = 'block';
         quizResult.textContent = isCorrect

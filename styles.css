@@ -1664,3 +1664,20 @@ body {
 /* Success modal stacked options spacing */
 #successDelayOptions .save-solution-btn { width: 100%; }
 #successMainActions { border-top: 1px solid #f3f3f3; } 
+
+/* Pop quiz description */
+#popQuizDesc {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8f9fa;
+    border: 1px solid #f1f3f5;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #495057;
+    margin-bottom: 10px;
+}
+#popQuizDesc .desc-icon { font-size: 1.3rem; line-height: 1; }
+#popQuizDesc .desc-text { display:flex; flex-direction:column; gap: 2px; }
+#popQuizDesc .desc-title { font-weight: 800; font-size: 0.95rem; color: #343a40; }
+#popQuizDesc .desc-body { font-size: 0.9rem; } 

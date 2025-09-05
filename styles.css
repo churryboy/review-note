@@ -886,6 +886,20 @@ body {
     100% { transform: scale(1); }
 }
 
+/* Pop quiz nav pulse feedback */
+.bottom-nav .nav-item.popquiz-pulse i {
+    animation: popQuizPulse 900ms ease-out;
+    color: #e53935;
+    text-shadow: 0 0 8px rgba(229, 57, 53, 0.5);
+}
+
+@keyframes popQuizPulse {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.2); }
+    50% { transform: scale(0.97); }
+    100% { transform: scale(1); }
+}
+
 /* Image Popup */
 .image-popup-overlay {
     position: fixed;

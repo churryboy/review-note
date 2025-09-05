@@ -1641,6 +1641,15 @@ function moveToPopQuiz(questionId) {
         // Update status immediately so stats reflect at swipe time
         updatePopQuizBadge();
         displayPopQuiz();
+        // Pulse the 팝퀴즈 icon to indicate movement
+        if (navSettings) {
+            navSettings.classList.add('popquiz-pulse');
+            const removePulse = () => {
+                navSettings.classList.remove('popquiz-pulse');
+                navSettings.removeEventListener('animationend', removePulse);
+            };
+            navSettings.addEventListener('animationend', removePulse);
+        }
     }
 }
 

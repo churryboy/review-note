@@ -414,10 +414,10 @@ function showSettingsView() {
 
 function computeRankIncrements() {
     const increments = [3];
-    for (let i = 1; i < 7; i++) {
+    for (let i = 1; i < 4; i++) { // 5 tiers total → 4 increments
         increments[i] = Math.round(increments[i - 1] * 1.8);
     }
-    return increments; // length 7 for 8 tiers
+    return increments; // length 4 for 5 tiers
 }
 
 function computeRankTotals(increments) {
@@ -444,13 +444,22 @@ function getAchievementRankInfo(achieveCount) {
             break;
         }
     }
-    const maxRank = 8;
+    const maxRank = 5;
     if (rank > maxRank) rank = maxRank;
     const nextStepSize = stepIndex < inc.length ? inc[stepIndex] : 0;
     const inStepProgress = Math.max(0, achieveCount - prevTotal);
     const remaining = Math.max(0, nextStepSize - inStepProgress);
     const progressRatio = nextStepSize > 0 ? Math.min(1, inStepProgress / nextStepSize) : 1;
-    return { rank, maxRank, achieveCount, nextStepSize, inStepProgress, remaining, progressRatio };
+    // Tier titles/emojis
+    const titles = [
+        { t: '오답노트 어린이', e: '🌱' },
+        { t: '오답노트 도전자', e: '💪' },
+        { t: '오답노트 숙련자', e: '🚀' },
+        { t: '오답노트 마스터', e: '🏆' },
+        { t: '오답노트 레전드', e: '🌟' },
+    ];
+    const title = titles[Math.min(rank - 1, titles.length - 1)];
+    return { rank, maxRank, achieveCount, nextStepSize, inStepProgress, remaining, progressRatio, title };
 }
 
 function displayAchievements() {
@@ -463,30 +472,27 @@ function displayAchievements() {
     if (status) {
         const info = getAchievementRankInfo((achievements || []).length);
         status.style.display = 'block';
-        if (info.rank >= info.maxRank) {
-            status.innerHTML = `
-                <div class="rank-panel">
-                    <div class="rank-header">오답노트 랭커</div>
-                    <div class="rank-stats">
-                        <span>현재 등급: <strong>${info.rank}/${info.maxRank}</strong></span>
-                        <span>총 성취: <strong>${info.achieveCount}개</strong></span>
-                        <span>다음 등급: <strong>최고 등급 도달</strong></span>
-                    </div>
-                    <div class="rank-progress"><div class="rank-progress-bar" style="width:100%"></div></div>
-                </div>`;
-        } else {
-            const percent = Math.round(info.progressRatio * 100);
-            status.innerHTML = `
-                <div class="rank-panel">
-                    <div class="rank-header">오답노트 랭커</div>
-                    <div class="rank-stats">
-                        <span>현재 등급: <strong>${info.rank}/${info.maxRank}</strong></span>
-                        <span>총 성취: <strong>${info.achieveCount}개</strong></span>
-                        <span>다음 등급까지: <strong>${info.remaining}개</strong></span>
-                    </div>
-                    <div class="rank-progress"><div class="rank-progress-bar" style="width:${percent}%"></div></div>
-                </div>`;
-        }
+        const percent = Math.round(info.progressRatio * 100);
+        const progressFill = info.rank >= info.maxRank ? 100 : percent;
+        // Visual badge row
+        const badges = Array.from({ length: info.maxRank }, (_, i) => {
+            const idx = i + 1;
+            const active = idx <= info.rank ? 'active' : '';
+            return `<div class=\"rank-badge ${active}\">${idx <= info.rank ? '⭐' : '☆'}</div>`;
+        }).join('');
+        const nextText = info.rank >= info.maxRank ? '최고 등급 도달' : `${info.remaining}개 남음`;
+        status.innerHTML = `
+            <div class="rank-panel fun">
+                <div class="rank-header">오답노트 랭커</div>
+                <div class="rank-tier-title">${info.title.e} ${info.title.t}</div>
+                <div class="rank-badges">${badges}</div>
+                <div class="rank-stats">
+                    <span>현재 등급: <strong>${info.rank}/${info.maxRank}</strong></span>
+                    <span>총 성취: <strong>${info.achieveCount}개</strong></span>
+                    <span>다음 등급까지: <strong>${nextText}</strong></span>
+                </div>
+                <div class="rank-progress"><div class="rank-progress-bar" style="width:${progressFill}%"></div></div>
+            </div>`;
     }
 
     if (!achievements || achievements.length === 0) {

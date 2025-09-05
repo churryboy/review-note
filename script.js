@@ -2035,3 +2035,30 @@ if (reviewImgEl) {
     reviewImgEl.style.objectFit = 'contain';
     reviewImgEl.style.maxHeight = '70vh';
 }
+
+// Review delete button
+const deleteFromReview = document.getElementById('deleteFromReview');
+if (deleteFromReview) {
+    deleteFromReview.addEventListener('click', () => {
+        // Just clear the current capture and go back
+        cleanupCurrentImage();
+        showNRoundView();
+    });
+}
+
+// Solution delete button
+const deleteFromSolution = document.getElementById('deleteFromSolution');
+if (deleteFromSolution) {
+    deleteFromSolution.addEventListener('click', () => {
+        const idStr = solutionView && solutionView.dataset.currentId;
+        if (!idStr) return;
+        const id = parseInt(idStr);
+        const idx = questions.findIndex(q => q.id === id);
+        if (idx >= 0) {
+            questions.splice(idx, 1);
+            saveQuestions();
+            updateQuestionCount();
+        }
+        showNRoundView();
+    });
+}

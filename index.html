@@ -99,9 +99,9 @@
                     <i class="fas fa-arrow-left"></i>
                 </button>
                 <h2>문제를 분류해주세요</h2>
-                <div class="review-progress">
-                    <span>1/1</span>
-                </div>
+                <button class="back-btn" id="deleteFromReview" title="삭제" style="justify-self:end;">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
             
             <div class="swipe-container">
@@ -165,6 +165,9 @@
                     <h2 id="solutionQuestionNumber">문제 1</h2>
                     <span class="solution-category" id="solutionCategory"></span>
                 </div>
+                <button class="back-btn" id="deleteFromSolution" title="삭제">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
             
             <div class="solution-content">
@@ -196,9 +199,6 @@
     <!-- Image Popup Modal -->
     <div class="image-popup-overlay" id="imagePopupOverlay" style="display: none;">
         <div class="image-popup-content">
-            <button class="popup-close" id="popupClose">
-                <i class="fas fa-times"></i>
-            </button>
             <img id="popupImage" src="" alt="문제 이미지">
         </div>
     </div>
@@ -206,12 +206,7 @@
     <!-- Pop Quiz Modal -->
     <div class="image-popup-overlay" id="quizModal" style="display: none;">
         <div class="image-popup-content">
-            <button class="popup-close" id="quizClose">
-                <i class="fas fa-times"></i>
-            </button>
-            <div class="quiz-image-container">
-                <img id="quizImage" src="" alt="문제 이미지">
-            </div>
+            <img id="quizImage" src="" alt="문제 이미지">
             <div class="quiz-answer-panel">
                 <input id="quizAnswer" type="text" placeholder="정답을 입력하세요" />
                 <button id="quizSubmit" class="save-solution-btn"><i class="fas fa-paper-plane"></i><span>제출</span></button>
@@ -247,9 +242,9 @@
                 <button id="successUnderstoodBtn" class="save-solution-btn"><span>이 문제는 완전히 이해했어요!</span></button>
             </div>
             <div class="success-actions" id="successDelayOptions" style="display:none; flex-direction:column; gap:8px;">
-                <button id="success5mBtn" class="save-solution-btn" style="width:100%;"><span>5분뒤에 다시 풀래요</span></button>
-                <button id="success1hBtn" class="save-solution-btn" style="width:100%;"><span>1시간 뒤에 다시 풀래요</span></button>
-                <button id="success1dBtn" class="save-solution-btn" style="width:100%;"><span>내일 다시 풀래요</span></button>
+                <button id="success5mBtn" class="save-solution-btn" style="width:100%;"><span>5분뒤에 다시 풀어볼래요</span></button>
+                <button id="success1hBtn" class="save-solution-btn" style="width:100%;"><span>1시간 뒤에 다시 풀어볼래요</span></button>
+                <button id="success1dBtn" class="save-solution-btn" style="width:100%;"><span>내일 다시 풀어볼래요</span></button>
             </div>
         </div>
     </div>

@@ -1783,6 +1783,10 @@ if (answerReqSubmit) answerReqSubmit.addEventListener('click', async () => {
     closeAnswerRequiredModal();
     // proceed moving to pop quiz
     moveToPopQuiz(qid);
+    // refresh n회독 list immediately so the card disappears without re-swipe
+    if (roundNView && roundNView.style.display !== 'none') {
+        setTimeout(() => { displayNRoundQuestions(); updatePopQuizBadge(); }, 50);
+    }
 });
 
 // Modify moveToPopQuiz to require answer

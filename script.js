@@ -459,7 +459,8 @@ function getAchievementRankInfo(achieveCount) {
         { t: '오답노트 레전드', e: '🌟' },
     ];
     const title = titles[Math.min(rank - 1, titles.length - 1)];
-    return { rank, maxRank, achieveCount, nextStepSize, inStepProgress, remaining, progressRatio, title };
+    const nextTitle = titles[Math.min(rank, titles.length - 1)];
+    return { rank, maxRank, achieveCount, nextStepSize, inStepProgress, remaining, progressRatio, title, nextTitle };
 }
 
 function displayAchievements() {
@@ -483,13 +484,10 @@ function displayAchievements() {
         const nextText = info.rank >= info.maxRank ? '최고 등급 도달' : `${info.remaining}개 남음`;
         status.innerHTML = `
             <div class="rank-panel fun">
-                <div class="rank-header">오답노트 랭커</div>
                 <div class="rank-tier-title">${info.title.e} ${info.title.t}</div>
                 <div class="rank-badges">${badges}</div>
                 <div class="rank-stats">
-                    <span>현재 등급: <strong>${info.rank}/${info.maxRank}</strong></span>
-                    <span>총 성취: <strong>${info.achieveCount}개</strong></span>
-                    <span>다음 등급까지: <strong>${nextText}</strong></span>
+                    <span>${info.nextTitle ? info.nextTitle.t : '다음 등급'}까지: <strong>${nextText}</strong></span>
                 </div>
                 <div class="rank-progress"><div class="rank-progress-bar" style="width:${progressFill}%"></div></div>
             </div>`;

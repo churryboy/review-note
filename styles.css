@@ -1670,8 +1670,8 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: #f8f9fa;
-    border: 1px solid #f1f3f5;
+    background: #fff4e6;
+    border: 1px solid #ffe8cc;
     border-radius: 12px;
     padding: 12px 14px;
     color: #495057;

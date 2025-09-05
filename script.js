@@ -504,7 +504,7 @@ function displayNRoundQuestions() {
 
     // Apply sorting based on dropdown
     const sortSelect = document.getElementById('nSortSelect');
-    const sortValue = sortSelect ? sortSelect.value : 'round_desc';
+    const sortValue = sortSelect ? sortSelect.value : 'created_recent';
     roundNQuestions = sortNRoundQuestions(roundNQuestions, sortValue);
     
     if (roundNQuestions.length === 0) {
@@ -580,7 +580,11 @@ function displayNRoundQuestions() {
 
 function sortNRoundQuestions(items, mode) {
     const arr = [...items];
-    if (mode === 'round_desc') {
+    if (mode === 'created_recent') {
+        arr.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } else if (mode === 'created_oldest') {
+        arr.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    } else if (mode === 'round_desc') {
         arr.sort((a, b) => (b.round ?? 0) - (a.round ?? 0));
     } else if (mode === 'round_asc') {
         arr.sort((a, b) => (a.round ?? 0) - (b.round ?? 0));

@@ -1636,3 +1636,12 @@ body {
 #achievementStatus .rank-badge.active { background:#ffe082; box-shadow: 0 0 0 2px rgba(255,224,130,0.6) inset; } 
 #achievementStatus .rank-tier-title { display:flex; align-items:center; gap:8px; }
 #achievementStatus .rank-tier-title .rank-emoji { font-size: 1.6rem; line-height: 1; filter: drop-shadow(0 2px 6px rgba(255, 193, 7, 0.5)); } 
+
+/* Ensure review image fits container and keeps aspect ratio */
+#imageCard img#reviewImage {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    max-height: 70vh;
+} 

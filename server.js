@@ -74,6 +74,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Simple file-backed answers store
 const DATA_DIR = path.join(__dirname, 'data');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const ANSWERS_FILE = path.join(DATA_DIR, 'answers.json');
 let answersByHash = {};
 
@@ -81,6 +82,9 @@ async function ensureDataDir() {
     try {
         if (!fsSync.existsSync(DATA_DIR)) {
             await fs.mkdir(DATA_DIR, { recursive: true });
+        }
+        if (!fsSync.existsSync(UPLOADS_DIR)) {
+            await fs.mkdir(UPLOADS_DIR, { recursive: true });
         }
     } catch (e) {
         console.warn('Failed to ensure data directory:', e.message);
@@ -112,6 +116,8 @@ loadAnswers();
 
 // Middleware
 app.use(express.static('.'));
+// Serve uploaded images from persistent disk
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Serve the main page
 app.get('/', (req, res) => {
@@ -140,6 +146,32 @@ app.post('/api/answers', async (req, res) => {
         return res.json({ ok: true });
     } catch (e) {
         return res.status(500).json({ error: 'failed to save answer' });
+    }
+});
+
+// Upload image from data URL and return a public URL
+app.post('/api/upload-image', async (req, res) => {
+    try {
+        const { imageDataUrl } = req.body || {};
+        if (typeof imageDataUrl !== 'string') {
+            return res.status(400).json({ error: 'imageDataUrl is required' });
+        }
+        const match = imageDataUrl.match(/^data:(.*?);base64,(.*)$/);
+        if (!match) {
+            return res.status(400).json({ error: 'Invalid data URL' });
+        }
+        const mediaType = match[1];
+        const base64 = match[2];
+        const ext = mediaType.includes('png') ? 'png' : mediaType.includes('webp') ? 'webp' : 'jpg';
+        const name = `${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+        await ensureDataDir();
+        const filePath = path.join(UPLOADS_DIR, name);
+        await fs.writeFile(filePath, Buffer.from(base64, 'base64'));
+        const url = `/uploads/${name}`;
+        return res.json({ url });
+    } catch (e) {
+        console.error('Failed to upload image:', e);
+        return res.status(500).json({ error: 'failed to upload image' });
     }
 });
 

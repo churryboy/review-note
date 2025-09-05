@@ -1957,3 +1957,26 @@ async function compressDataUrl(dataUrl, maxWidth = 1080, quality = 0.8) {
         img.src = dataUrl;
     });
 } 
+
+// After compressing dataUrl, upload to server to store file and keep URL only
+try {
+    const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+    const up = await fetch(base + '/api/upload-image', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageDataUrl: dataUrl })
+    });
+    if (up.ok) {
+        const j = await up.json();
+        if (j && j.url) {
+            dataUrl = j.url;
+        }
+    }
+} catch (_) {}
+
+// Ensure review image scales to fit fully
+const reviewImgEl = document.getElementById('reviewImage');
+if (reviewImgEl) {
+    reviewImgEl.style.width = '100%';
+    reviewImgEl.style.height = 'auto';
+    reviewImgEl.style.objectFit = 'contain';
+    reviewImgEl.style.maxHeight = '70vh';
+}

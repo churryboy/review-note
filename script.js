@@ -348,9 +348,8 @@ function setupEventListeners() {
             await saveAnswerForHash(currentImageHash, reviewAnswerInput.value || '');
             const dbg = document.getElementById('reviewDebugHash');
             if (dbg) {
-                const sid = shortIdFromHash(currentImageHash);
-                dbg.textContent = `${sid} - ${(reviewAnswerInput.value || '').trim()}`;
-                dbg.style.display = 'block';
+                dbg.textContent = '';
+                dbg.style.display = 'none';
             }
         };
         reviewAnswerInput.addEventListener('blur', saveReviewAnswer);
@@ -593,11 +592,9 @@ async function handleImageCapture(event) {
             const dataUrl = e.target.result;
             currentImageHash = await computeSHA256HexFromDataUrl(dataUrl);
             const dbg = document.getElementById('reviewDebugHash');
-            if (dbg && currentImageHash) {
-                const ans = answerByHash[currentImageHash] || '';
-                const sid = shortIdFromHash(currentImageHash);
-                dbg.textContent = `${sid} - ${ans}`;
-                dbg.style.display = 'block';
+            if (dbg) {
+                dbg.textContent = '';
+                dbg.style.display = 'none';
             }
         };
         fr.readAsDataURL(file);

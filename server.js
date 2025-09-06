@@ -651,7 +651,17 @@ app.get('/api/questions', async (req, res) => {
     const userId = getAuthedUserId(req);
     if (!userId) return res.status(401).json({ error: 'unauthorized' });
     const items = await prisma.question.findMany({ where: { userId }, include: { image: true } });
-    return res.json({ items });
+    // Normalize image URLs to absolute
+    const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').toString().split(',')[0].trim();
+    const host = req.headers.host;
+    const norm = items.map(it => {
+      if (it && it.image && it.image.url && !/^https?:\/\//i.test(it.image.url)) {
+        const url = it.image.url.startsWith('/') ? `${proto}://${host}${it.image.url}` : `${proto}://${host}/${it.image.url}`;
+        it.image.url = url;
+      }
+      return it;
+    });
+    return res.json({ items: norm });
   } catch (e) {
     console.warn('DB get questions failed:', e.message);
     return res.json({ items: [] });
@@ -717,7 +727,17 @@ app.get('/api/pop-quiz-queue', async (req, res) => {
     const userId = getAuthedUserId(req);
     if (!userId) return res.status(401).json({ error: 'unauthorized' });
     const items = await prisma.popQuizQueue.findMany({ where: { question: { userId } }, include: { question: { include: { image: true } } } });
-    return res.json({ items });
+    // Normalize image URLs to absolute
+    const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').toString().split(',')[0].trim();
+    const host = req.headers.host;
+    const norm = items.map(it => {
+      const img = it && it.question && it.question.image;
+      if (img && img.url && !/^https?:\/\//i.test(img.url)) {
+        img.url = img.url.startsWith('/') ? `${proto}://${host}${img.url}` : `${proto}://${host}/${img.url}`;
+      }
+      return it;
+    });
+    return res.json({ items: norm });
   } catch (e) {
     console.warn('DB list queue failed:', e.message);
     return res.json({ items: [] });
@@ -794,7 +814,17 @@ app.get('/api/achievements', async (req, res) => {
   const userId = getAuthedUserId(req);
   if (!userId) return res.status(401).json({ error: 'unauthorized' });
   const items = await prisma.achievement.findMany({ where: { userId }, include: { question: { include: { image: true } } } });
-  return res.json({ items });
+  // Normalize image URLs to absolute
+  const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').toString().split(',')[0].trim();
+  const host = req.headers.host;
+  const norm = items.map(it => {
+    const img = it && it.question && it.question.image;
+    if (img && img.url && !/^https?:\/\//i.test(img.url)) {
+      img.url = img.url.startsWith('/') ? `${proto}://${host}${img.url}` : `${proto}://${host}/${img.url}`;
+    }
+    return it;
+  });
+  return res.json({ items: norm });
 });
 app.post('/api/achievements', async (req, res) => {
   if (!prisma) return res.status(501).json({ error: 'DB unavailable' });

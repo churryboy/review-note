@@ -473,14 +473,18 @@ app.post('/api/auth/login-pin', async (req, res) => {
     } catch (e) {
       console.warn('DB login-pin failed:', e.message);
     }
-    if (!user && !IS_PROD) {
-      const rec = Array.from(pinUsersById.values()).find(u => (u.nickname || '') === nickname);
-      if (!rec) return res.status(401).json({ error: 'invalid credentials' });
-      const ok = await bcrypt.compare(pin, rec.pinHash || '');
-      if (!ok) return res.status(401).json({ error: 'invalid credentials' });
-      const token = signSession({ id: rec.id, role: 'user' });
-      res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
-      return res.json({ ok: true, user: { id: rec.id, publicId: rec.publicId, nickname: rec.nickname } });
+    if (!user) {
+      if (!IS_PROD) {
+        const rec = Array.from(pinUsersById.values()).find(u => (u.nickname || '') === nickname);
+        if (!rec) return res.status(401).json({ error: 'invalid credentials' });
+        const ok = await bcrypt.compare(pin, rec.pinHash || '');
+        if (!ok) return res.status(401).json({ error: 'invalid credentials' });
+        const token = signSession({ id: rec.id, role: 'user' });
+        res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
+        return res.json({ ok: true, user: { id: rec.id, publicId: rec.publicId, nickname: rec.nickname } });
+      }
+      // In production, require DB user
+      return res.status(401).json({ error: 'invalid credentials' });
     }
     const ok = await bcrypt.compare(pin, user.pinHash || '');
     if (!ok) return res.status(401).json({ error: 'invalid credentials' });

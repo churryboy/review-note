@@ -128,8 +128,6 @@ const profileNickname = document.getElementById('profileNickname');
 const loginStartBtn = null;
 
 async function refreshAuthUi() {
-    try { if (window.currentUserId) { mixpanel.identify(window.currentUserId); if (window.currentPublicId) { mixpanel.people && mixpanel.people.set({ publicId: window.currentPublicId }); } } } catch(_){}
-
     try {
         const res = await fetch('/api/auth/me');
         const j = await res.json();
@@ -139,6 +137,7 @@ async function refreshAuthUi() {
             window.currentUserId = user.id || null;
             window.currentAuthProvider = user.provider || 'anon';
             window.currentPublicId = user.publicId || null;
+            try { if (window.currentUserId) { mixpanel.identify(window.currentUserId); if (window.currentPublicId) { mixpanel.people && mixpanel.people.set({ publicId: window.currentPublicId }); } } } catch(_){}
             if (nickEl) nickEl.textContent = user.publicId ? String(user.publicId) : (user.nickname || user.name || '');
             if (profileAvatar) {
                 // random avatar for now
@@ -154,6 +153,7 @@ async function refreshAuthUi() {
         } else {
             window.currentUserId = null;
             window.currentAuthProvider = null;
+            try { mixpanel.reset && mixpanel.reset(); } catch(_){}
             if (nickEl) nickEl.textContent = '';
             if (loginBtn) {
                 loginBtn.title = '로그인';

@@ -229,6 +229,7 @@ body {
 }
 
 /* Category tag in list */
+#roundNView .question-tags { margin: 0; }
 .question-tags { margin-top: 6px; }
 .question-category { display:inline-block; padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:600; color:#fff; }
 .question-category.wrong { background:#FF5500; }
@@ -1866,3 +1867,101 @@ body {
 .auth-body { }
 .auth-row { margin-bottom: 10px; }
 .auth-row input { width:100%; border:2px solid #eee; border-radius:10px; padding:12px; font-size:0.95rem; } 
+
+/* Shared card sizing for question-item, pop-quiz-card, success-item */
+.question-item, .pop-quiz-card, .success-item { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); transition: all 0.3s ease; cursor: pointer; margin-bottom: 8px; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
+.success-item:hover:not(.swiping) { box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: translateY(-1px); }
+.success-item.swiping { transition: none; z-index: 10; }
+.success-item .question-with-image { display:flex; gap:10px; }
+.success-item {
+    position: relative;
+    border-radius: 12px;
+    background: #fff;
+}
+/* Ensure pop-quiz and success items use same thumbnail sizing as n회독 */
+.pop-quiz-card .question-image,
+.success-item .question-image { flex-shrink: 0; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; background: #f5f5f5; }
+.pop-quiz-card .question-image img,
+.success-item .question-image img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Corner badges (top-right) */
+.badge-corner {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    z-index: 2;
+}
+
+/* Quiz count badge */
+.quiz-count {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    background: #6c757d;
+}
+
+/* Hide source badge globally */
+.question-source { display: none; }
+/* Pop quiz uses same spacing as question-list cards */
+#settingsView .pop-quiz-card .question-with-image { display:flex; gap:10px; }
+#settingsView .pop-quiz-card .question-content,
+#achievementView .success-item .question-content { flex: 1; display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; }
+#settingsView .pop-quiz-card .question-number,
+#achievementView .success-item .question-number { margin: 0; }
+#settingsView .pop-quiz-card .question-timestamp,
+#achievementView .success-item .question-timestamp { margin: 0; }
+#settingsView .pop-quiz-card .question-header { display:flex; justify-content:space-between; align-items:flex-start; }
+#settingsView .pop-quiz-card .question-meta { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+/* Hide quiz-count in n회독 view list */
+#roundNView .quiz-count { display: none; }
+
+/* Position pop-quiz-card badges */
+.pop-quiz-card { position: relative; background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); transition: all 0.3s ease; cursor: pointer; margin-bottom: 8px; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
+.pop-quiz-card:hover:not(.swiping) { box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: translateY(-1px); }
+.pop-quiz-card.swiping { transition: none; z-index: 10; }
+.pop-quiz-card .question-with-image { display:flex; gap:10px; } 
+
+/* Pop quiz and achievements lists mimic question-list */
+#popQuizContainer { display: flex; flex-direction: column; gap: 12px; }
+#achievementList { display: flex; flex-direction: column; gap: 12px; }
+.pop-quiz-card, .success-item { width: 100%; } 
+
+/* Force inner container to match n회독 dimensions */
+#settingsView .pop-quiz-card .question-with-image,
+#achievementView .success-item .question-with-image { width: 100%; min-height: 82px; }
+#settingsView .pop-quiz-card .question-image,
+#achievementView .success-item .question-image { width: 60px; height: 60px; }
+#settingsView .pop-quiz-card .question-meta,
+#achievementView .success-item .question-meta { display:flex; flex-direction:column; align-items:flex-end; gap:4px; } 
+
+/* Answer Required Modal - balanced input and button */
+#answerReqModal .image-popup-content { max-width: 440px; padding: 18px 20px; }
+#answerReqModal .image-popup-content .popup-close { position:absolute; top:10px; right:10px; }
+#answerReqModal input#answerReqInput { 
+    flex: 1; 
+    height: 44px; 
+    border: 2px solid #eee; 
+    border-radius: 10px; 
+    padding: 0 12px; 
+    font-size: 0.95rem; 
+}
+#answerReqModal #answerReqSubmit { 
+    height: 44px; 
+    padding: 0 14px; 
+    border-radius: 10px; 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    white-space: nowrap; 
+}
+#answerReqModal .image-popup-content > div[style*="display:flex"] { gap: 10px !important; }
+@media (max-width: 420px) {
+    #answerReqModal .image-popup-content { max-width: 92vw; }
+} 

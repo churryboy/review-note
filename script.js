@@ -14,7 +14,7 @@ function storageKey(base) {
 }
 
 // Constants
-const POP_QUIZ_DELAY_MS = 10 * 1000; // 10 seconds readiness delay
+const POP_QUIZ_DELAY_MS = 5 * 1000; // 5 seconds readiness delay for first appearance
 const POP_QUIZ_REAPPEAR_MS = 24 * 60 * 60 * 1000; // 1 day for wrong answers
 // Default avatar (inline SVG data URI)
 const DEFAULT_AVATAR_DATA = "data:image/svg+xml;utf8,\
@@ -819,23 +819,26 @@ function displayAchievements() {
     list.style.display = 'block';
     empty.style.display = 'none';
     list.innerHTML = achievements.map(q => `
-        <div class="question-item" data-id="${q.id}">
+        <div class="success-item" data-id="${q.id}">
             <div class="question-with-image">
                 <div class="question-image">
                     <img src="${q.imageUrl}" alt="문제 이미지" />
                 </div>
                 <div class="question-content">
                     <div class="question-header">
-                        <span class="question-number">${q.questionNumber}</span>
+                        <span class="question-number" contenteditable="true">${q.questionNumber}</span>
                         <div class="question-meta">
                             <div class="source-category">
-                                <span class="question-source">${q.publisher}</span>
                                 <span class="question-round">${q.round}회독</span>
+                                <span class="quiz-count">퀴즈 ${(q.quizCount || 0)}회</span>
                             </div>
                         </div>
                     </div>
                     <div class="question-timestamp">
                         ${new Date(q.achievedAt || q.lastAccessed || q.timestamp).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div class="source-category">
+                        <span class="question-category ${q.category || ''}">${(q.category === 'ambiguous') ? '애매했던 문제' : '틀렸던 문제'}</span>
                     </div>
                 </div>
             </div>
@@ -913,11 +916,9 @@ async function handleImageCapture(event) {
     try {
         const dbg = document.getElementById('reviewDebugHash');
         if (dbg) {
-            const hash = await ensureQuestionImageHash({ imageUrl: currentImageUrl, imageHash: currentImageHash });
-            const short = shortIdFromHash(hash || '');
-            const ans = hash ? (await getAnswerForHash(hash)) : '';
-            dbg.textContent = short ? (ans ? `${short} - ${ans}` : `${short}`) : '';
-            dbg.style.display = short ? 'block' : 'none';
+            // Hide debug from users
+            dbg.textContent = '';
+            dbg.style.display = 'none';
         }
     } catch (_) {}
 
@@ -1096,11 +1097,12 @@ function displayNRoundQuestions() {
                 </div>
                 <div class="question-content">
                     <div class="question-header">
-                        <span class="question-number">${question.questionNumber}</span>
+                        <span class="question-number" contenteditable="true">${question.questionNumber}</span>
                         <div class="question-meta">
                             <div class="source-category">
                                 <span class="question-source">${question.publisher}</span>
                                 <span class="question-round">${question.round}회독</span>
+                                <span class="quiz-count">퀴즈 ${(question.quizCount || 0)}회</span>
                             </div>
                         </div>
                     </div>
@@ -1113,7 +1115,7 @@ function displayNRoundQuestions() {
                         })}
                     </div>
                     <div class="question-tags">
-                        ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매함' : '틀림'}</span>` : ''}
+                        ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매했던 문제' : '틀렸던 문제'}</span>` : ''}
                     </div>
                 </div>
             </div>
@@ -1216,25 +1218,12 @@ function showSolutionView(questionId, fromView) {
 
     // Populate solution view
     document.getElementById('solutionQuestionNumber').textContent = question.questionNumber;
-    (async () => {
-        try {
-            const h = await ensureQuestionImageHash(question);
-            const s = shortIdFromHash(h || '');
-            let a = '';
-            if (h) {
-                try { a = await getAnswerForHash(h); } catch (_) {}
-            }
-            if (s) {
-                const el = document.getElementById('solutionQuestionNumber');
-                const tag = a ? `${s} - ${a}` : s;
-                if (el) el.textContent = `[${tag}] ${question.questionNumber}`;
-            }
-        } catch (_) {}
-    })();
+    // Keep title clean without debug identifiers
+    document.getElementById('solutionQuestionNumber').textContent = question.questionNumber;
     // Removed: solutionPublisher and solutionTimestamp UI
 
     const solutionCategory = document.getElementById('solutionCategory');
-    solutionCategory.textContent = question.category === 'ambiguous' ? '애매함' : '틀림';
+    solutionCategory.textContent = question.category === 'ambiguous' ? '애매했던 문제' : '틀렸던 문제';
     solutionCategory.className = `solution-category ${question.category}`;
 
     document.getElementById('solutionImage').src = question.imageUrl;
@@ -1244,11 +1233,9 @@ function showSolutionView(questionId, fromView) {
         try {
             const dbg = document.getElementById('solutionDebugHash');
             if (dbg) {
-                const hash = await ensureQuestionImageHash(question);
-                const short = shortIdFromHash(hash || '');
-                const ans = hash ? (await getAnswerForHash(hash)) : '';
-                dbg.textContent = short ? (ans ? `${short} - ${ans}` : `${short}`) : '';
-                dbg.style.display = short ? 'block' : 'none';
+                            // Hide debug from users
+            dbg.textContent = '';
+            dbg.style.display = 'none';
             }
         } catch (_) {}
     })();
@@ -1551,12 +1538,26 @@ function displayPopQuiz() {
 
     popQuizContainer.innerHTML = readyItems.map(({ item, idx }) => `
         <div class="pop-quiz-card" data-id="${item.id}" data-index="${idx}">
-            <img src="${item.imageUrl}" alt="팝퀴즈 이미지" />
-            <div class="meta">
-                <div class="question-number">${item.questionNumber || '문제'}</div>
-                <div class="question-badges">
-                    <span class="question-round">${item.round || 0}회독</span>
-                    <span class="quiz-count">퀴즈 ${(item.quizCount || 0)}회</span>
+            <div class="question-with-image">
+                <div class="question-image">
+                    <img src="${item.imageUrl}" alt="팝퀴즈 이미지" />
+                </div>
+                <div class="question-content">
+                    <div class="question-header">
+                        <span class="question-number" contenteditable="true">${item.questionNumber || '문제'}</span>
+                        <div class="question-meta">
+                            <div class="source-category">
+                                <span class="question-round">${item.round || 0}회독</span>
+                                <span class="quiz-count">퀴즈 ${(item.quizCount || 0)}회</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="question-timestamp">
+                        ${new Date(item.lastAccessed || Date.now()).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div class="source-category">
+                        <span class="question-category ${item.category || ''}">${(item.category === 'ambiguous') ? '애매했던 문제' : '틀렸던 문제'}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2223,10 +2224,10 @@ function setupNRoundSwipe(item) {
                                     await saveAnswerForHash(hash, v);
                                 }
                                 // queue to pop quiz now
-                                const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
+                                const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), questionNumber: q.questionNumber, category: q.category, lastAccessed: q.lastAccessed || q.timestamp, reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
                                 popQuizItems.push(entry);
                                 try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
-                                // remove from list now that it’s queued
+                                // remove from list now that it's queued
                                 const idx = questions.findIndex(qq => qq.id === qid);
                                 if (idx !== -1) {
                                     questions.splice(idx, 1);
@@ -2239,10 +2240,10 @@ function setupNRoundSwipe(item) {
                         item.style.transform = 'translateX(0)';
                         return;
                     }
-                    const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
+                    const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), questionNumber: q.questionNumber, category: q.category, lastAccessed: q.lastAccessed || q.timestamp, reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
                     popQuizItems.push(entry);
                     try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
-                    // remove from list now that it’s queued
+                    // remove from list now that it's queued
                     const idx = questions.findIndex(qq => qq.id === qid);
                     if (idx !== -1) {
                         questions.splice(idx, 1);

@@ -555,10 +555,11 @@ app.get('/api/answers/:hash', async (req, res) => {
         const parse = ParamsSchema.safeParse(req.params);
         if (!parse.success) return res.status(400).json({ error: 'hash required' });
         const { hash } = parse.data;
+        const userId = getAuthedUserId(req);
 
         if (prisma) {
           try {
-            const ans = await prisma.answer.findFirst({ where: { imageHash: hash } });
+            const ans = await prisma.answer.findFirst({ where: { imageHash: hash, userId: userId || undefined } });
             if (ans) return res.json({ answer: ans.value || null });
           } catch (e) {
             console.warn('DB read answer failed, falling back:', e.message);
@@ -576,18 +577,26 @@ app.post('/api/answers', async (req, res) => {
         const parse = BodySchema.safeParse(req.body);
         if (!parse.success) return res.status(400).json({ error: 'imageHash and answer are required' });
         const { imageHash, answer } = parse.data;
+        const userId = getAuthedUserId(req);
 
         let savedToDb = false;
         if (prisma) {
           try {
-            const existing = await prisma.answer.findFirst({ where: { imageHash } });
+            // Upsert by (userId, imageHash) if possible
+            const existing = await prisma.answer.findFirst({ where: { imageHash, userId: userId || undefined } });
             if (existing) {
               await prisma.answer.update({ where: { id: existing.id }, data: { value: answer } });
+              savedToDb = true;
             } else {
-              // Our schema requires a question relation; skip DB create if relation unknown
-              savedToDb = false;
+              // Find question for this user by image hash
+              const q = userId ? await prisma.question.findFirst({ where: { userId, image: { hash: imageHash } }, include: { image: true } }) : null;
+              if (q) {
+                await prisma.answer.create({ data: { value: answer, imageHash, userId, questionId: q.id } });
+                savedToDb = true;
+              } else {
+                savedToDb = false;
+              }
             }
-            savedToDb = true;
           } catch (e) {
             console.warn('DB save answer failed, falling back:', e.message);
           }
@@ -700,7 +709,7 @@ app.get('/api/pop-quiz-queue', async (req, res) => {
     if (!prisma) return res.json({ items: [] });
     const userId = getAuthedUserId(req);
     if (!userId) return res.status(401).json({ error: 'unauthorized' });
-    const items = await prisma.popQuizQueue.findMany({ where: { question: { userId } }, include: { question: true } });
+    const items = await prisma.popQuizQueue.findMany({ where: { question: { userId } }, include: { question: { include: { image: true } } } });
     return res.json({ items });
   } catch (e) {
     console.warn('DB list queue failed:', e.message);

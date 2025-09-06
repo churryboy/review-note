@@ -324,6 +324,22 @@
         </div>
     </div>
 
+    <!-- Answer Required Modal -->
+    <div class="image-popup-overlay" id="answerReqModal" style="display:none;">
+        <div class="image-popup-content" style="max-width:520px;">
+            <button class="popup-close" id="answerReqClose"><i class="fas fa-times"></i></button>
+            <div style="padding: 8px 0 12px; text-align:center;">
+                <div style="font-size:1.6rem; margin-bottom:6px;">✍️</div>
+                <h3 style="margin:0 0 6px;">정답을 입력해 주세요</h3>
+                <p style="margin:0; color:#666; font-size:0.92rem;">팝퀴즈 기능을 사용하려면 정답이 필요해요.</p>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; padding-top:6px;">
+                <input id="answerReqInput" type="text" placeholder="정답을 입력하세요" style="flex:1; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />
+                <button id="answerReqSubmit" class="save-solution-btn"><span>저장하고 퀴즈로</span></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Coaching Guide Overlay (unused in auth page) -->
     <div class="coaching-overlay" id="coachingOverlay" style="display: none;"></div>
         <div class="coaching-overlay" id="listCoachingOverlay" style="display: none;">

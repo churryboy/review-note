@@ -444,6 +444,7 @@ function reloadUserState() {
     loadQuestions();
     loadPopQuizItems();
     loadAchievements();
+    loadAnswerByHash();
     updateQuestionCount();
     updatePopQuizBadge();
     if (roundNView && roundNView.style.display !== 'none') displayNRoundQuestions();
@@ -908,6 +909,18 @@ async function handleImageCapture(event) {
     reviewImage.src = currentImageUrl;
     const reviewAnswerInput = document.getElementById('reviewAnswerInput');
     if (reviewAnswerInput) reviewAnswerInput.value = '';
+    // Show debug unique id - answer in review view
+    try {
+        const dbg = document.getElementById('reviewDebugHash');
+        if (dbg) {
+            const hash = await ensureQuestionImageHash({ imageUrl: currentImageUrl, imageHash: currentImageHash });
+            const short = shortIdFromHash(hash || '');
+            const ans = hash ? (await getAnswerForHash(hash)) : '';
+            dbg.textContent = short ? (ans ? `${short} - ${ans}` : `${short}`) : '';
+            dbg.style.display = short ? 'block' : 'none';
+        }
+    } catch (_) {}
+
     showImageReviewView();
     cameraInput.value = '';
 }
@@ -933,6 +946,7 @@ function categorizeQuestion(category) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         let dataUrl = e.target.result;
+        const origDataUrl = dataUrl;
         // Compress image to avoid localStorage quota issues
         try { dataUrl = await compressDataUrl(dataUrl, 1080, 0.82); } catch (_) {}
         // Upload to server and keep URL only (reduces localStorage usage)
@@ -950,7 +964,17 @@ function categorizeQuestion(category) {
                 }
             }
         } catch (_) {}
-        const imageHash = currentImageHash || await computeSHA256HexFromDataUrl(dataUrl);
+        let imageHash = null;
+        if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+            imageHash = currentImageHash || await computeSHA256HexFromDataUrl(dataUrl);
+        } else {
+            imageHash = await computeSHA256HexFromString(dataUrl);
+            // Bridge: if an answer exists under the original data-hash, copy it to URL-hash
+            const origHash = currentImageHash || await computeSHA256HexFromDataUrl(origDataUrl);
+            if (origHash && answerByHash && answerByHash[origHash] && !answerByHash[imageHash]) {
+                await saveAnswerForHash(imageHash, answerByHash[origHash]);
+            }
+        }
         const reviewAnswerInput = document.getElementById('reviewAnswerInput');
         const initialAnswer = reviewAnswerInput ? (reviewAnswerInput.value || '') : '';
         
@@ -1192,6 +1216,21 @@ function showSolutionView(questionId, fromView) {
 
     // Populate solution view
     document.getElementById('solutionQuestionNumber').textContent = question.questionNumber;
+    (async () => {
+        try {
+            const h = await ensureQuestionImageHash(question);
+            const s = shortIdFromHash(h || '');
+            let a = '';
+            if (h) {
+                try { a = await getAnswerForHash(h); } catch (_) {}
+            }
+            if (s) {
+                const el = document.getElementById('solutionQuestionNumber');
+                const tag = a ? `${s} - ${a}` : s;
+                if (el) el.textContent = `[${tag}] ${question.questionNumber}`;
+            }
+        } catch (_) {}
+    })();
     // Removed: solutionPublisher and solutionTimestamp UI
 
     const solutionCategory = document.getElementById('solutionCategory');
@@ -1199,6 +1238,21 @@ function showSolutionView(questionId, fromView) {
     solutionCategory.className = `solution-category ${question.category}`;
 
     document.getElementById('solutionImage').src = question.imageUrl;
+
+    // Show debug unique id - answer in solution view
+    (async () => {
+        try {
+            const dbg = document.getElementById('solutionDebugHash');
+            if (dbg) {
+                const hash = await ensureQuestionImageHash(question);
+                const short = shortIdFromHash(hash || '');
+                const ans = hash ? (await getAnswerForHash(hash)) : '';
+                dbg.textContent = short ? (ans ? `${short} - ${ans}` : `${short}`) : '';
+                dbg.style.display = short ? 'block' : 'none';
+            }
+        } catch (_) {}
+    })();
+
 
     // Expose current id for chat/delete handlers
     solutionView.dataset.currentId = String(question.id);
@@ -1219,6 +1273,23 @@ function showSolutionView(questionId, fromView) {
             } catch (_) {}
             if (typeof answerByHash[hash] === 'string' && answerByHash[hash].length > 0) {
                 solutionAnswerInput.value = answerByHash[hash];
+            }
+            // Hide solution process (and input row) if we already have an answer
+            const inputRow = solutionAnswerInput && solutionAnswerInput.parentElement;
+            const hasAnswer = (solutionAnswerInput && solutionAnswerInput.value && solutionAnswerInput.value.trim().length > 0);
+            const solutionProcess = document.querySelector('.solution-process');
+            if (hasAnswer) {
+                if (solutionProcess) solutionProcess.style.display = 'none';
+                if (inputRow) inputRow.style.display = 'none';
+                if (solutionAnswerInput) solutionAnswerInput.style.display = 'none';
+                const submitBtn = document.getElementById('solutionAnswerSubmit');
+                if (submitBtn) submitBtn.style.display = 'none';
+            } else {
+                if (solutionProcess) solutionProcess.style.display = '';
+                if (inputRow) inputRow.style.display = 'flex';
+                if (solutionAnswerInput) solutionAnswerInput.style.display = '';
+                const submitBtn = document.getElementById('solutionAnswerSubmit');
+                if (submitBtn) submitBtn.style.display = '';
             }
             const dbg = document.getElementById('solutionDebugHash');
             if (dbg) {
@@ -1646,6 +1717,18 @@ async function saveAnswerForHash(imageHash, answer) {
     } catch (_) {}
 }
 
+// New: Compute SHA-256 hex of an arbitrary string
+async function computeSHA256HexFromString(text) {
+    try {
+        if (window.crypto && window.crypto.subtle && window.TextEncoder) {
+            const data = new TextEncoder().encode(String(text));
+            const digest = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+    } catch (_) {}
+    return simpleHash(String(text || ''));
+}
+
 // New: Compute SHA-256 hex of a Data URL (fallbacks to simple hash)
 async function computeSHA256HexFromDataUrl(dataUrl) {
     try {
@@ -1675,13 +1758,30 @@ function simpleHash(str) {
     }
     return (h >>> 0).toString(16);
 }
+function shortIdFromHash(hash) {
+    if (!hash || typeof hash !== 'string') return '';
+    let acc = 5381;
+    for (let i = 0; i < hash.length; i++) {
+        acc = ((acc << 5) + acc) ^ hash.charCodeAt(i);
+        acc >>>= 0;
+    }
+    const num = acc % 1000000000;
+    return String(num).padStart(9, '0');
+}
 async function ensureQuestionImageHash(question) {
     if (question.imageHash) return question.imageHash;
-    if (!question.imageUrl) return null;
-    const hash = await computeSHA256HexFromDataUrl(question.imageUrl);
+    const url = question.imageUrl;
+    if (!url) return null;
+    let hash = null;
+    if (typeof url === 'string' && url.startsWith('data:')) {
+        hash = await computeSHA256HexFromDataUrl(url);
+    } else {
+        // For blob:/http(s): or any other URL, hash the URL string for stable identity
+        hash = await computeSHA256HexFromString(url);
+    }
     if (hash) {
         question.imageHash = hash;
-        saveQuestions();
+        try { saveQuestions(); } catch (_) {}
     }
     return hash;
 }
@@ -2090,9 +2190,66 @@ function setupNRoundSwipe(item) {
             const qid = parseInt(item.dataset.id);
             const q = questions.find(q => q.id === qid);
             if (q) {
-                const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
-                popQuizItems.push(entry);
-                try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
+                // Require answer before queuing to pop quiz
+                (async () => {
+                    const hash = q.imageHash || (await ensureQuestionImageHash(q));
+                    let ans = '';
+                    try {
+                        const r = hash ? await fetch(`/api/answers/${hash}`) : null;
+                        if (r && r.ok) { const j = await r.json(); ans = (j && j.answer) || ''; }
+                    } catch (_) {}
+                    if ((!ans || ans.trim().length === 0) && hash && answerByHash && typeof answerByHash[hash] === 'string') {
+                        ans = (answerByHash[hash] || '').trim();
+                    }
+                    if (!ans || ans.trim().length === 0) {
+                        const modal = document.getElementById('answerReqModal');
+                        const input = document.getElementById('answerReqInput');
+                        const submit = document.getElementById('answerReqSubmit');
+                        const closeBtn = document.getElementById('answerReqClose');
+                        if (modal && input && submit) {
+                            modal.style.display = 'flex';
+                            input.value = '';
+                            input.focus();
+                            const cleanup = () => {
+                                modal.style.display = 'none';
+                                submit.onclick = null;
+                                if (closeBtn) closeBtn.onclick = null;
+                            };
+                            if (closeBtn) closeBtn.onclick = cleanup;
+                            submit.onclick = async () => {
+                                const v = input.value.trim();
+                                if (!v) { input.focus(); return; }
+                                if (hash) {
+                                    await saveAnswerForHash(hash, v);
+                                }
+                                // queue to pop quiz now
+                                const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
+                                popQuizItems.push(entry);
+                                try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
+                                // remove from list now that it’s queued
+                                const idx = questions.findIndex(qq => qq.id === qid);
+                                if (idx !== -1) {
+                                    questions.splice(idx, 1);
+                                    try { saveQuestions(); } catch (_) {}
+                                    displayNRoundQuestions();
+                                }
+                                cleanup();
+                            };
+                        }
+                        item.style.transform = 'translateX(0)';
+                        return;
+                    }
+                    const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
+                    popQuizItems.push(entry);
+                    try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
+                    // remove from list now that it’s queued
+                    const idx = questions.findIndex(qq => qq.id === qid);
+                    if (idx !== -1) {
+                        questions.splice(idx, 1);
+                        try { saveQuestions(); } catch (_) {}
+                        displayNRoundQuestions();
+                    }
+                })();
                 // microinteraction on pop quiz icon
                 try {
                     const icon = document.querySelector('#navSettings i.fas.fa-question-circle');
@@ -2113,13 +2270,7 @@ function setupNRoundSwipe(item) {
                         }
                     } catch (_) {}
                 })();
-                // Remove from list visually
-                const idx = questions.findIndex(qq => qq.id === qid);
-                if (idx !== -1) {
-                    questions.splice(idx, 1);
-                    try { saveQuestions(); } catch (_) {}
-                    displayNRoundQuestions();
-                }
+                // Keep card in place; do not remove from list unless explicitly handled elsewhere
             }
             item.style.transform = 'translateX(0) rotate(0deg)';
         } else {

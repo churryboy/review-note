@@ -2180,8 +2180,8 @@ function setupNRoundSwipe(item) {
         const threshold = 110;
         if (deltaX < -threshold) {
             // Left: increment round (wrong)
-            const qid = parseInt(item.dataset.id);
-            const q = questions.find(q => q.id === qid);
+            const qid = item.dataset.id;
+            const q = questions.find(q => String(q.id) === String(qid));
             if (q) {
                 q.round = (q.round || 0) + 1;
                 try { saveQuestions(); } catch (_) {}
@@ -2192,8 +2192,8 @@ function setupNRoundSwipe(item) {
             item.style.transform = 'translateX(0) rotate(0deg)';
         } else if (deltaX > threshold) {
             // Right: send to pop quiz (ambiguous)
-            const qid = parseInt(item.dataset.id);
-            const q = questions.find(q => q.id === qid);
+            const qid = item.dataset.id;
+            const q = questions.find(q => String(q.id) === String(qid));
             if (q) {
                 // Require answer before queuing to pop quiz
                 (async () => {
@@ -2232,7 +2232,7 @@ function setupNRoundSwipe(item) {
                                 popQuizItems.push(entry);
                                 try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
                                 // remove from list now that it's queued
-                                const idx = questions.findIndex(qq => qq.id === qid);
+                                const idx = questions.findIndex(qq => String(qq.id) === String(qid));
                                 if (idx !== -1) {
                                     questions.splice(idx, 1);
                                     try { saveQuestions(); } catch (_) {}
@@ -2248,7 +2248,7 @@ function setupNRoundSwipe(item) {
                     popQuizItems.push(entry);
                     try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
                     // remove from list now that it's queued
-                    const idx = questions.findIndex(qq => qq.id === qid);
+                    const idx = questions.findIndex(qq => String(qq.id) === String(qid));
                     if (idx !== -1) {
                         questions.splice(idx, 1);
                         try { saveQuestions(); } catch (_) {}

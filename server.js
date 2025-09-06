@@ -400,7 +400,7 @@ app.post('/api/auth/anon', async (req, res) => {
 // PIN registration: create or update a user with nickname and hashed pin
 app.post('/api/auth/register-pin', async (req, res) => {
   try {
-    if (!prisma) {
+    if (!prisma && !IS_PROD) {
       // Fallback to file store
       const Body = z.object({ nickname: z.string().min(1).max(40), pin: z.string().min(4).max(12) });
       const b = Body.safeParse(req.body);
@@ -427,9 +427,9 @@ app.post('/api/auth/register-pin', async (req, res) => {
     try {
       user = await prisma.user.create({ data: { email, name: nickname, nickname, pinHash, publicId, authProvider: 'pin', role: 'user' } });
     } catch (e) {
-      console.warn('DB register-pin failed; falling back to file store:', e.message);
+      console.warn('DB register-pin failed:', e.message);
     }
-    if (!user) {
+    if (!user && !IS_PROD) {
       const id = 'pin_' + crypto.randomBytes(8).toString('hex');
       const rec = { id, nickname, pinHash, publicId, createdAt: new Date().toISOString() };
       pinUsersById.set(id, rec);
@@ -450,7 +450,7 @@ app.post('/api/auth/register-pin', async (req, res) => {
 // PIN login: find by nickname, verify pin
 app.post('/api/auth/login-pin', async (req, res) => {
   try {
-    if (!prisma) {
+    if (!prisma && !IS_PROD) {
       const Body = z.object({ nickname: z.string().min(1).max(40), pin: z.string().min(4).max(12) });
       const b = Body.safeParse(req.body);
       if (!b.success) return res.status(400).json({ error: 'invalid' });
@@ -471,9 +471,9 @@ app.post('/api/auth/login-pin', async (req, res) => {
     try {
       user = await prisma.user.findFirst({ where: { nickname, authProvider: 'pin' } });
     } catch (e) {
-      console.warn('DB login-pin failed; trying file store:', e.message);
+      console.warn('DB login-pin failed:', e.message);
     }
-    if (!user) {
+    if (!user && !IS_PROD) {
       const rec = Array.from(pinUsersById.values()).find(u => (u.nickname || '') === nickname);
       if (!rec) return res.status(401).json({ error: 'invalid credentials' });
       const ok = await bcrypt.compare(pin, rec.pinHash || '');

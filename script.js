@@ -237,7 +237,6 @@ function handleSuccessUnderstood(index) {
     if (typeof index === 'number') {
         const removed = popQuizItems.splice(index, 1)[0];
         if (removed) {
-            removed.round = (removed.round || 0) + 1;
             removed.lastAccessed = new Date().toISOString();
             achievements.unshift({ ...removed, achievedAt: new Date().toISOString() });
             saveAchievements();

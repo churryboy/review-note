@@ -128,6 +128,8 @@ const profileNickname = document.getElementById('profileNickname');
 const loginStartBtn = null;
 
 async function refreshAuthUi() {
+    try { if (window.currentUserId) { mixpanel.identify(window.currentUserId); if (window.currentPublicId) { mixpanel.people && mixpanel.people.set({ publicId: window.currentPublicId }); } } } catch(_){}
+
     try {
         const res = await fetch('/api/auth/me');
         const j = await res.json();
@@ -996,7 +998,7 @@ function categorizeQuestion(category) {
             userAnswer: initialAnswer
         };
 
-        questions.unshift(newQuestion);
+        questions.unshift(newQuestion); try{trackEvent('image_saved',{ category, hasAnswer: !!initialAnswer });}catch(_){}
         if (newQuestion.imageHash) {
             await saveAnswerForHash(newQuestion.imageHash, initialAnswer);
         }
@@ -2097,6 +2099,7 @@ async function doLogout() {
 document.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
+    try { trackEvent && trackEvent('click', { id: t.id || '', tag: t.tagName, cls: t.className||'' }); } catch(_){}
     if (t.id === 'logoutBtn' || (t.closest && t.closest('#logoutBtn'))) {
         e.preventDefault();
         if (profileDropdown) {

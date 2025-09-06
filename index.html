@@ -15,25 +15,27 @@
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
-    <!-- Sign-in Overlay -->
-    <div id="pinOverlay" class="pin-overlay" style="display:none;">
-        <div class="pin-card">
-            <h3>시작하기</h3>
-            <p class="pin-desc">닉네임과 휴대폰 끝 4자리, 그리고 간단한 PIN을 입력해 주세요.</p>
-            <div class="pin-row">
-                <input id="pinNickname" type="text" maxlength="40" placeholder="닉네임" />
+    <!-- Auth Page View -->
+    <div id="authView" class="auth-view" style="display:none;">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fas fa-book"></i>
+                <div class="auth-title">스마트 오답노트</div>
             </div>
-            <div class="pin-row">
-                <input id="pinPhone4" type="text" inputmode="numeric" pattern="\\d{4}" maxlength="4" placeholder="휴대폰 끝 4자리" />
+            <div class="auth-tabs">
+                <button id="authTabLogin" class="auth-tab active">로그인</button>
+                <button id="authTabSignup" class="auth-tab">회원가입</button>
             </div>
-            <div class="pin-row">
-                <input id="pinCode" type="password" inputmode="numeric" maxlength="12" placeholder="PIN (4~12자리)" />
+            <div class="auth-body">
+                <div class="auth-row">
+                    <input id="authNickname" type="text" maxlength="40" placeholder="닉네임" />
+                </div>
+                <div class="auth-row">
+                    <input id="authPin" type="password" inputmode="numeric" maxlength="12" placeholder="비밀번호 (4~12자리)" />
+                </div>
+                <button id="authActionBtn" class="save-solution-btn" style="width:100%; margin-top:8px;">로그인</button>
+                <div id="authError" class="pin-error" style="display:none;"></div>
             </div>
-            <div class="pin-actions">
-                <button id="pinLoginBtn" class="save-solution-btn" style="flex:1;background:#f0f0f0;color:#333;">로그인</button>
-                <button id="pinRegisterBtn" class="save-solution-btn" style="flex:1;">가입</button>
-            </div>
-            <div id="pinError" class="pin-error" style="display:none;"></div>
         </div>
     </div>
 
@@ -44,22 +46,21 @@
                 <i class="fas fa-book"></i>
                 <span class="logo-text">스마트 오답노트</span>
             </div>
-            <button id="loginBtn" class="back-btn" title="로그인" style="margin-left:auto;">
-                <i class="fas fa-user-circle"></i>
+            <!-- Removed login/profile controls: signup is the first screen -->
+            <button id="logoutBtn" class="back-btn" title="계정" style="margin-left:auto;">
+                <img id="headerAvatar" src="" alt="avatar" style="width:24px; height:24px; border-radius:999px; object-fit:cover;" />
             </button>
-            <!-- Profile Dropdown -->
-            <div id="profileDropdown" class="profile-dropdown" style="display:none;">
-                <div class="profile-header">
-                    <img id="profileAvatar" alt="프로필" />
-                    <div class="profile-info">
-                        <div class="profile-name" id="profileName">게스트</div>
-                        <div class="profile-email" id="profileEmail"></div>
-                    </div>
+        </div>
+        <div class="profile-dropdown" id="profileDropdown" style="display:none;">
+            <div class="profile-header">
+                <img id="profileAvatar" src="" alt="avatar" onerror="this.src='data:image/svg+xml;utf8,\x3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'96\' height=\'96\' viewBox=\'0 0 96 96\'\x3E\x3Crect width=\'96\' height=\'96\' rx=\'48\' fill=\'%23eee\'/\x3E\x3Ccircle cx=\'48\' cy=\'38\' r=\'16\' fill=\'%23999\'/\x3E\x3Cpath d=\'M16 84c6-16 20-24 32-24s26 8 32 24\' fill=\'%23999\'/\x3E\x3C/svg\x3E'">
+                <div class="profile-info">
+                    <div class="profile-name" id="profilePublicId">-</div>
+                    <div class="profile-email" id="profileNickname">-</div>
                 </div>
-                <div class="profile-actions" style="gap:8px;">
-                    <button id="loginStartBtn" class="logout-btn" style="display:none;"><i class="fas fa-sign-in-alt"></i><span>로그인</span></button>
-                    <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i><span>로그아웃</span></button>
-                </div>
+            </div>
+            <div class="profile-actions">
+                <button class="logout-btn" id="profileLogoutBtn"><i class="fas fa-sign-out-alt"></i><span>로그아웃</span></button>
             </div>
         </div>
     </header>
@@ -323,193 +324,58 @@
         </div>
     </div>
 
-    <!-- Coaching Guide Overlay -->
-    <div class="coaching-overlay" id="coachingOverlay" style="display: none;">
+    <!-- Coaching Guide Overlay (unused in auth page) -->
+    <div class="coaching-overlay" id="coachingOverlay" style="display: none;"></div>
+        <div class="coaching-overlay" id="listCoachingOverlay" style="display: none;">
         <div class="coaching-content">
             <div class="coaching-header">
-                <h2>사용법 안내</h2>
-                <button class="coaching-skip" id="coachingSkip">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h2>처음 사용 가이드</h2>
+                <button class="coaching-skip" id="listCoachingSkip">건너뛰기</button>
             </div>
-            
-            <div class="coaching-steps">
-                <!-- Step 1: Left swipe explanation -->
-                <div class="coaching-step active" id="step1">
-                    <div class="step-icon">
-                        <i class="fas fa-times-circle"></i>
+                            <div class="coaching-steps">
+                    <div class="coaching-step">
+                        <div class="coaching-emoji">👈</div>
+                        <h3>왼쪽으로 보내면 회독 +1</h3>
+                        <p>카드를 왼쪽으로 스와이프하거나 '회독 추가 +'로 회독 수를 올릴 수 있어요.</p>
                     </div>
-                    <h3>왼쪽으로 스와이프</h3>
-                    <p>왼쪽으로 스와이프하면<br>틀린 문제로 저장됩니다</p>
-                    <div class="swipe-demo">
-                        <div class="demo-card">
-                            <div class="demo-arrow left">
-                                <i class="fas fa-arrow-left"></i>
-                                <span>틀린 문제</span>
-                            </div>
-                            <div class="demo-image">📝</div>
-                        </div>
+                    <div class="coaching-step">
+                        <div class="coaching-emoji">👉</div>
+                        <h3>오른쪽으로 보내면 팝퀴즈</h3>
+                        <p>카드를 오른쪽으로 스와이프하면 팝퀴즈 대기열에 들어가요.</p>
+                    </div>
+                    <div class="coaching-step">
+                        <div class="coaching-emoji">🎯</div>
+                        <h3>팝퀴즈는 뜬금없이 등장!</h3>
+                        <p>팝퀴즈는 잊을만할 때 쯤 랜덤하게 나타나요. 당장 목록에는 보이지 않을 수 있어요.</p>
                     </div>
                 </div>
-                
-                <!-- Step 2: Right swipe explanation -->
-                <div class="coaching-step" id="step2">
-                    <div class="step-icon">
-                        <i class="fas fa-question-circle"></i>
-                    </div>
-                    <h3>오른쪽으로 스와이프</h3>
-                    <p>오른쪽으로 스와이프하면<br>애매한 문제로 저장됩니다</p>
-                    <div class="swipe-demo">
-                        <div class="demo-card">
-                            <div class="demo-image">📝</div>
-                            <div class="demo-arrow right">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>애매한 문제</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="coaching-footer">
-                <div class="step-indicators">
-                    <span class="step-dot active" data-step="1"></span>
-                    <span class="step-dot" data-step="2"></span>
-                </div>
-                <button class="coaching-next" id="coachingNext">다음</button>
-                <button class="coaching-done" id="coachingDone" style="display: none;">시작하기</button>
+            <div class="coaching-actions" style="padding: 0 20px 20px; text-align:center;">
+                <button id="listCoachingNext" class="save-solution-btn"><span>확인</span></button>
             </div>
         </div>
     </div>
-
-    <!-- List Coaching Guide Overlay -->
-    <div class="coaching-overlay" id="listCoachingOverlay" style="display: none;">
-        <div class="coaching-content">
-            <div class="coaching-header">
-                <h2>목록 사용법</h2>
-                <button class="coaching-skip" id="listCoachingSkip">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="coaching-steps">
-                <!-- Step 1: Left swipe explanation -->
-                <div class="coaching-step active" id="listStep1">
-                    <div class="step-icon">
-                        <i class="fas fa-redo"></i>
-                    </div>
-                    <h3>왼쪽으로 스와이프</h3>
-                    <p>왼쪽으로 스와이프하면<br>회독 수가 +1 증가합니다</p>
-                    <div class="swipe-demo">
-                        <div class="demo-card">
-                            <div class="demo-arrow left">
-                                <i class="fas fa-arrow-left"></i>
-                                <span>+1회독</span>
-                            </div>
-                            <div class="demo-image">📝</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Step 2: Right swipe explanation -->
-                <div class="coaching-step" id="listStep2">
-                    <div class="step-icon">
-                        <i class="fas fa-question-circle"></i>
-                    </div>
-                    <h3>오른쪽으로 스와이프</h3>
-                    <p>오른쪽으로 스와이프하면<br>팝퀴즈로 이동합니다</p>
-                    <div class="swipe-demo">
-                        <div class="demo-card">
-                            <div class="demo-image">📝</div>
-                            <div class="demo-arrow right">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>팝퀴즈</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="coaching-footer">
-                <div class="step-indicators">
-                    <span class="step-dot active" data-step="1"></span>
-                    <span class="step-dot" data-step="2"></span>
-                </div>
-                <button class="coaching-next" id="listCoachingNext">다음</button>
-                <button class="coaching-done" id="listCoachingDone" style="display: none;">확인</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- n회독 Coaching Guide Overlay -->
     <div class="coaching-overlay" id="nListCoachingOverlay" style="display: none;">
         <div class="coaching-content">
             <div class="coaching-header">
-                <h2>n회독 사용법</h2>
-                <button class="coaching-skip" id="nListCoachingSkip">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h2>n회독 가이드</h2>
+                <button class="coaching-skip" id="nListCoachingSkip">건너뛰기</button>
             </div>
-            
             <div class="coaching-steps">
-                <!-- Step 1: Left swipe explanation -->
-                <div class="coaching-step active" id="nListStep1">
-                    <div class="step-icon">
-                        <i class="fas fa-redo"></i>
-                    </div>
-                    <h3>왼쪽으로 스와이프</h3>
-                    <p>왼쪽으로 스와이프하면<br>회독 수가 +1 증가합니다</p>
-                    <div class="swipe-demo">
-                        <div class="demo-card">
-                            <div class="demo-arrow left">
-                                <i class="fas fa-arrow-left"></i>
-                                <span>+1회독</span>
-                            </div>
-                            <div class="demo-image">📝</div>
-                        </div>
-                    </div>
+                <div class="coaching-step active">
+                    <h3>왼쪽은 회독 +1, 오른쪽은 팝퀴즈</h3>
+                    <p>왼쪽은 회독 추가, 오른쪽은 팝퀴즈 대기열로 이동합니다.</p>
                 </div>
-                
-                <!-- Step 2: Right swipe explanation -->
-                <div class="coaching-step" id="nListStep2">
-                    <div class="step-icon">
-                        <i class="fas fa-question-circle"></i>
-                    </div>
-                    <h3>오른쪽으로 스와이프</h3>
-                    <p>오른쪽으로 스와이프하면<br>팝퀴즈로 이동합니다</p>
-                    <div class="swipe-demo">
-                        <div class="demo-card">
-                            <div class="demo-image">📝</div>
-                            <div class="demo-arrow right">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>팝퀴즈</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Step 3: Pop quiz timing explanation -->
-                <div class="coaching-step" id="nListStep3">
-                    <div class="step-icon">
-                        <i class="fas fa-bell"></i>
-                    </div>
-                    <h3>팝퀴즈 안내</h3>
-                    <p>팝퀴즈는 잊을만할 때 쯤 뜬금없이 제시되는 퀴즈입니다.<br>당장 목록에는 보이지 않고, 적절한 시점에 노출된다는 점 참고바랍니다.</p>
+                <div class="coaching-step">
+                    <h3>팝퀴즈는 적절한 시점에</h3>
+                    <p>당장 보이지 않아도, 시간이 되면 팝퀴즈 탭에 나타납니다.</p>
                 </div>
             </div>
-            
-            <div class="coaching-footer">
-                <div class="step-indicators">
-                    <span class="step-dot active" data-step="1"></span>
-                    <span class="step-dot" data-step="2"></span>
-                    <span class="step-dot" data-step="3"></span>
-                </div>
-                <button class="coaching-next" id="nListCoachingNext">다음</button>
-                <button class="coaching-done" id="nListCoachingDone" style="display: none;">확인</button>
+            <div class="coaching-actions" style="padding: 0 20px 20px; text-align:center;">
+                <button id="nListCoachingNext" class="save-solution-btn"><span>확인</span></button>
             </div>
         </div>
     </div>
-
+    
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner">
@@ -534,23 +400,6 @@
             <span>성취도</span>
         </button>
     </nav>
-
-    <!-- Answer Required Modal -->
-    <div class="image-popup-overlay" id="answerRequiredModal" style="display: none;">
-        <div class="image-popup-content">
-            <button class="popup-close" id="answerReqClose">
-                <i class="fas fa-times"></i>
-            </button>
-            <div style="padding:16px 16px 8px;">
-                <h3 style="margin:0 0 8px;">팝퀴즈로 보내기 전에 정답을 입력해주세요</h3>
-                <p style="margin:0 0 12px; color:#555; font-size:0.95rem;">정답을 저장해두면 팝퀴즈에서 자동으로 채점할 수 있어요.</p>
-                <input id="answerReqInput" type="text" placeholder="정답을 입력하세요" style="width:100%; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />
-                <div style="margin-top:12px; display:flex; justify-content:flex-end;">
-                    <button id="answerReqSubmit" class="save-solution-btn"><i class="fas fa-paper-plane"></i><span>저장하고 보내기</span></button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="script.js"></script>
 </body>

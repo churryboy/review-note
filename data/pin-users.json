@@ -1,0 +1,38 @@
+[
+  {
+    "id": "pin_7a0575cd4c1ba1ad",
+    "nickname": "test1",
+    "pinHash": "$2a$10$1DPzDvZkSj6WB1NpeNxuHOtfhB0hdjavEDoyd9yia8aDUP4mVIa0u",
+    "createdAt": "2025-09-06T02:07:02.438Z"
+  },
+  {
+    "id": "pin_dd75a50a7f4f1679",
+    "nickname": "dino",
+    "pinHash": "$2a$10$uoeEQZuuwPJcX11Q9EHejenGwj/yz/MC5P3gH8dTajBfN8lx9/jmG",
+    "createdAt": "2025-09-06T02:07:21.250Z"
+  },
+  {
+    "id": "pin_b233ffd27d605891",
+    "nickname": "dino1",
+    "pinHash": "$2a$10$DM/10AoI.o5qH1w/mEHrjupe.I4cqwIyZFNci5LqPhNVDavc10wEG",
+    "createdAt": "2025-09-06T02:10:56.814Z"
+  },
+  {
+    "id": "pin_175d41cb5cd068ab",
+    "nickname": "1",
+    "pinHash": "$2a$10$7CpvgQRV3TM38AChg8SwTunZKrZT2ThlLjv5nW3mNmV7ZaVC7Xiv.",
+    "createdAt": "2025-09-06T02:15:28.653Z"
+  },
+  {
+    "id": "pin_2f7b4f28dc9a50ec",
+    "nickname": "2",
+    "pinHash": "$2a$10$lmLnqPljTzC.sR6ejS0EbuzHO82flxuXlz4YufFoE/H/ofu45dyk.",
+    "createdAt": "2025-09-06T02:22:20.190Z"
+  },
+  {
+    "id": "pin_2afc2c9bcac29234",
+    "nickname": "3",
+    "pinHash": "$2a$10$6VYyjdOPQ78f98rwDrNexOCH0fnsbXNTN06VuIbdtHGHCKlchtKAu",
+    "createdAt": "2025-09-06T02:55:24.046Z"
+  }
+]

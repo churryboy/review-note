@@ -6,6 +6,13 @@ let currentImageUrl = null;
 let currentImageHash = null;
 let achievements = [];
 
+// Current user context
+window.currentUserId = window.currentUserId || null;
+function storageKey(base) {
+    const uid = window.currentUserId || 'anon';
+    return `${base}::${uid}`;
+}
+
 // Constants
 const POP_QUIZ_DELAY_MS = 10 * 1000; // 10 seconds readiness delay
 const POP_QUIZ_REAPPEAR_MS = 24 * 60 * 60 * 1000; // 1 day for wrong answers
@@ -107,50 +114,52 @@ function closeQuizModal() {
 }
 
 // New: Profile dropdown elements
-const loginBtn = document.getElementById('loginBtn');
-const profileDropdown = document.getElementById('profileDropdown');
-const profileAvatar = document.getElementById('profileAvatar');
-const profileName = document.getElementById('profileName');
-const profileEmail = document.getElementById('profileEmail');
+const loginBtn = null;
+let profileDropdown = null;
+let profileAvatar = null;
+const profileName = null;
+const profileEmail = null;
 const logoutBtn = document.getElementById('logoutBtn');
-const loginStartBtn = document.getElementById('loginStartBtn');
+profileDropdown = document.getElementById('profileDropdown');
+profileAvatar = document.getElementById('profileAvatar');
+const headerAvatar = document.getElementById('headerAvatar');
+const profilePublicId = document.getElementById('profilePublicId');
+const profileNickname = document.getElementById('profileNickname');
+const loginStartBtn = null;
 
 async function refreshAuthUi() {
     try {
         const res = await fetch('/api/auth/me');
         const j = await res.json();
         const user = j && j.user;
+        const nickEl = document.getElementById('headerNickname');
         if (user) {
+            window.currentUserId = user.id || null;
+            window.currentAuthProvider = user.provider || 'anon';
+            window.currentPublicId = user.publicId || null;
+            if (nickEl) nickEl.textContent = user.publicId ? String(user.publicId) : (user.nickname || user.name || '');
+            if (profileAvatar) {
+                // random avatar for now
+                const seed = user.publicId || user.id || 'user';
+                const url = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`;
+                profileAvatar.src = url;
+                if (headerAvatar) headerAvatar.src = url;
+            }
             if (loginBtn) {
                 loginBtn.title = '프로필';
-                const src = user.picture || DEFAULT_AVATAR_DATA;
-                // Inline onerror fallback for header image as HTML
-                const escaped = src.replace(/"/g, '&quot;');
-                const onerr = DEFAULT_AVATAR_DATA.replace(/"/g, '&quot;');
-                loginBtn.innerHTML = `<img src="${escaped}" alt="프로필" onerror="this.onerror=null;this.src='${onerr}';" style="width:24px;height:24px;border-radius:999px;object-fit:cover;" />`;
             }
-            if (profileAvatar) {
-                profileAvatar.src = user.picture || DEFAULT_AVATAR_DATA;
-                profileAvatar.onerror = () => { profileAvatar.onerror = null; profileAvatar.src = DEFAULT_AVATAR_DATA; };
-            }
-            if (profileName) profileName.textContent = user.name || '사용자';
-            if (profileEmail) profileEmail.textContent = user.email || '';
-            if (logoutBtn) logoutBtn.style.display = 'inline-flex';
-            if (loginStartBtn) loginStartBtn.style.display = 'none';
+            // no profile visuals
         } else {
+            window.currentUserId = null;
+            window.currentAuthProvider = null;
+            if (nickEl) nickEl.textContent = '';
             if (loginBtn) {
                 loginBtn.title = '로그인';
-                loginBtn.innerHTML = '<i class="fas fa-user-circle"></i>';
             }
-            if (profileAvatar) { profileAvatar.src = DEFAULT_AVATAR_DATA; }
-            if (profileName) profileName.textContent = '게스트';
-            if (profileEmail) profileEmail.textContent = '';
-            if (logoutBtn) logoutBtn.style.display = 'none';
-            if (loginStartBtn) loginStartBtn.style.display = 'inline-flex';
+            // no profile visuals
         }
     } catch (_) {
         // silent
-        if (profileAvatar) { profileAvatar.src = DEFAULT_AVATAR_DATA; }
     }
 }
 
@@ -349,28 +358,97 @@ document.addEventListener('DOMContentLoaded', () => {
     // sessionStorage.removeItem('shownNListCoach');
     // sessionStorage.removeItem('nListCoachPending');
 
+    setupEventListeners();
+    (async () => {
+        await ensureSession();
+        await refreshAuthUi();
+        routeAuthOrApp();
+        initAuthPage();
+        reloadUserState();
+        if (window.currentAuthProvider === 'pin') {
+            showNRoundView();
+        } else {
+            const authView = document.getElementById('authView');
+            if (authView) authView.style.display = 'flex';
+        }
+        try { if (typeof startPopQuizTimer === 'function') { startPopQuizTimer(); } } catch (_) {}
+    })();
+});
+
+function initAuthPage() {
+    const authView = document.getElementById('authView');
+    const tabLogin = document.getElementById('authTabLogin');
+    const tabSignup = document.getElementById('authTabSignup');
+    const btn = document.getElementById('authActionBtn');
+    const nn = document.getElementById('authNickname');
+    const pc = document.getElementById('authPin');
+    const err = document.getElementById('authError');
+    if (!authView || !tabLogin || !tabSignup || !btn || !nn || !pc) return;
+    let mode = 'login';
+    function setMode(m) {
+        mode = m;
+        tabLogin.classList.toggle('active', m === 'login');
+        tabSignup.classList.toggle('active', m === 'signup');
+        btn.textContent = (m === 'login') ? '로그인' : '회원가입';
+        if (err) err.style.display = 'none';
+    }
+    tabLogin.addEventListener('click', ()=> setMode('login'));
+    tabSignup.addEventListener('click', ()=> setMode('signup'));
+    setMode('login');
+
+    async function submitAuth() {
+        const nickname = (nn.value || '').trim();
+        const pin = (pc.value || '').trim();
+        console.log('submitAuth called', { mode, nicknameLength: nickname.length, pinLength: pin.length });
+        if (!nickname || pin.length < 4) {
+            if (err) { err.textContent = '입력을 확인해 주세요.'; err.style.display = 'block'; }
+            return;
+        }
+        const path = (mode === 'login') ? '/api/auth/login-pin' : '/api/auth/register-pin';
+        try {
+            console.log('submitAuth fetch ->', path);
+            const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname, pin }) });
+            console.log('submitAuth response status', res.status);
+            if (!res.ok) {
+                if (err) {
+                    if (res.status === 401) {
+                        err.textContent = '닉네임 또는 PIN이 올바르지 않습니다.';
+                    } else if (res.status === 400) {
+                        err.textContent = '입력값이 올바르지 않습니다.';
+                    } else {
+                        err.textContent = '요청에 실패했습니다.';
+                    }
+                    err.style.display = 'block';
+                }
+                return;
+            }
+            if (err) err.style.display = 'none';
+            await refreshAuthUi();
+            routeAuthOrApp();
+            reloadUserState();
+            showNRoundView();
+        } catch (e) {
+            console.error('submitAuth error', e);
+            if (err) { err.textContent = '요청에 실패했습니다.'; err.style.display = 'block'; }
+        }
+    }
+    console.log('initAuthPage: attaching click handler to authActionBtn');
+    btn.addEventListener('click', submitAuth);
+}
+
+function reloadUserState() {
+    // Reset and load per-user data from namespaced storage
+    questions = [];
+    popQuizItems = [];
+    achievements = [];
     loadQuestions();
     loadPopQuizItems();
-    loadAnswerByHash();
     loadAchievements();
     updateQuestionCount();
     updatePopQuizBadge();
-    setupEventListeners();
-    refreshAuthUi();
-    ensureSession().then(showPinOverlayIfNeeded);
-    document.addEventListener('click', hideProfileDropdownOnOutsideClick, true);
-    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-    if (loginStartBtn) loginStartBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        try {
-            await fetch('/api/auth/anon', { method: 'POST' });
-            await refreshAuthUi();
-            if (profileDropdown) profileDropdown.style.display = 'none';
-        } catch (_) {}
-    });
-    showNRoundView();
-    startPopQuizTimer();
-});
+    if (roundNView && roundNView.style.display !== 'none') displayNRoundQuestions();
+    if (achievementView && achievementView.style.display !== 'none') displayAchievements();
+}
 
 async function ensureSession() {
     try {
@@ -385,10 +463,11 @@ function showPinOverlayIfNeeded() {
     const overlay = document.getElementById('pinOverlay');
     if (!overlay) return;
     fetch('/api/auth/me').then(r => r.json()).then(j => {
-        if (!j || !j.user) return; // session exists
-        // Do not show if already verified nickname provider later; for now, skip
-    }).catch(()=>{});
-    // We only show overlay when user clicks login, to avoid blocking flow
+        const user = j && j.user;
+        if (!user || user.provider !== 'pin') {
+            overlay.style.display = 'flex';
+        }
+    }).catch(()=>{ overlay.style.display = 'flex'; });
 }
 
 // PIN overlay handlers
@@ -397,29 +476,27 @@ function showPinOverlayIfNeeded() {
     const loginBtn = document.getElementById('pinLoginBtn');
     const regBtn = document.getElementById('pinRegisterBtn');
     const nn = document.getElementById('pinNickname');
-    const ph = document.getElementById('pinPhone4');
     const pc = document.getElementById('pinCode');
     const err = document.getElementById('pinError');
 
     function openOverlay(){ if (overlay) overlay.style.display = 'flex'; }
     function closeOverlay(){ if (overlay) overlay.style.display = 'none'; if (err) err.style.display = 'none'; }
-    if (loginStartBtn) {
-        loginStartBtn.addEventListener('click', (e)=>{ e.preventDefault(); openOverlay(); });
+    if (loginBtn) {
+        loginBtn.addEventListener('click', ()=> handle('/api/auth/login-pin'));
     }
 
     async function handle(path){
-        if (!nn || !ph || !pc) return;
+        if (!nn || !pc) return;
         const nickname = (nn.value || '').trim();
-        const phone4 = (ph.value || '').trim();
         const pin = (pc.value || '').trim();
-        if (!nickname || !/^\d{4}$/.test(phone4) || pin.length < 4) {
+        if (!nickname || pin.length < 4) {
             if (err) { err.textContent = '입력을 확인해 주세요.'; err.style.display = 'block'; }
             return;
         }
         try {
             const res = await fetch(path, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nickname, phone4, pin })
+                body: JSON.stringify({ nickname, pin })
             });
             if (!res.ok) throw new Error('failed');
             await refreshAuthUi();
@@ -845,7 +922,7 @@ function categorizeQuestion(category) {
             sys.classList.add('show');
             setTimeout(() => {
                 sys.classList.remove('show');
-                setTimeout(() => { sys.style.display = 'none'; }, 180);
+                setTimeout(() => { sys.style.display = 'none'; }, 1500);
             }, 1500);
         }
         return;
@@ -931,7 +1008,7 @@ function categorizeQuestion(category) {
             sys.classList.add('show');
             setTimeout(() => {
                 sys.classList.remove('show');
-                setTimeout(() => { sys.style.display = 'none'; }, 180);
+                setTimeout(() => { sys.style.display = 'none'; }, 1500);
             }, 1500);
         }
         
@@ -1000,7 +1077,6 @@ function displayNRoundQuestions() {
                             <div class="source-category">
                                 <span class="question-source">${question.publisher}</span>
                                 <span class="question-round">${question.round}회독</span>
-                                ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매함' : '틀림'}</span>` : ''}
                             </div>
                         </div>
                     </div>
@@ -1011,6 +1087,9 @@ function displayNRoundQuestions() {
                             hour: '2-digit', 
                             minute: '2-digit' 
                         })}
+                    </div>
+                    <div class="question-tags">
+                        ${question.category ? `<span class="question-category ${question.category}">${question.category === 'ambiguous' ? '애매함' : '틀림'}</span>` : ''}
                     </div>
                 </div>
             </div>
@@ -1066,6 +1145,30 @@ function sortNRoundQuestions(items, mode) {
         arr.sort((a, b) => new Date(a.lastAccessed || a.timestamp) - new Date(b.lastAccessed || b.timestamp));
     }
     return arr;
+}
+
+// Apply dynamic styles to .question-round badges based on round count (blue -> red by 10th)
+function applyRoundBadgeStyles(container) {
+    if (!container) return;
+    const badges = container.querySelectorAll('.question-round');
+    badges.forEach(badge => {
+        const text = (badge.textContent || '').trim();
+        const match = text.match(/(\d+)/);
+        const round = match ? Math.min(parseInt(match[1], 10) || 0, 10) : 0;
+        const t = Math.max(0, Math.min(round / 10, 1)); // 0..1
+        // Hue from 220 (blue) -> 0 (red)
+        const hueStart = 220;
+        const hueEnd = 0;
+        const hue = Math.round(hueStart + (hueEnd - hueStart) * t);
+        const color1 = `hsl(${hue}, 85%, 55%)`;
+        const color2 = `hsl(${hue}, 85%, 45%)`;
+        badge.style.color = '#fff';
+        badge.style.borderRadius = '12px';
+        badge.style.padding = '2px 8px';
+        badge.style.fontWeight = '600';
+        badge.style.background = `linear-gradient(135deg, ${color1}, ${color2})`;
+        badge.style.display = 'inline-block';
+    });
 }
 
 // Wire up sort change
@@ -1457,12 +1560,12 @@ function handleQuizSubmit() {
 
 // Save questions to localStorage
 function saveQuestions() {
-    localStorage.setItem('reviewNoteQuestions', JSON.stringify(questions));
+    localStorage.setItem(storageKey('reviewNoteQuestions'), JSON.stringify(questions));
 }
 
 // Load questions from localStorage
 function loadQuestions() {
-    const saved = localStorage.getItem('reviewNoteQuestions');
+    const saved = localStorage.getItem(storageKey('reviewNoteQuestions'));
     if (saved) {
         try {
             questions = JSON.parse(saved);
@@ -1475,12 +1578,12 @@ function loadQuestions() {
 
 // Save pop quiz items to localStorage
 function savePopQuizItems() {
-    localStorage.setItem('reviewNotePopQuiz', JSON.stringify(popQuizItems));
+    localStorage.setItem(storageKey('reviewNotePopQuiz'), JSON.stringify(popQuizItems));
 }
 
 // Load pop quiz items from localStorage
 function loadPopQuizItems() {
-    const saved = localStorage.getItem('reviewNotePopQuiz');
+    const saved = localStorage.getItem(storageKey('reviewNotePopQuiz'));
     if (saved) {
         try {
             popQuizItems = JSON.parse(saved);
@@ -1492,11 +1595,11 @@ function loadPopQuizItems() {
 }
 
 function saveAchievements() {
-    localStorage.setItem('reviewNoteAchievements', JSON.stringify(achievements));
+    localStorage.setItem(storageKey('reviewNoteAchievements'), JSON.stringify(achievements));
 }
 
 function loadAchievements() {
-    const saved = localStorage.getItem('reviewNoteAchievements');
+    const saved = localStorage.getItem(storageKey('reviewNoteAchievements'));
     if (saved) {
         try {
             achievements = JSON.parse(saved) || [];
@@ -1517,18 +1620,14 @@ function isPopQuizReady(item, nowTs) {
 
 // Save/load answers mapped by image hash
 function saveAnswerByHash() {
-    try {
-        localStorage.setItem('reviewNoteAnswerByHash', JSON.stringify(answerByHash));
-    } catch (_) {}
+    try { localStorage.setItem(storageKey('answerByHash'), JSON.stringify(answerByHash)); } catch (_) {}
 }
 function loadAnswerByHash() {
-    const saved = localStorage.getItem('reviewNoteAnswerByHash');
-    if (saved) {
-        try {
-            answerByHash = JSON.parse(saved) || {};
-        } catch (e) {
-            answerByHash = {};
-        }
+    try {
+        const v = localStorage.getItem(storageKey('answerByHash'));
+        answerByHash = v ? (JSON.parse(v) || {}) : {};
+    } catch (_) {
+        answerByHash = {};
     }
 }
 
@@ -1750,28 +1849,26 @@ function setupSwipeGestures() {
 
 // Set up swipe gestures for question items
 function setupQuestionSwipe(item) {
-    console.log('setupQuestionSwipe called for item:', item.dataset.id);
     let startX = 0;
     let startY = 0;
     let currentX = 0;
     let currentY = 0;
     let isDragging = false;
 
-    console.log('Adding touch event listeners to item');
     item.addEventListener('touchstart', handleStart, { passive: false });
     item.addEventListener('touchmove', handleMove, { passive: false });
     item.addEventListener('touchend', handleEnd, { passive: false });
 
     // Mouse events for desktop testing
-    console.log('Adding mouse event listeners to item');
     item.addEventListener('mousedown', handleStart);
     item.addEventListener('mousemove', handleMove);
     item.addEventListener('mouseup', handleEnd);
     item.addEventListener('mouseleave', handleEnd);
 
     function handleStart(e) {
+        e.preventDefault();
         isDragging = true;
-        // Don't add 'swiping' class immediately - wait for actual movement
+        item.classList.add('swiping');
 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -1784,6 +1881,7 @@ function setupQuestionSwipe(item) {
 
     function handleMove(e) {
         if (!isDragging) return;
+        e.preventDefault();
 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -1793,497 +1891,246 @@ function setupQuestionSwipe(item) {
 
         const deltaX = currentX - startX;
         const deltaY = currentY - startY;
+        const rotation = deltaX * 0.1; // Slight rotation effect
 
-        console.log('Move detected - deltaX:', deltaX, 'deltaY:', deltaY);
+        // Update card position
+        item.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
 
-        // Start swiping mode if horizontal movement is significant
-        if (Math.abs(deltaX) > 10) {
-            console.log('Starting swipe mode');
-            item.classList.add('swiping');
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        // Only allow horizontal swiping
-        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaX) < 20) return;
-
-        // Update item position
-        item.style.transform = `translateX(${deltaX}px)`;
-        item.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 200);
-
-        // Show visual feedback for swipe direction
-        if (deltaX < -30) {
-            item.style.backgroundColor = '#e8f5e8'; // Green tint for n회독
-        } else if (deltaX > 30) {
-            item.style.backgroundColor = '#ffe8e8'; // Red tint for delete
-        } else {
-            item.style.backgroundColor = '';
-        }
-    }
-
-    function handleEnd(e) {
-        if (!isDragging) return;
-        console.log('0회독 Touch/mouse end detected');
-        isDragging = false;
-        
-        const deltaX = currentX - startX;
-        const threshold = 100;
-        console.log('0회독 Final deltaX:', deltaX, 'threshold:', threshold);
-        
-        setTimeout(() => {
-            item.classList.remove('swiping');
-        }, 100);
-
+        // Show/hide indicators based on swipe direction
+        const threshold = 80;
         if (deltaX < -threshold) {
-            // Swiped left - Move to n회독
-            console.log('0회독 Swiped left - moving to n회독');
-            moveToNRound(parseInt(item.dataset.id));
-            item.style.transform = 'translateX(-100%)';
-            item.style.opacity = '0';
-            
-            setTimeout(() => {
-                display0RoundQuestions(); // Refresh 0회독 list
-            }, 300);
+            leftIndicator.classList.add('active');
+            rightIndicator.classList.remove('active');
         } else if (deltaX > threshold) {
-            // Swiped right - Delete
-            console.log('0회독 Swiped right - deleting');
-            deleteQuestion0Round(parseInt(item.dataset.id));
-            item.style.transform = 'translateX(100%)';
-            item.style.opacity = '0';
-            
-            setTimeout(() => {
-                display0RoundQuestions(); // Refresh 0회독 list
-            }, 300);
+            rightIndicator.classList.add('active');
+            leftIndicator.classList.remove('active');
         } else {
-            // Snap back to original position
-            console.log('0회독 Snapping back to center');
-            item.style.transform = 'translateX(0)';
-            item.style.opacity = '1';
-            item.style.backgroundColor = '';
-        }
-    }
-}
-
-// Move question to n회독
-function moveToNRound(questionId) {
-    const questionIndex = questions.findIndex(q => q.id === questionId);
-    if (questionIndex !== -1) {
-        // Capture pre-count of n회독 items
-        const preCountNRound = questions.filter(q => (q.round ?? -1) >= 0).length;
-
-        questions[questionIndex].round = 1; // Move to 1회독
-        saveQuestions();
-        showToast('n회독으로 이동했습니다!');
-
-        // Mark coaching pending if this creates the first n회독 card
-        if (preCountNRound === 0) {
-            sessionStorage.setItem('nListCoachPending', 'true');
-        }
-    }
-}
-
-// Delete question from 0회독
-function deleteQuestion0Round(questionId) {
-    const questionIndex = questions.findIndex(q => q.id === questionId);
-    if (questionIndex !== -1) {
-        questions.splice(questionIndex, 1); // Remove from questions
-        saveQuestions();
-        updateQuestionCount();
-        showToast('문제가 삭제되었습니다!');
-    }
-}
-
-// Set up swipe gestures for n회독 items
-function setupNRoundSwipe(item) {
-    let startX = 0;
-    let startY = 0;
-    let currentX = 0;
-    let currentY = 0;
-    let isDragging = false;
-
-    item.addEventListener('touchstart', handleStart, { passive: false });
-    item.addEventListener('touchmove', handleMove, { passive: false });
-    item.addEventListener('touchend', handleEnd, { passive: false });
-
-    // Mouse events for desktop testing
-    item.addEventListener('mousedown', handleStart);
-    item.addEventListener('mousemove', handleMove);
-    item.addEventListener('mouseup', handleEnd);
-    item.addEventListener('mouseleave', handleEnd);
-
-    function handleStart(e) {
-        console.log('Touch/mouse start detected on 0회독 item');
-        isDragging = true;
-
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        startX = clientX;
-        startY = clientY;
-        currentX = clientX;
-        currentY = clientY;
-    }
-
-    function handleMove(e) {
-        if (!isDragging) return;
-
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        currentX = clientX;
-        currentY = clientY;
-
-        const deltaX = currentX - startX;
-        const deltaY = currentY - startY;
-
-        // Start swiping mode if horizontal movement is significant
-        if (Math.abs(deltaX) > 5 && Math.abs(deltaX) > Math.abs(deltaY)) {
-            item.classList.add('swiping');
-            e.preventDefault();
-        }
-
-        // Only allow horizontal swiping
-        if (Math.abs(deltaY) > Math.abs(deltaX)) return;
-
-        // Update item position
-        item.style.transform = `translateX(${deltaX}px)`;
-        item.style.opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 200);
-
-        // Show visual feedback for swipe direction
-        if (deltaX < -30) {
-            item.style.backgroundColor = '#e8f5e8'; // Green tint for round increment
-        } else if (deltaX > 30) {
-            item.style.backgroundColor = '#fff3e0'; // Orange tint for pop quiz
-        } else {
-            item.style.backgroundColor = '';
+            leftIndicator.classList.remove('active');
+            rightIndicator.classList.remove('active');
         }
     }
 
     function handleEnd(e) {
         if (!isDragging) return;
-        console.log('n회독 Touch/mouse end detected');
         isDragging = false;
-        
+        item.classList.remove('swiping');
+
         const deltaX = currentX - startX;
-        const threshold = 100;
-        console.log('n회독 Final deltaX:', deltaX, 'threshold:', threshold);
-        
-        setTimeout(() => {
-            item.classList.remove('swiping');
-        }, 100);
+        const threshold = 120;
 
         if (deltaX < -threshold) {
-            // Swiped left - Increment round count
-            console.log('n회독 Swiped left - incrementing round');
-            const id = parseInt(item.dataset.id);
-            incrementRound(id);
-            item.style.transform = 'translateX(0)';
-            item.style.opacity = '1';
-            item.style.backgroundColor = '';
-            // Update round label in-place without re-rendering the list
-            const roundEl = item.querySelector('.question-round');
-            const q = questions.find(q => q.id === id);
-            if (roundEl && q) {
-                roundEl.textContent = `${q.round}회독`;
-                roundEl.style.backgroundColor = computeRoundColor(q.round || 0);
-                roundEl.classList.add('bump');
-                setTimeout(() => roundEl.classList.remove('bump'), 300);
+            // Swiped left - Wrong
+            swipeComplete('left', 'wrong');
+        } else if (deltaX > threshold) {
+            // Swiped right - Ambiguous
+            swipeComplete('right', 'ambiguous');
+        } else {
+            // Snap back to center
+            item.style.transform = 'translateX(0) rotate(0deg)';
+            leftIndicator.classList.remove('active');
+            rightIndicator.classList.remove('active');
+        }
+    }
+
+    function swipeComplete(direction, category) {
+        item.classList.add(`swipe-${direction}`);
+        leftIndicator.classList.remove('active');
+        rightIndicator.classList.remove('active');
+
+        setTimeout(() => {
+            categorizeQuestion(category);
+            // Reset card position for next use
+            item.style.transform = 'translateX(0) rotate(0deg)';
+            item.classList.remove(`swipe-${direction}`);
+        }, 300);
+    }
+}
+
+// Show 3-step coaching guide for first creation
+function showNListCoachingGuide() {
+    if (!listCoachingOverlay) return;
+    listCoachingOverlay.style.display = 'flex';
+    const steps = Array.from(listCoachingOverlay.querySelectorAll('.coaching-step'));
+    let index = 0;
+    function render() {
+        steps.forEach((s, i) => { s.style.display = (i === index) ? 'block' : 'none'; });
+        if (listCoachingNext) listCoachingNext.innerHTML = index === steps.length - 1 ? '<span>시작하기</span>' : '<span>다음</span>';
+    }
+    function complete() {
+        listCoachingOverlay.style.display = 'none';
+        sessionStorage.setItem('shownNListCoach', 'true');
+    }
+    if (listCoachingSkip) listCoachingSkip.onclick = complete;
+    if (listCoachingNext) listCoachingNext.onclick = () => {
+        if (index < steps.length - 1) { index += 1; render(); } else { complete(); }
+    };
+    render();
+}
+
+// Show N-round coaching guide
+function showNRoundCoachingGuide() {
+    if (nListCoachingOverlay) nListCoachingOverlay.style.display = 'flex';
+    if (nListCoachingSkip) nListCoachingSkip.addEventListener('click', () => {
+        nListCoachingOverlay.style.display = 'none';
+        sessionStorage.setItem('shownNListCoach', 'true');
+    });
+    if (nListCoachingNext) nListCoachingNext.addEventListener('click', () => {
+        nListCoachingOverlay.style.display = 'none';
+        sessionStorage.setItem('shownNListCoach', 'true');
+    });
+}
+
+// Robust logout handler
+async function doLogout() {
+    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (_) {}
+    // Keep per-user data in localStorage to persist across sessions
+    window.currentUserId = null;
+    window.currentAuthProvider = null;
+    await refreshAuthUi();
+    // Do not clear localStorage; data is namespaced by userId and will be reloaded after login
+    reloadUserState();
+    routeAuthOrApp();
+}
+
+// Delegate click for logout to avoid missing listeners
+document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    if (t.id === 'logoutBtn' || (t.closest && t.closest('#logoutBtn'))) {
+        e.preventDefault();
+        if (profileDropdown) {
+            const visible = profileDropdown.style.display !== 'none';
+            profileDropdown.style.display = visible ? 'none' : 'block';
+            if (!visible) {
+                try {
+                    // Fill in current user info
+                    const meFill = window.currentPublicId || '';
+                    if (profilePublicId) profilePublicId.textContent = meFill || '-';
+                    const nick = document.getElementById('headerNickname');
+                    if (profileNickname) profileNickname.textContent = (nick && nick.textContent) ? nick.textContent : '';
+                } catch (_) {}
             }
-        } else if (deltaX > threshold) {
-            // Swiped right - Move to 팝퀴즈
-            console.log('n회독 Swiped right - moving to pop quiz');
-            moveToPopQuiz(parseInt(item.dataset.id));
-            item.style.transform = 'translateX(100%)';
-            item.style.opacity = '0';
-            
-            setTimeout(() => {
-                displayNRoundQuestions(); // Refresh n회독 list
-                updatePopQuizBadge(); // Update notification badge
-            }, 300);
-        } else {
-            // Snap back to original position
-            console.log('n회독 Snapping back to center');
-            item.style.transform = 'translateX(0)';
-            item.style.opacity = '1';
-            item.style.backgroundColor = '';
         }
-    }
-}
-
-// Increment round count
-function incrementRound(questionId) {
-    const questionIndex = questions.findIndex(q => q.id === questionId);
-    if (questionIndex !== -1) {
-        questions[questionIndex].round += 1;
-        questions[questionIndex].lastAccessed = new Date().toISOString();
-        saveQuestions();
-        showToast(`${questions[questionIndex].round}회독으로 업데이트되었습니다!`);
-    }
-}
-
-// Answer-required modal controls
-const answerRequiredModal = document.getElementById('answerRequiredModal');
-const answerReqClose = document.getElementById('answerReqClose');
-const answerReqInput = document.getElementById('answerReqInput');
-const answerReqSubmit = document.getElementById('answerReqSubmit');
-let pendingMoveQuestionId = null;
-function openAnswerRequiredModal(questionId) {
-    pendingMoveQuestionId = questionId;
-    if (answerRequiredModal) answerRequiredModal.style.display = 'flex';
-    if (answerReqInput) answerReqInput.value = '';
-}
-function closeAnswerRequiredModal() {
-    if (answerRequiredModal) answerRequiredModal.style.display = 'none';
-    pendingMoveQuestionId = null;
-}
-if (answerReqClose) answerReqClose.addEventListener('click', closeAnswerRequiredModal);
-if (answerRequiredModal) answerRequiredModal.addEventListener('click', (e) => {
-    if (e.target === answerRequiredModal) closeAnswerRequiredModal();
-});
-if (answerReqSubmit) answerReqSubmit.addEventListener('click', async () => {
-    const qid = pendingMoveQuestionId;
-    if (!qid) return closeAnswerRequiredModal();
-    const q = questions.find(x => x.id === qid);
-    const val = (answerReqInput && answerReqInput.value || '').trim();
-    if (!val) {
-        if (answerReqInput) answerReqInput.focus();
         return;
     }
-    const hash = q.imageHash || await ensureQuestionImageHash(q);
-    if (hash) await saveAnswerForHash(hash, val);
-    closeAnswerRequiredModal();
-    // proceed moving to pop quiz
-    moveToPopQuiz(qid);
-    // refresh n회독 list immediately so the card disappears without re-swipe
-    if (roundNView && roundNView.style.display !== 'none') {
-        setTimeout(() => { displayNRoundQuestions(); updatePopQuizBadge(); }, 50);
+    if (t.id === 'profileLogoutBtn' || (t.closest && t.closest('#profileLogoutBtn'))) {
+        e.preventDefault();
+        if (profileDropdown) profileDropdown.style.display = 'none';
+        doLogout();
+        return;
+    }
+    // click outside to close
+    if (profileDropdown && profileDropdown.style.display !== 'none') {
+        if (!t.closest('#profileDropdown') && !t.closest('#logoutBtn')) {
+            profileDropdown.style.display = 'none';
+        }
     }
 });
 
-// Modify moveToPopQuiz to require answer
-function moveToPopQuiz(questionId) {
-    const qIdx = questions.findIndex(q => q.id === questionId);
-    if (qIdx === -1) return;
-    const q = questions[qIdx];
-    (async () => {
-        const hash = q.imageHash || await ensureQuestionImageHash(q);
-        let savedAns = '';
-        if (hash) {
-            try {
-                const r = await fetch(((location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000') + `/api/answers/${hash}`);
-                if (r.ok) {
-                    const j = await r.json();
-                    savedAns = (j && j.answer) || '';
-                }
-            } catch (_) {}
-            if (!savedAns) savedAns = (answerByHash && answerByHash[hash]) || '';
-        }
-        if (!savedAns) {
-            // Require answer before moving
-            openAnswerRequiredModal(questionId);
-            return;
-        }
-        // proceed original move
-        const preCountNRound = questions.filter(q => (q.round ?? -1) >= 0).length;
-        q.popQuizAdded = new Date().toISOString();
-        popQuizItems.push(q);
-        questions.splice(qIdx, 1);
-        saveQuestions();
-        savePopQuizItems();
-        // Persist queue to DB (best-effort)
-        try {
-            const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
-            const nextAt = new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString();
-            const questionIdDb = q.dbId; // set on create if DB exists
-            if (questionIdDb) {
-                await fetch(base + '/api/pop-quiz-queue', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ questionId: questionIdDb, nextAt })
-                });
-            }
-        } catch (_) {}
-        updatePopQuizBadge();
-        displayPopQuiz();
-        // Pulse icon
-        if (navSettings) {
-            navSettings.classList.add('popquiz-pulse');
-            const removePulse = () => { navSettings.classList.remove('popquiz-pulse'); navSettings.removeEventListener('animationend', removePulse); };
-            navSettings.addEventListener('animationend', removePulse);
-        }
-        // Coaching flag remains unchanged here
-    })();
-}
-
-// Start pop quiz timer
-function startPopQuizTimer() {
-    setInterval(() => {
-        updatePopQuizBadge();
-        if (settingsView.style.display !== 'none') {
-            displayPopQuiz();
-        }
-    }, 2000); // poll every 2s for snappier 10s readiness
-}
-
-// Check if we should show a pop quiz (kept for compatibility)
-function checkForPopQuiz() {
-    // No-op: display is handled in displayPopQuiz with 5-minute readiness
-}
-
-// Show a random pop quiz (kept for compatibility)
-function showRandomPopQuiz() {
-    // No-op: display is handled via displayPopQuiz filtering by readiness
-}
-
-// Remove all coaching features: make functions no-ops
-function checkAndShowCoachingGuide() {}
-function showCoachingGuide() {}
-function closeCoachingGuide() {}
-function nextCoachingStep() {}
-function checkAndShowListCoaching() {}
-function showListCoachingGuide() {}
-function closeListCoachingGuide() {}
-function nextListCoachingStep() {}
-function showNListCoachingGuide() {
-    const overlay = document.getElementById('nListCoachingOverlay');
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-    // Reset to step 1
-    const s1 = document.getElementById('nListStep1');
-    const s2 = document.getElementById('nListStep2');
-    if (s1) s1.classList.add('active');
-    if (s2) s2.classList.remove('active');
-    const dots = document.querySelectorAll('#nListCoachingOverlay .step-dot');
-    dots.forEach(d => d.classList.remove('active'));
-    if (dots[0]) dots[0].classList.add('active');
-}
-function closeNListCoachingGuide() {
-    const overlay = document.getElementById('nListCoachingOverlay');
-    if (overlay) overlay.style.display = 'none';
-    sessionStorage.setItem('shownNListCoach', 'true');
-}
-function nextNListCoachingStep() {
-    const s1 = document.getElementById('nListStep1');
-    const s2 = document.getElementById('nListStep2');
-    const s3 = document.getElementById('nListStep3');
-    const onStep1 = s1 && s1.classList.contains('active');
-    const onStep2 = s2 && s2.classList.contains('active');
-    if (onStep1) {
-        s1.classList.remove('active');
-        if (s2) s2.classList.add('active');
-        const dots = document.querySelectorAll('#nListCoachingOverlay .step-dot');
-        dots.forEach(d => d.classList.remove('active'));
-        if (dots[1]) dots[1].classList.add('active');
-    } else if (onStep2) {
-        s2.classList.remove('active');
-        if (s3) s3.classList.add('active');
-        const dots = document.querySelectorAll('#nListCoachingOverlay .step-dot');
-        dots.forEach(d => d.classList.remove('active'));
-        if (dots[2]) dots[2].classList.add('active');
-        const nextBtn = document.getElementById('nListCoachingNext');
-        const doneBtn = document.getElementById('nListCoachingDone');
-        if (nextBtn) nextBtn.style.display = 'none';
-        if (doneBtn) doneBtn.style.display = 'inline-block';
-    } else {
-        closeNListCoachingGuide();
-    }
-}
-// Wire buttons once
-(function initNListCoachingButtons(){
-    document.addEventListener('click', (e) => {
-        const t = e.target;
-        if (!(t instanceof HTMLElement)) return;
-        if (t.id === 'nListCoachingSkip') {
-            closeNListCoachingGuide();
-        } else if (t.id === 'nListCoachingNext') {
-            nextNListCoachingStep();
-        } else if (t.id === 'nListCoachingDone') {
-            closeNListCoachingGuide();
-        }
-    });
-})(); 
-
-function computeRoundColor(round) {
-    const r = Math.max(0, Math.min(10, round));
-    // Interpolate from blue (#1e88e5) to red (#e53935)
-    const from = { r: 0x1e, g: 0x88, b: 0xe5 };
-    const to   = { r: 0xe5, g: 0x39, b: 0x35 };
-    const t = r / 10;
-    const mix = (a, b) => Math.round(a + (b - a) * t);
-    const rr = mix(from.r, to.r);
-    const gg = mix(from.g, to.g);
-    const bb = mix(from.b, to.b);
-    const hex = (n) => n.toString(16).padStart(2, '0');
-    return `#${hex(rr)}${hex(gg)}${hex(bb)}`;
-}
-
-function applyRoundBadgeStyles(container) {
-    if (!container) return;
-    container.querySelectorAll('.question-item').forEach(item => {
-        const id = parseInt(item.dataset.id);
-        const q = questions.find(x => x.id === id);
-        const el = item.querySelector('.question-round');
-        if (q && el) {
-            el.style.backgroundColor = computeRoundColor(q.round || 0);
-        }
-    });
-} 
-
-async function compressDataUrl(dataUrl, maxWidth = 1080, quality = 0.8) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            const scale = Math.min(1, maxWidth / img.width);
-            const w = Math.round(img.width * scale);
-            const h = Math.round(img.height * scale);
-            const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            try {
-                const out = canvas.toDataURL('image/jpeg', quality);
-                resolve(out);
-            } catch (_) {
-                resolve(dataUrl);
-            }
+// Ensure routeAuthOrApp exists (guard)
+    if (typeof window.routeAuthOrApp !== 'function') {
+        window.routeAuthOrApp = function () {
+            const authView = document.getElementById('authView');
+            const showAuth = !window.currentAuthProvider || window.currentAuthProvider !== 'pin';
+            if (authView) authView.style.display = showAuth ? 'flex' : 'none';
+            if (typeof roundNView !== 'undefined' && roundNView) roundNView.style.display = showAuth ? 'none' : 'block';
+            if (typeof settingsView !== 'undefined' && settingsView) settingsView.style.display = 'none';
+            if (typeof achievementView !== 'undefined' && achievementView) achievementView.style.display = 'none';
+            if (typeof imageReviewView !== 'undefined' && imageReviewView) imageReviewView.style.display = 'none';
+            if (typeof solutionView !== 'undefined' && solutionView) solutionView.style.display = 'none';
         };
-        img.onerror = () => resolve(dataUrl);
-        img.src = dataUrl;
-    });
-} 
+    }
 
-// Ensure review image scales to fit fully
-const reviewImgEl = document.getElementById('reviewImage');
-if (reviewImgEl) {
-    reviewImgEl.style.width = '100%';
-    reviewImgEl.style.height = 'auto';
-    reviewImgEl.style.objectFit = 'contain';
-    reviewImgEl.style.maxHeight = '70vh';
-}
+// Minimal no-op to avoid ReferenceError when swipe is disabled on n회독 items
+function setupNRoundSwipe(item) {
+    let isDragging = false;
+    let startX = 0;
+    let currentX = 0;
 
-// Review delete button
-const deleteFromReview = document.getElementById('deleteFromReview');
-if (deleteFromReview) {
-    deleteFromReview.addEventListener('click', () => {
-        // Just clear the current capture and go back
-        cleanupCurrentImage();
-        showNRoundView();
-    });
-}
+    // Lock height to avoid reflow jump during swipe
+    const fixedHeight = item.offsetHeight;
+    item.style.minHeight = fixedHeight + 'px';
 
-// Solution delete button
-const deleteFromSolution = document.getElementById('deleteFromSolution');
-if (deleteFromSolution) {
-    deleteFromSolution.addEventListener('click', () => {
-        const idStr = solutionView && solutionView.dataset.currentId;
-        if (!idStr) return;
-        const id = parseInt(idStr);
-        const idx = questions.findIndex(q => q.id === id);
-        if (idx >= 0) {
-            questions.splice(idx, 1);
-            saveQuestions();
-            updateQuestionCount();
+    function handleStart(e) {
+        isDragging = true;
+        item.classList.add('swiping');
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        startX = clientX;
+        currentX = clientX;
+    }
+
+    function handleMove(e) {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        currentX = clientX;
+        const deltaX = currentX - startX;
+        item.style.transform = `translateX(${deltaX}px)`;
+    }
+
+    function handleEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        item.classList.remove('swiping');
+        const deltaX = currentX - startX;
+        const threshold = 110;
+        if (deltaX < -threshold) {
+            // Left: increment round (wrong)
+            const qid = parseInt(item.dataset.id);
+            const q = questions.find(q => q.id === qid);
+            if (q) {
+                q.round = (q.round || 0) + 1;
+                try { saveQuestions(); } catch (_) {}
+                const badge = item.querySelector('.question-round');
+                if (badge) badge.textContent = `${q.round}회독`;
+                applyRoundBadgeStyles(item.parentElement || roundNList);
+            }
+            item.style.transform = 'translateX(0) rotate(0deg)';
+        } else if (deltaX > threshold) {
+            // Right: send to pop quiz (ambiguous)
+            const qid = parseInt(item.dataset.id);
+            const q = questions.find(q => q.id === qid);
+            if (q) {
+                const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
+                popQuizItems.push(entry);
+                try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
+                // microinteraction on pop quiz icon
+                try {
+                    const icon = document.querySelector('#navSettings i.fas.fa-question-circle');
+                    if (icon && icon.animate) {
+                        icon.animate([
+                            { transform: 'scale(1)', filter: 'brightness(1)' },
+                            { transform: 'scale(1.25)', filter: 'brightness(1.3)' },
+                            { transform: 'scale(1)', filter: 'brightness(1)' }
+                        ], { duration: 300, easing: 'ease-out' });
+                    }
+                } catch (_) {}
+                // Best-effort DB persist
+                (async () => {
+                    try {
+                        if (q.dbId) {
+                            const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+                            await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questionId: String(q.dbId), nextAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString() }) });
+                        }
+                    } catch (_) {}
+                })();
+                // Remove from list visually
+                const idx = questions.findIndex(qq => qq.id === qid);
+                if (idx !== -1) {
+                    questions.splice(idx, 1);
+                    try { saveQuestions(); } catch (_) {}
+                    displayNRoundQuestions();
+                }
+            }
+            item.style.transform = 'translateX(0) rotate(0deg)';
+        } else {
+            item.style.transform = 'translateX(0) rotate(0deg)';
         }
-        showNRoundView();
-    });
+    }
+
+    item.addEventListener('touchstart', handleStart, { passive: true });
+    item.addEventListener('mousedown', handleStart);
+    item.addEventListener('touchmove', handleMove, { passive: true });
+    item.addEventListener('mousemove', handleMove);
+    item.addEventListener('touchend', handleEnd);
+    item.addEventListener('mouseup', handleEnd);
 }

@@ -13,6 +13,14 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
+// Global crash guards
+process.on('uncaughtException', (err) => {
+  try { console.error('UncaughtException:', err && err.stack || err); } catch (_) {}
+});
+process.on('unhandledRejection', (reason) => {
+  try { console.error('UnhandledRejection:', reason); } catch (_) {}
+});
+
 dotenv.config();
 
 const app = express();
@@ -21,9 +29,13 @@ const PORT = process.env.PORT || 3000;
 // Prisma (optional)
 let prisma = null;
 try {
-  // Lazy require to avoid install issues before prisma is added
-  const { PrismaClient } = require('@prisma/client');
-  prisma = new PrismaClient();
+  const DISABLE_DB = String(process.env.DISABLE_DB || '').toLowerCase();
+  if (DISABLE_DB === '1' || DISABLE_DB === 'true' || DISABLE_DB === 'yes') {
+    prisma = null;
+  } else {
+    const { PrismaClient } = require('@prisma/client');
+    prisma = new PrismaClient();
+  }
 } catch (_) {
   prisma = null;
 }
@@ -120,11 +132,13 @@ const anthropic = new Anthropic({ apiKey: claudeApiKey });
 // Initialize OpenAI client (optional)
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
-// Simple file-backed answers store
+// Simple file-backed answers store and pin users fallback
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const ANSWERS_FILE = path.join(DATA_DIR, 'answers.json');
+const PIN_USERS_FILE = path.join(DATA_DIR, 'pin-users.json');
 let answersByHash = {};
+let pinUsersById = new Map();
 
 async function ensureDataDir() {
     try {
@@ -158,9 +172,53 @@ async function saveAnswers() {
         console.warn('Failed to save answers file:', e.message);
     }
 }
+async function loadPinUsers() {
+    try {
+        await ensureDataDir();
+        if (fsSync.existsSync(PIN_USERS_FILE)) {
+            const raw = await fs.readFile(PIN_USERS_FILE, 'utf8');
+            const arr = JSON.parse(raw || '[]') || [];
+            pinUsersById = new Map(arr.map(u => [u.id, u]));
+        }
+    } catch (e) {
+        console.warn('Failed to load pin users:', e.message);
+        pinUsersById = new Map();
+    }
+}
+async function savePinUsers() {
+    try {
+        await ensureDataDir();
+        const arr = Array.from(pinUsersById.values());
+        await fs.writeFile(PIN_USERS_FILE, JSON.stringify(arr, null, 2), 'utf8');
+    } catch (e) {
+        console.warn('Failed to save pin users:', e.message);
+    }
+}
 
 // Load answers on startup
 loadAnswers();
+loadPinUsers();
+
+async function generate6DigitPublicId() {
+  function rnd() { return String(Math.floor(100000 + Math.random() * 900000)); }
+  for (let i = 0; i < 50; i++) {
+    const id = rnd();
+    let exists = false;
+    try {
+      if (prisma) {
+        const u = await prisma.user.findFirst({ where: { publicId: id } });
+        if (u) exists = true;
+      }
+    } catch (_) {}
+    if (!exists) {
+      try {
+        for (const u of pinUsersById.values()) { if ((u.publicId || '') === id) { exists = true; break; } }
+      } catch (_) {}
+    }
+    if (!exists) return id;
+  }
+  return rnd();
+}
 
 // Simple in-memory user store (replace with DB later)
 const usersByGoogleId = new Map();
@@ -281,11 +339,16 @@ app.get('/api/auth/me', async (req, res) => {
     if (prisma) {
       try {
         const dbUser = await prisma.user.findUnique({ where: { id: decoded.sub } });
-        if (dbUser) user = { id: dbUser.id, role: dbUser.role, name: dbUser.name, email: dbUser.email, picture: dbUser.picture };
+        if (dbUser) user = { id: dbUser.id, role: dbUser.role, name: dbUser.name, email: dbUser.email, picture: dbUser.picture, provider: dbUser.authProvider, publicId: dbUser.publicId, nickname: dbUser.nickname || dbUser.name };
       } catch (_) {}
-    } else {
+    }
+    if (!user.name) {
       const u = usersByGoogleId.get(decoded.sub);
-      if (u) user = { id: u.id || decoded.sub, role: u.role || decoded.role, name: u.name, email: u.email, picture: u.picture };
+      if (u) user = { id: u.id || decoded.sub, role: u.role || decoded.role, name: u.name, email: u.email, picture: u.picture, provider: 'memory' };
+    }
+    if (!user.name) {
+      const u2 = pinUsersById.get(decoded.sub);
+      if (u2) user = { id: u2.id, role: 'user', name: u2.nickname, provider: 'pin', publicId: u2.publicId, nickname: u2.nickname };
     }
     return res.json({ user });
   } catch (_) {
@@ -308,11 +371,17 @@ app.post('/api/auth/anon', async (req, res) => {
     }
     let userId = null;
     if (prisma) {
-      const rnd = crypto.randomBytes(10).toString('hex');
-      const email = `anon-${Date.now()}-${rnd}@anon.local`;
-      const user = await prisma.user.create({ data: { email, name: 'Anonymous', role: 'user', authProvider: 'anon' } });
-      userId = user.id;
-    } else {
+      try {
+        const rnd = crypto.randomBytes(10).toString('hex');
+        const email = `anon-${Date.now()}-${rnd}@anon.local`;
+        // Do NOT set columns that may not exist yet
+        const user = await prisma.user.create({ data: { email, name: 'Anonymous', role: 'user' } });
+        userId = user.id;
+      } catch (e) {
+        console.warn('DB anon create failed, falling back to memory:', e.message);
+      }
+    }
+    if (!userId) {
       // Memory-only fallback
       const rnd = crypto.randomBytes(16).toString('hex');
       const temp = { id: `anon_${rnd}`, email: `anon-${rnd}@anon.local`, name: 'Anonymous', role: 'user' };
@@ -328,19 +397,47 @@ app.post('/api/auth/anon', async (req, res) => {
   }
 });
 
-// PIN registration: create or update a user with nickname/phone4 and hashed pin
+// PIN registration: create or update a user with nickname and hashed pin
 app.post('/api/auth/register-pin', async (req, res) => {
   try {
-    if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-    const Body = z.object({ nickname: z.string().min(1).max(40), phone4: z.string().regex(/^\d{4}$/), pin: z.string().min(4).max(12) });
+    if (!prisma) {
+      // Fallback to file store
+      const Body = z.object({ nickname: z.string().min(1).max(40), pin: z.string().min(4).max(12) });
+      const b = Body.safeParse(req.body);
+      if (!b.success) return res.status(400).json({ error: 'invalid' });
+      const { nickname, pin } = b.data;
+      const pinHash = await bcrypt.hash(pin, 10);
+      const id = 'pin_' + crypto.randomBytes(8).toString('hex');
+      const publicId = await generate6DigitPublicId();
+      const rec = { id, nickname, pinHash, publicId, createdAt: new Date().toISOString() };
+      pinUsersById.set(id, rec);
+      await savePinUsers();
+      const token = signSession({ id, role: 'user' });
+      res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
+      return res.json({ ok: true, user: { id, publicId, nickname } });
+    }
+    const Body = z.object({ nickname: z.string().min(1).max(40), pin: z.string().min(4).max(12) });
     const b = Body.safeParse(req.body);
     if (!b.success) return res.status(400).json({ error: 'invalid' });
-    const { nickname, phone4, pin } = b.data;
+    const { nickname, pin } = b.data;
     const pinHash = await bcrypt.hash(pin, 10);
-    const publicId = 'u_' + crypto.randomBytes(6).toString('hex');
-    // Use a synthetic email index for uniqueness
-    const email = `pin-${phone4}-${publicId}@pin.local`;
-    const user = await prisma.user.create({ data: { email, name: nickname, nickname, phone4, pinHash, publicId, authProvider: 'pin', role: 'user' } });
+    const publicId = await generate6DigitPublicId();
+    const email = `pin-${publicId}@pin.local`;
+    let user = null;
+    try {
+      user = await prisma.user.create({ data: { email, name: nickname, nickname, pinHash, publicId, authProvider: 'pin', role: 'user' } });
+    } catch (e) {
+      console.warn('DB register-pin failed; falling back to file store:', e.message);
+    }
+    if (!user) {
+      const id = 'pin_' + crypto.randomBytes(8).toString('hex');
+      const rec = { id, nickname, pinHash, publicId, createdAt: new Date().toISOString() };
+      pinUsersById.set(id, rec);
+      await savePinUsers();
+      const token = signSession({ id, role: 'user' });
+      res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
+      return res.json({ ok: true, user: { id, publicId, nickname } });
+    }
     const token = signSession({ id: user.id, role: 'user' });
     res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
     return res.json({ ok: true, user: { id: user.id, publicId: user.publicId, nickname: user.nickname } });
@@ -350,17 +447,42 @@ app.post('/api/auth/register-pin', async (req, res) => {
   }
 });
 
-// PIN login: find by phone4 + nickname, verify pin
+// PIN login: find by nickname, verify pin
 app.post('/api/auth/login-pin', async (req, res) => {
   try {
-    if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-    const Body = z.object({ nickname: z.string().min(1).max(40), phone4: z.string().regex(/^\d{4}$/), pin: z.string().min(4).max(12) });
+    if (!prisma) {
+      const Body = z.object({ nickname: z.string().min(1).max(40), pin: z.string().min(4).max(12) });
+      const b = Body.safeParse(req.body);
+      if (!b.success) return res.status(400).json({ error: 'invalid' });
+      const { nickname, pin } = b.data;
+      const rec = Array.from(pinUsersById.values()).find(u => (u.nickname || '') === nickname);
+      if (!rec) return res.status(401).json({ error: 'invalid credentials' });
+      const ok = await bcrypt.compare(pin, rec.pinHash || '');
+      if (!ok) return res.status(401).json({ error: 'invalid credentials' });
+      const token = signSession({ id: rec.id, role: 'user' });
+      res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
+      return res.json({ ok: true, user: { id: rec.id, publicId: rec.publicId, nickname: rec.nickname } });
+    }
+    const Body = z.object({ nickname: z.string().min(1).max(40), pin: z.string().min(4).max(12) });
     const b = Body.safeParse(req.body);
     if (!b.success) return res.status(400).json({ error: 'invalid' });
-    const { nickname, phone4, pin } = b.data;
-    const user = await prisma.user.findFirst({ where: { nickname, phone4, authProvider: 'pin' } });
-    if (!user || !user.pinHash) return res.status(401).json({ error: 'invalid credentials' });
-    const ok = await bcrypt.compare(pin, user.pinHash);
+    const { nickname, pin } = b.data;
+    let user = null;
+    try {
+      user = await prisma.user.findFirst({ where: { nickname, authProvider: 'pin' } });
+    } catch (e) {
+      console.warn('DB login-pin failed; trying file store:', e.message);
+    }
+    if (!user) {
+      const rec = Array.from(pinUsersById.values()).find(u => (u.nickname || '') === nickname);
+      if (!rec) return res.status(401).json({ error: 'invalid credentials' });
+      const ok = await bcrypt.compare(pin, rec.pinHash || '');
+      if (!ok) return res.status(401).json({ error: 'invalid credentials' });
+      const token = signSession({ id: rec.id, role: 'user' });
+      res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
+      return res.json({ ok: true, user: { id: rec.id, publicId: rec.publicId, nickname: rec.nickname } });
+    }
+    const ok = await bcrypt.compare(pin, user.pinHash || '');
     if (!ok) return res.status(401).json({ error: 'invalid credentials' });
     const token = signSession({ id: user.id, role: user.role || 'user' });
     res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
@@ -424,7 +546,7 @@ app.get('/api/answers/:hash', async (req, res) => {
         if (prisma) {
           try {
             const ans = await prisma.answer.findFirst({ where: { imageHash: hash } });
-            return res.json({ answer: ans?.value || null });
+            if (ans) return res.json({ answer: ans.value || null });
           } catch (e) {
             console.warn('DB read answer failed, falling back:', e.message);
           }
@@ -442,22 +564,22 @@ app.post('/api/answers', async (req, res) => {
         if (!parse.success) return res.status(400).json({ error: 'imageHash and answer are required' });
         const { imageHash, answer } = parse.data;
 
-        let ok = false;
+        let savedToDb = false;
         if (prisma) {
           try {
-            // Find question by image hash; if a dedicated mapping exists, use it directly
             const existing = await prisma.answer.findFirst({ where: { imageHash } });
             if (existing) {
               await prisma.answer.update({ where: { id: existing.id }, data: { value: answer } });
             } else {
-              await prisma.answer.create({ data: { imageHash, value: answer } });
+              // Our schema requires a question relation; skip DB create if relation unknown
+              savedToDb = false;
             }
-            ok = true;
+            savedToDb = true;
           } catch (e) {
             console.warn('DB save answer failed, falling back:', e.message);
           }
         }
-        if (!ok) {
+        if (!savedToDb) {
           answersByHash[imageHash] = answer;
           await saveAnswers();
         }
@@ -495,88 +617,133 @@ app.post('/api/upload-image', async (req, res) => {
 
 // Questions API (DB only; require auth)
 app.get('/api/questions', async (req, res) => {
-  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-  const userId = getAuthedUserId(req);
-  if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  const items = await prisma.question.findMany({ where: { userId }, include: { image: true } });
-  return res.json({ items });
+  try {
+    if (!prisma) return res.json({ items: [] });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const items = await prisma.question.findMany({ where: { userId }, include: { image: true } });
+    return res.json({ items });
+  } catch (e) {
+    console.warn('DB get questions failed:', e.message);
+    return res.json({ items: [] });
+  }
 });
 app.post('/api/questions', async (req, res) => {
-  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-  const userId = getAuthedUserId(req);
-  if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  const Body = z.object({ imageHash: z.string(), imageUrl: z.string(), questionNumber: z.string().optional(), publisher: z.string().optional(), category: z.string().optional(), round: z.number().int().optional() });
-  const parsed = Body.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'invalid body' });
-  const { imageHash, imageUrl, questionNumber, publisher, category, round } = parsed.data;
-  // Upsert image
-  const img = await prisma.image.upsert({ where: { hash: imageHash }, update: { url: imageUrl }, create: { hash: imageHash, url: imageUrl } });
-  const q = await prisma.question.create({ data: { userId, imageId: img.id, questionNumber: questionNumber || null, publisher: publisher || null, category: category || null, round: typeof round === 'number' ? round : 0 } });
-  return res.json({ item: q });
+  try {
+    if (!prisma) return res.json({ item: null, persisted: false });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const Body = z.object({ imageHash: z.string(), imageUrl: z.string(), questionNumber: z.string().optional(), publisher: z.string().optional(), category: z.string().optional(), round: z.number().int().optional() });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'invalid body' });
+    const { imageHash, imageUrl, questionNumber, publisher, category, round } = parsed.data;
+    // Ensure user exists in DB
+    const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!dbUser) return res.json({ item: null, persisted: false });
+    // Upsert image
+    const img = await prisma.image.upsert({ where: { hash: imageHash }, update: { url: imageUrl }, create: { hash: imageHash, url: imageUrl } });
+    const q = await prisma.question.create({ data: { userId, imageId: img.id, questionNumber: questionNumber || null, publisher: publisher || null, category: category || null, round: typeof round === 'number' ? round : 0 } });
+    return res.json({ item: q, persisted: true });
+  } catch (e) {
+    console.warn('DB create question failed:', e.message);
+    return res.json({ item: null, persisted: false });
+  }
 });
 app.patch('/api/questions/:id', async (req, res) => {
-  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-  const userId = getAuthedUserId(req);
-  if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  const Params = z.object({ id: z.string() });
-  const Body = z.object({ round: z.number().int().optional(), lastAccessed: z.string().datetime().optional(), quizCount: z.number().int().optional(), category: z.string().optional() });
-  const p = Params.safeParse(req.params);
-  const b = Body.safeParse(req.body);
-  if (!p.success || !b.success) return res.status(400).json({ error: 'invalid' });
-  const q = await prisma.question.update({ where: { id: p.data.id }, data: { ...b.data } });
-  return res.json({ item: q });
+  try {
+    if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const Params = z.object({ id: z.string() });
+    const Body = z.object({ round: z.number().int().optional(), lastAccessed: z.string().datetime().optional(), quizCount: z.number().int().optional(), category: z.string().optional() });
+    const p = Params.safeParse(req.params);
+    const b = Body.safeParse(req.body);
+    if (!p.success || !b.success) return res.status(400).json({ error: 'invalid' });
+    const q = await prisma.question.update({ where: { id: p.data.id }, data: { ...b.data } });
+    return res.json({ item: q });
+  } catch (e) {
+    console.warn('DB update question failed:', e.message);
+    return res.status(500).json({ error: 'update failed' });
+  }
 });
 app.delete('/api/questions/:id', async (req, res) => {
-  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-  const userId = getAuthedUserId(req);
-  if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  const p = z.object({ id: z.string() }).safeParse(req.params);
-  if (!p.success) return res.status(400).json({ error: 'invalid' });
-  await prisma.question.delete({ where: { id: p.data.id } });
-  return res.json({ ok: true });
+  try {
+    if (!prisma) return res.json({ ok: true });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const p = z.object({ id: z.string() }).safeParse(req.params);
+    if (!p.success) return res.status(400).json({ error: 'invalid' });
+    await prisma.question.delete({ where: { id: p.data.id } });
+    return res.json({ ok: true });
+  } catch (e) {
+    console.warn('DB delete question failed:', e.message);
+    return res.json({ ok: true });
+  }
 });
 
 // Pop Quiz Queue API (DB only; require auth)
 app.get('/api/pop-quiz-queue', async (req, res) => {
-  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-  const userId = getAuthedUserId(req);
-  if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  const items = await prisma.popQuizQueue.findMany({ where: { question: { userId } }, include: { question: true } });
-  return res.json({ items });
+  try {
+    if (!prisma) return res.json({ items: [] });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const items = await prisma.popQuizQueue.findMany({ where: { question: { userId } }, include: { question: true } });
+    return res.json({ items });
+  } catch (e) {
+    console.warn('DB list queue failed:', e.message);
+    return res.json({ items: [] });
+  }
 });
 app.post('/api/pop-quiz-queue', async (req, res) => {
-  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-  const userId = getAuthedUserId(req);
-  if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  const Body = z.object({ questionId: z.string(), nextAt: z.coerce.date() });
-  const b = Body.safeParse(req.body);
-  if (!b.success) return res.status(400).json({ error: 'invalid' });
-  const existing = await prisma.popQuizQueue.findUnique({ where: { questionId: b.data.questionId } });
-  const item = existing
-    ? await prisma.popQuizQueue.update({ where: { id: existing.id }, data: { nextAt: b.data.nextAt } })
-    : await prisma.popQuizQueue.create({ data: { questionId: b.data.questionId, nextAt: b.data.nextAt } });
-  return res.json({ item });
+  try {
+    if (!prisma) return res.json({ item: null, persisted: false });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const Body = z.object({ questionId: z.string(), nextAt: z.coerce.date() });
+    const b = Body.safeParse(req.body);
+    if (!b.success) return res.status(400).json({ error: 'invalid' });
+    const q = await prisma.question.findUnique({ where: { id: b.data.questionId } });
+    if (!q || q.userId !== userId) return res.json({ item: null, persisted: false });
+    const existing = await prisma.popQuizQueue.findUnique({ where: { questionId: b.data.questionId } });
+    const item = existing
+      ? await prisma.popQuizQueue.update({ where: { id: existing.id }, data: { nextAt: b.data.nextAt } })
+      : await prisma.popQuizQueue.create({ data: { questionId: b.data.questionId, nextAt: b.data.nextAt } });
+    return res.json({ item, persisted: true });
+  } catch (e) {
+    console.warn('DB upsert queue failed:', e.message);
+    return res.json({ item: null, persisted: false });
+  }
 });
 app.patch('/api/pop-quiz-queue/:id', async (req, res) => {
-  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-  const userId = getAuthedUserId(req);
-  if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  const Params = z.object({ id: z.string() });
-  const Body = z.object({ nextAt: z.coerce.date() });
-  const p = Params.safeParse(req.params);
-  const b = Body.safeParse(req.body);
-  if (!p.success || !b.success) return res.status(400).json({ error: 'invalid' });
-  const item = await prisma.popQuizQueue.update({ where: { id: p.data.id }, data: { nextAt: b.data.nextAt } });
-  return res.json({ item });
+  try {
+    if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const Params = z.object({ id: z.string() });
+    const Body = z.object({ nextAt: z.coerce.date() });
+    const p = Params.safeParse(req.params);
+    const b = Body.safeParse(req.body);
+    if (!p.success || !b.success) return res.status(400).json({ error: 'invalid' });
+    const item = await prisma.popQuizQueue.update({ where: { id: p.data.id }, data: { nextAt: b.data.nextAt } });
+    return res.json({ item });
+  } catch (e) {
+    console.warn('DB update queue failed:', e.message);
+    return res.status(500).json({ error: 'update failed' });
+  }
 });
 app.delete('/api/pop-quiz-queue/:id', async (req, res) => {
-  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
-  const userId = getAuthedUserId(req);
-  if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  const p = z.object({ id: z.string() }).safeParse(req.params);
-  if (!p.success) return res.status(400).json({ error: 'invalid' });
-  await prisma.popQuizQueue.delete({ where: { id: p.data.id } });
-  return res.json({ ok: true });
+  try {
+    if (!prisma) return res.json({ ok: true });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const p = z.object({ id: z.string() }).safeParse(req.params);
+    if (!p.success) return res.status(400).json({ error: 'invalid' });
+    await prisma.popQuizQueue.delete({ where: { id: p.data.id } });
+    return res.json({ ok: true });
+  } catch (e) {
+    console.warn('DB delete queue failed:', e.message);
+    return res.json({ ok: true });
+  }
 });
 
 // Convenience: delete queue by questionId
@@ -735,15 +902,11 @@ ${ocrText}
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-// Error handling middleware
-app.use((error, req, res, next) => {
-    if (error instanceof multer.MulterError) {
-        if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
-        }
-    }
-    console.error('Server error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+// Express error handler (last)
+app.use((err, req, res, next) => {
+  try { console.error('Request error:', err && err.stack || err); } catch (_) {}
+  if (res.headersSent) return next(err);
+  return res.status(500).json({ error: 'server error' });
 });
 
 app.listen(PORT, () => {

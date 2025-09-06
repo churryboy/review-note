@@ -388,6 +388,16 @@ document.addEventListener('DOMContentLoaded', () => {
         showNRoundView();
         try { if (typeof startPopQuizTimer === 'function') { startPopQuizTimer(); } } catch (_) {}
     })();
+
+    // Refresh from server when window gains focus, so other-device actions reflect
+    window.addEventListener('focus', async () => {
+        if (window.currentAuthProvider === 'pin') {
+            try { await pullServerDataReplaceLocal(); } catch(_) {}
+            if (roundNView && roundNView.style.display !== 'none') displayNRoundQuestions();
+            if (settingsView && settingsView.style.display !== 'none') displayPopQuiz();
+            if (achievementView && achievementView.style.display !== 'none') displayAchievements();
+        }
+    });
 });
 
 function initAuthPage() {
@@ -728,7 +738,7 @@ function showNRoundView() {
     if (navSettings) navSettings.classList.remove('active');
     if (navAchievement) navAchievement.classList.remove('active');
     
-    displayNRoundQuestions();
+    (async () => { if (window.currentAuthProvider === 'pin') { try { await pullServerDataReplaceLocal(); } catch(_) {} } displayNRoundQuestions(); })();
 }
 
 // Show settings view (Pop Quiz)
@@ -744,7 +754,7 @@ function showSettingsView() {
     if (navSettings) navSettings.classList.add('active');
     if (navAchievement) navAchievement.classList.remove('active');
     
-    displayPopQuiz();
+    (async () => { if (window.currentAuthProvider === 'pin') { try { await pullServerDataReplaceLocal(); } catch(_) {} } displayPopQuiz(); })();
 }
 
 function computeRankIncrements() {
@@ -876,7 +886,7 @@ function showAchievementView() {
     if (navSettings) navSettings.classList.remove('active');
     if (navAchievement) navAchievement.classList.add('active');
 
-    displayAchievements();
+    (async () => { if (window.currentAuthProvider === 'pin') { try { await pullServerDataReplaceLocal(); } catch(_) {} } displayAchievements(); })();
 }
 
 // Show image review view

@@ -915,6 +915,22 @@ ${ocrText}
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
+// Debug health endpoint
+app.get('/api/debug/health', async (req, res) => {
+  try {
+    const userId = getAuthedUserId(req);
+    const base = { isProd: IS_PROD, prisma: !!prisma, userId };
+    if (!prisma) return res.json({ ...base, ok: true, note: 'prisma not available' });
+    const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
+    const questionCount = userId ? await prisma.question.count({ where: { userId } }) : null;
+    const popQuizCount = userId ? await prisma.popQuizQueue.count({ where: { question: { userId } } }) : null;
+    const achievementCount = userId ? await prisma.achievement.count({ where: { userId } }) : null;
+    return res.json({ ...base, ok: true, userExists: !!user, questionCount, popQuizCount, achievementCount });
+  } catch (e) {
+    return res.json({ ok: false, error: e && e.message || String(e) });
+  }
+});
+
 // Express error handler (last)
 app.use((err, req, res, next) => {
   try { console.error('Request error:', err && err.stack || err); } catch (_) {}

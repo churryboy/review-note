@@ -344,6 +344,21 @@ function rescheduleCurrentQuiz(delayMs) {
     } else {
         closeFailModal();
     }
+    // Persist to DB if possible
+    (async () => {
+        try {
+            const item = popQuizItems[index];
+            const qid = String(item && (item.dbId || item.questionId || ''));
+            if (qid) {
+                const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+                // Try update existing queue; if not found, upsert via POST
+                try {
+                    // We do not have queue id; use upsert
+                    await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questionId: qid, nextAt: new Date(Date.now() + delayMs).toISOString() }) });
+                } catch(_) {}
+            }
+        } catch(_) {}
+    })();
 }
 
 if (fail5mBtn) fail5mBtn.addEventListener('click', () => rescheduleCurrentQuiz(5 * 60 * 1000));
@@ -1081,6 +1096,14 @@ function displayNRoundQuestions() {
     const sortSelect = document.getElementById('nSortSelect');
     const sortValue = sortSelect ? sortSelect.value : 'created_recent';
     roundNQuestions = sortNRoundQuestions(roundNQuestions, sortValue);
+    // Exclude questions that are currently in pop quiz queue or achievements
+    try {
+        const excludedIds = new Set([
+            ...(popQuizItems || []).map(p => String(p.dbId || p.questionId || '')),
+            ...(achievements || []).map(a => String(a.dbId || a.questionId || '')),
+        ].filter(Boolean));
+        roundNQuestions = roundNQuestions.filter(q => !excludedIds.has(String(q.dbId || q.id)));
+    } catch (_) {}
     
     if (roundNQuestions.length === 0) {
         if (roundNList) roundNList.style.display = 'none';
@@ -2188,6 +2211,15 @@ function setupNRoundSwipe(item) {
                 const badge = item.querySelector('.question-round');
                 if (badge) badge.textContent = `${q.round}회독`;
                 applyRoundBadgeStyles(item.parentElement || roundNList);
+                // Persist round to DB
+                (async () => {
+                    try {
+                        if (q.dbId) {
+                            const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+                            await fetch(base + '/api/questions/' + String(q.dbId), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ round: q.round }) });
+                        }
+                    } catch (_) {}
+                })();
             }
             item.style.transform = 'translateX(0) rotate(0deg)';
         } else if (deltaX > threshold) {
@@ -2238,6 +2270,8 @@ function setupNRoundSwipe(item) {
                                     try { saveQuestions(); } catch (_) {}
                                     displayNRoundQuestions();
                                 }
+                                // Persist queue to DB
+                                (async () => { try { if (q.dbId) { const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000'; await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questionId: String(q.dbId), nextAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString() }) }); } } catch(_){} })();
                                 cleanup();
                             };
                         }
@@ -2254,6 +2288,8 @@ function setupNRoundSwipe(item) {
                         try { saveQuestions(); } catch (_) {}
                         displayNRoundQuestions();
                     }
+                    // Persist queue to DB
+                    (async () => { try { if (q.dbId) { const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000'; await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questionId: String(q.dbId), nextAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString() }) }); } } catch(_){} })();
                 })();
                 // microinteraction on pop quiz icon
                 try {

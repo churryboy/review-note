@@ -19,6 +19,8 @@
       mixpanel.set_config({batch_requests:false});
       try{ console.log('[Mixpanel] initialized'); }catch(_){}
       window.trackEvent=function(name,props){ try{ mixpanel.track(name,props||{});}catch(_){} };
+      // Guard people usage until library fully loads
+      (function waitPeople(){ try{ if (mixpanel && mixpanel.people) { /* ready */ } else { setTimeout(waitPeople, 200); } } catch(_) { setTimeout(waitPeople, 200); } })();
     </script>
 </head>
 <body>

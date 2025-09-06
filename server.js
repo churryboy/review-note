@@ -559,7 +559,11 @@ app.get('/api/answers/:hash', async (req, res) => {
 
         if (prisma) {
           try {
-            const ans = await prisma.answer.findFirst({ where: { imageHash: hash, userId: userId || undefined } });
+            let ans = await prisma.answer.findFirst({ where: { imageHash: hash, userId: userId || undefined } });
+            if (!ans) {
+              // Fallback: any user's answer for this hash (rare collision, but better UX)
+              ans = await prisma.answer.findFirst({ where: { imageHash: hash } });
+            }
             if (ans) return res.json({ answer: ans.value || null });
           } catch (e) {
             console.warn('DB read answer failed, falling back:', e.message);
@@ -629,7 +633,10 @@ app.post('/api/upload-image', async (req, res) => {
         await ensureDataDir();
         const filePath = path.join(UPLOADS_DIR, name);
         await fs.writeFile(filePath, Buffer.from(base64, 'base64'));
-        const url = `/uploads/${name}`;
+        const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').toString().split(',')[0].trim();
+        const host = req.headers.host;
+        const abs = `${proto}://${host}/uploads/${name}`;
+        const url = abs;
         return res.json({ url });
     } catch (e) {
         console.error('Failed to upload image:', e);

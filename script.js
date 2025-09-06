@@ -365,13 +365,12 @@ document.addEventListener('DOMContentLoaded', () => {
         await refreshAuthUi();
         routeAuthOrApp();
         initAuthPage();
+        // Load local, then replace from server for cross-device sync
         reloadUserState();
         if (window.currentAuthProvider === 'pin') {
-            showNRoundView();
-        } else {
-            const authView = document.getElementById('authView');
-            if (authView) authView.style.display = 'flex';
+            try { await pullServerDataReplaceLocal(); } catch(_) {}
         }
+        showNRoundView();
         try { if (typeof startPopQuizTimer === 'function') { startPopQuizTimer(); } } catch (_) {}
     })();
 });
@@ -2287,4 +2286,96 @@ function setupNRoundSwipe(item) {
     item.addEventListener('mousemove', handleMove);
     item.addEventListener('touchend', handleEnd);
     item.addEventListener('mouseup', handleEnd);
+}
+
+// Pull data from server (DB) and replace local state, then persist
+async function pullServerDataReplaceLocal() {
+    try {
+        const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+        // Questions
+        let qItems = [];
+        try {
+            const qRes = await fetch(base + '/api/questions');
+            if (qRes.ok) {
+                const j = await qRes.json();
+                qItems = (j && j.items) || [];
+            }
+        } catch(_) {}
+        // Pop quiz queue
+        let pqItems = [];
+        try {
+            const pqRes = await fetch(base + '/api/pop-quiz-queue');
+            if (pqRes.ok) {
+                const j = await pqRes.json();
+                pqItems = (j && j.items) || [];
+            }
+        } catch(_) {}
+        // Achievements
+        let aItems = [];
+        try {
+            const aRes = await fetch(base + '/api/achievements');
+            if (aRes.ok) {
+                const j = await aRes.json();
+                aItems = (j && j.items) || [];
+            }
+        } catch(_) {}
+
+        // Map DB records to client structures
+        const mappedQuestions = qItems.map(q => ({
+            id: q.id || Date.now(),
+            questionNumber: q.questionNumber || '문제',
+            publisher: q.publisher || '출처모름',
+            questionText: '이미지 문제',
+            answerChoices: [],
+            handwrittenNotes: '',
+            imageUrl: (q.image && q.image.url) || '',
+            imageHash: (q.image && q.image.hash) || null,
+            category: q.category || 'wrong',
+            round: q.round || 0,
+            timestamp: q.timestamp || new Date().toISOString(),
+            lastAccessed: q.lastAccessed || new Date().toISOString(),
+            solutionNotes: '',
+            userAnswer: '',
+            dbId: q.id
+        }));
+
+        const mappedPopQuiz = pqItems.map(p => ({
+            id: p.questionId,
+            questionNumber: (p.question && p.question.questionNumber) || '문제',
+            imageUrl: (p.question && p.question.image && p.question.image.url) || '',
+            imageHash: (p.question && p.question.image && p.question.image.hash) || null,
+            category: (p.question && p.question.category) || 'wrong',
+            round: (p.question && p.question.round) || 0,
+            lastAccessed: (p.question && p.question.lastAccessed) || new Date().toISOString(),
+            quizCount: (p.question && p.question.quizCount) || 0,
+            popQuizAdded: (p.createdAt) || new Date().toISOString(),
+            reappearAt: p.nextAt || null,
+            dbId: p.questionId
+        }));
+
+        const mappedAchievements = aItems.map(a => ({
+            id: a.questionId,
+            questionNumber: (a.question && a.question.questionNumber) || '문제',
+            imageUrl: (a.question && a.question.image && a.question.image.url) || '',
+            imageHash: (a.question && a.question.image && a.question.image.hash) || null,
+            category: (a.question && a.question.category) || 'wrong',
+            round: (a.question && a.question.round) || 0,
+            lastAccessed: (a.question && a.question.lastAccessed) || new Date().toISOString(),
+            quizCount: (a.question && a.question.quizCount) || 0,
+            achievedAt: a.achievedAt || new Date().toISOString(),
+            dbId: a.questionId
+        }));
+
+        // Replace local state and persist
+        questions = mappedQuestions;
+        popQuizItems = mappedPopQuiz;
+        achievements = mappedAchievements;
+        saveQuestions();
+        savePopQuizItems();
+        saveAchievements();
+        updateQuestionCount();
+        updatePopQuizBadge();
+        if (roundNView && roundNView.style.display !== 'none') displayNRoundQuestions();
+        if (achievementView && achievementView.style.display !== 'none') displayAchievements();
+    } catch(_) {}
 }

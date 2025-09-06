@@ -421,23 +421,32 @@ app.post('/api/auth/register-pin', async (req, res) => {
     if (!b.success) return res.status(400).json({ error: 'invalid' });
     const { nickname, pin } = b.data;
     const pinHash = await bcrypt.hash(pin, 10);
-    const publicId = await generate6DigitPublicId();
-    const email = `pin-${publicId}@pin.local`;
-    let user = null;
+
+    // Enforce unique nickname for PIN provider
     try {
-      user = await prisma.user.create({ data: { email, name: nickname, nickname, pinHash, publicId, authProvider: 'pin', role: 'user' } });
-    } catch (e) {
-      console.warn('DB register-pin failed:', e.message);
+      const exists = await prisma.user.findFirst({ where: { nickname, authProvider: 'pin' } });
+      if (exists) return res.status(409).json({ error: 'nickname exists' });
+    } catch (_) {}
+
+    const emailPrefix = 'pin-';
+    let user = null;
+    for (let i = 0; i < 5 && !user; i++) {
+      const publicId = await generate6DigitPublicId();
+      const email = `${emailPrefix}${publicId}@pin.local`;
+      try {
+        user = await prisma.user.create({ data: { email, name: nickname, nickname, pinHash, publicId, authProvider: 'pin', role: 'user' } });
+      } catch (e) {
+        const code = e && e.code;
+        if (code === 'P2002') {
+          // Unique constraint violation; retry with new publicId
+          continue;
+        }
+        console.warn('DB register-pin failed:', e.message || e);
+        break;
+      }
     }
-    if (!user && !IS_PROD) {
-      const id = 'pin_' + crypto.randomBytes(8).toString('hex');
-      const rec = { id, nickname, pinHash, publicId, createdAt: new Date().toISOString() };
-      pinUsersById.set(id, rec);
-      await savePinUsers();
-      const token = signSession({ id, role: 'user' });
-      res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
-      return res.json({ ok: true, user: { id, publicId, nickname } });
-    }
+    if (!user) return res.status(500).json({ error: 'register failed' });
+
     const token = signSession({ id: user.id, role: 'user' });
     res.cookie('session', token, { path: '/', sameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(), secure: IS_PROD, httpOnly: true, maxAge: 365 * 24 * 3600 * 1000 });
     return res.json({ ok: true, user: { id: user.id, publicId: user.publicId, nickname: user.nickname } });

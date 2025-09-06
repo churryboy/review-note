@@ -426,6 +426,9 @@ function initAuthPage() {
             await refreshAuthUi();
             routeAuthOrApp();
             reloadUserState();
+            if (window.currentAuthProvider === 'pin') {
+                try { await pullServerDataReplaceLocal(); } catch (_) {}
+            }
             showNRoundView();
         } catch (e) {
             console.error('submitAuth error', e);

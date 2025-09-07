@@ -16,6 +16,8 @@ const { fileTypeFromBuffer } = require('file-type');
 const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
 const rateLimit = require('express-rate-limit');
+let Sentry = null;
+try { Sentry = require('@sentry/node'); } catch (_) { Sentry = null; }
 
 // Global crash guards
 process.on('uncaughtException', (err) => {
@@ -24,6 +26,12 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   try { console.error('UnhandledRejection:', reason); } catch (_) {}
 });
+
+// Sentry (optional, env-gated)
+if (Sentry && process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV || 'development', tracesSampleRate: 0.1 });
+  app.use(Sentry.Handlers.requestHandler());
+}
 
 dotenv.config();
 
@@ -864,6 +872,63 @@ app.post('/api/achievements', async (req, res) => {
   return res.json({ item });
 });
 
+// User data export (DB only; require auth). Returns JSON download of the user's data
+app.get('/api/user/export', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  try {
+    const [user, images, questions, answers, queue, achievementsList] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true, nickname: true, publicId: true, authProvider: true, createdAt: true } }),
+      prisma.image.findMany({ where: { questions: { some: { userId } } } }),
+      prisma.question.findMany({ where: { userId }, include: { image: true } }),
+      prisma.answer.findMany({ where: { OR: [{ userId }, { question: { userId } }] }, include: { question: true } }),
+      prisma.popQuizQueue.findMany({ where: { question: { userId } }, include: { question: { include: { image: true } } } }),
+      prisma.achievement.findMany({ where: { userId }, include: { question: { include: { image: true } } } })
+    ]);
+    const payload = { exportedAt: new Date().toISOString(), user, images, questions, answers, popQuizQueue: queue, achievements: achievementsList };
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="review-note-export.json"');
+    return res.status(200).send(JSON.stringify(payload));
+  } catch (e) {
+    console.warn('export error:', e && e.message || e);
+    return res.status(500).json({ error: 'export failed' });
+  }
+});
+
+// User account deletion (DB only; require auth). Requires confirm token in body
+app.post('/api/user/delete', async (req, res) => {
+  if (!prisma) return res.status(501).json({ error: 'DB unavailable' });
+  const userId = getAuthedUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  const Body = z.object({ confirm: z.literal('DELETE') });
+  const b = Body.safeParse(req.body);
+  if (!b.success) return res.status(400).json({ error: 'confirmation required' });
+  try {
+    // Gather user's questions for relation deletes
+    const qs = await prisma.question.findMany({ where: { userId }, select: { id: true } });
+    const qIds = qs.map(q => q.id);
+    await prisma.$transaction(async (tx) => {
+      // Answers by user or linked to user's questions
+      await tx.answer.deleteMany({ where: { OR: [{ userId }, { questionId: { in: qIds } }] } });
+      // Pop quiz items linked to user's questions
+      await tx.popQuizQueue.deleteMany({ where: { questionId: { in: qIds } } });
+      // Achievements for user
+      await tx.achievement.deleteMany({ where: { userId } });
+      // Questions
+      await tx.question.deleteMany({ where: { userId } });
+      // Finally user
+      await tx.user.delete({ where: { id: userId } });
+    });
+    // Clear session cookie
+    res.cookie('session', '', { path: '/', maxAge: 0 });
+    return res.json({ ok: true });
+  } catch (e) {
+    console.warn('delete account error:', e && e.message || e);
+    return res.status(500).json({ error: 'delete failed' });
+  }
+});
+
 // OpenAI LLM chat with image context
 app.post('/api/llm-chat', async (req, res) => {
     try {
@@ -1007,6 +1072,7 @@ app.get('/api/debug/health', async (req, res) => {
 // Express error handler (last)
 app.use((err, req, res, next) => {
   try { console.error('Request error:', err && err.stack || err); } catch (_) {}
+  try { if (Sentry && process.env.SENTRY_DSN) Sentry.captureException(err); } catch (_) {}
   if (res.headersSent) return next(err);
   return res.status(500).json({ error: 'server error' });
 });

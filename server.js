@@ -12,6 +12,10 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { fileTypeFromBuffer } = require('file-type');
+const sharp = require('sharp');
+const { v4: uuidv4 } = require('uuid');
+const rateLimit = require('express-rate-limit');
 
 // Global crash guards
 process.on('uncaughtException', (err) => {
@@ -101,23 +105,20 @@ if (IS_PROD) {
 })();
 
 // Increase body parser limits for base64 images
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Configure multer for image uploads
 const storage = multer.memoryStorage();
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
-        if (allowedTypes.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and HEIC are allowed.'));
-        }
-    }
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB hard limit
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+    if (allowed.includes(file.mimetype)) return cb(null, true);
+    return cb(new Error('Invalid file type'));
+  }
 });
 
 // Initialize Google Vision API client
@@ -560,8 +561,8 @@ app.get('/api/answers/:hash', async (req, res) => {
         if (prisma) {
           try {
             let ans = await prisma.answer.findFirst({ where: { imageHash: hash, userId: userId || undefined } });
-            if (!ans) {
-              // Fallback: any user's answer for this hash (rare collision, but better UX)
+            if (!ans && !IS_PROD) {
+              // In non-prod only, fallback to any user's answer (dev convenience)
               ans = await prisma.answer.findFirst({ where: { imageHash: hash } });
             }
             if (ans) return res.json({ answer: ans.value || null });
@@ -626,13 +627,39 @@ app.post('/api/upload-image', async (req, res) => {
         if (!match) {
             return res.status(400).json({ error: 'Invalid data URL' });
         }
-        const mediaType = match[1];
+        const hintedType = (match[1] || '').toLowerCase();
         const base64 = match[2];
-        const ext = mediaType.includes('png') ? 'png' : mediaType.includes('webp') ? 'webp' : 'jpg';
-        const name = `${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+        const rawBuffer = Buffer.from(base64, 'base64');
+        // Enforce 5MB limit for data URL payload as well
+        if (rawBuffer.length > 5 * 1024 * 1024) {
+          return res.status(413).json({ error: 'file too large (max 5MB)' });
+        }
+        // Sniff actual MIME
+        const sniff = await fileTypeFromBuffer(rawBuffer);
+        const mime = sniff?.mime || hintedType;
+        const allowed = new Set(['image/jpeg', 'image/png', 'image/webp']);
+        if (!allowed.has(mime)) {
+          return res.status(400).json({ error: 'unsupported file type' });
+        }
+        // Normalize, auto-rotate, strip metadata via sharp
+        let pipeline = sharp(rawBuffer, { failOn: 'warning' }).rotate();
+        switch (mime) {
+          case 'image/jpeg':
+            pipeline = pipeline.jpeg({ quality: 90, mozjpeg: true }).withMetadata({ exif: false, icc: false });
+            break;
+          case 'image/png':
+            pipeline = pipeline.png({ compressionLevel: 9 }).withMetadata({});
+            break;
+          case 'image/webp':
+            pipeline = pipeline.webp({ quality: 90 }).withMetadata({});
+            break;
+        }
+        const sanitized = await pipeline.toBuffer();
+        const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+        const name = `${uuidv4()}.${ext}`;
         await ensureDataDir();
         const filePath = path.join(UPLOADS_DIR, name);
-        await fs.writeFile(filePath, Buffer.from(base64, 'base64'));
+        await fs.writeFile(filePath, sanitized);
         const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').toString().split(',')[0].trim();
         const host = req.headers.host;
         const abs = `${proto}://${host}/uploads/${name}`;

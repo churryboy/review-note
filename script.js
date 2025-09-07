@@ -1167,7 +1167,7 @@ function displayNRoundQuestions() {
             
             // Only open solution if not currently swiping
             if (!item.classList.contains('swiping')) {
-                const questionId = parseInt(item.dataset.id);
+                const questionId = String(item.dataset.id);
                 showSolutionView(questionId, 'n회독');
             }
         });
@@ -1245,7 +1245,7 @@ function applyRoundBadgeStyles(container) {
 
 // Show solution view
 function showSolutionView(questionId, fromView) {
-    const question = questions.find(q => q.id === questionId);
+    const question = questions.find(q => String(q.id) === String(questionId));
     if (!question) return;
 
     // Update last accessed time

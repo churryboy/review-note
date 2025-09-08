@@ -42,6 +42,19 @@ body {
     margin: 0 auto;
 }
 
+/* Round view swipe description panel */
+.roundn-desc-panel {
+    max-width: 500px;
+    margin: 8px auto 4px auto;
+    padding: 6px 10px;
+    text-align: center;
+    font-size: 0.92rem;
+    color: #666;
+    background: #ffffff;
+    border: 1px solid #eee;
+    border-radius: 10px;
+}
+
 /* Ensure profile button has stable size */
 #loginBtn {
     width: 40px;

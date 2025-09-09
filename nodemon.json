@@ -1,0 +1,11 @@
+{
+  "watch": ["server.js", "prisma", "package.json"],
+  "ignore": [
+    "node_modules/**",
+    ".git/**",
+    "data/uploads/**",
+    "data/*.json",
+    "public/uploads/**"
+  ],
+  "ext": "js,json"
+} 

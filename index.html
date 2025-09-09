@@ -236,6 +236,13 @@
                     <img id="solutionImage" src="" alt="문제 이미지">
                 </div>
                 
+                <!-- Answer Container -->
+                <div id="answerContainer" class="answer-container" style="margin:12px 0; padding:12px; border:2px solid #eee; border-radius:8px; font-size:0.95rem; background:#fafafa; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                    <span style="font-weight:600; color:#333;">정답</span>
+                    <span id="answerValue" style="color:#111; display:none;">정답을 알려주세요</span>
+                    <button id="answerReveal" class="save-solution-btn" style="padding:6px 10px; font-size:0.9rem;">보기</button>
+                </div>
+                
                 <!-- Solution Process -->
                 <div class="solution-process">
                     
@@ -314,9 +321,6 @@
     <!-- Incorrect Answer Modal -->
     <div class="image-popup-overlay" id="failModal" style="display: none;">
         <div class="image-popup-content encourage-content">
-            <button class="popup-close" id="failClose">
-                <i class="fas fa-times"></i>
-            </button>
             <div class="encourage-visual" aria-hidden="true">
                 <div class="encourage-emoji">💪</div>
                 <div class="sparkles">

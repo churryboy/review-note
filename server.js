@@ -571,7 +571,19 @@ app.get('/api/answers/:hash', async (req, res) => {
             let ans = await prisma.answer.findFirst({ where: { imageHash: hash, userId: userId || undefined } });
             if (!ans && !IS_PROD) {
               // In non-prod only, fallback to any user's answer (dev convenience)
-              ans = await prisma.answer.findFirst({ where: { imageHash: hash } });
+              const any = await prisma.answer.findFirst({ where: { imageHash: hash } });
+              if (any) {
+                // Self-heal: if current user exists, upsert a user-scoped answer with the same value
+                if (userId) {
+                  try {
+                    const existingForUser = await prisma.answer.findFirst({ where: { imageHash: hash, userId } });
+                    if (!existingForUser) {
+                      await prisma.answer.create({ data: { value: any.value || '', imageHash: hash, userId, questionId: any.questionId || null } });
+                    }
+                  } catch(_) {}
+                }
+                return res.json({ answer: any.value || null });
+              }
             }
             if (ans) return res.json({ answer: ans.value || null });
           } catch (e) {
@@ -592,19 +604,49 @@ app.post('/api/answers', async (req, res) => {
         const { imageHash, answer } = parse.data;
         const userId = getAuthedUserId(req);
 
+        // Server-side bridge: if this hash corresponds to a full URL, try to derive canonical pathname hash
+        let canonicalHash = imageHash;
+        try {
+          // If a matching question exists for this user with an image that has a pathname we can hash, prefer that hash
+          if (prisma && userId) {
+            const q = await prisma.question.findFirst({ where: { userId, image: { hash: imageHash } }, include: { image: true } });
+            if (q && q.image && q.image.url) {
+              try {
+                const u = new URL(q.image.url, (req.headers['x-forwarded-proto'] || req.protocol || 'http') + '://' + req.headers.host);
+                const pathOnly = u.pathname;
+                const crypto = require('crypto');
+                canonicalHash = crypto.createHash('sha256').update(pathOnly).digest('hex');
+                if (canonicalHash !== imageHash) {
+                  // Migrate any existing legacy answers for this user from imageHash -> canonicalHash
+                  try {
+                    const legacy = await prisma.answer.findFirst({ where: { imageHash, userId } });
+                    const existsCanonical = await prisma.answer.findFirst({ where: { imageHash: canonicalHash, userId } });
+                    if (legacy && !existsCanonical) {
+                      await prisma.answer.create({ data: { value: legacy.value || '', imageHash: canonicalHash, userId, questionId: legacy.questionId || q.id } });
+                    }
+                  } catch(_) {}
+                }
+              } catch(_) {}
+            }
+          }
+        } catch(_) {}
+
         let savedToDb = false;
         if (prisma) {
           try {
-            // Upsert by (userId, imageHash) if possible
-            const existing = await prisma.answer.findFirst({ where: { imageHash, userId: userId || undefined } });
+            // Upsert by (userId, canonicalHash)
+            const existing = await prisma.answer.findFirst({ where: { imageHash: canonicalHash, userId: userId || undefined } });
             if (existing) {
               await prisma.answer.update({ where: { id: existing.id }, data: { value: answer } });
               savedToDb = true;
             } else {
-              // Find question for this user by image hash
-              const q = userId ? await prisma.question.findFirst({ where: { userId, image: { hash: imageHash } }, include: { image: true } }) : null;
+              // Find question for this user by image hash or by image hash legacy
+              let q = userId ? await prisma.question.findFirst({ where: { userId, image: { hash: canonicalHash } }, include: { image: true } }) : null;
+              if (!q && userId) {
+                q = await prisma.question.findFirst({ where: { userId, image: { hash: imageHash } }, include: { image: true } });
+              }
               if (q) {
-                await prisma.answer.create({ data: { value: answer, imageHash, userId, questionId: q.id } });
+                await prisma.answer.create({ data: { value: answer, imageHash: canonicalHash, userId, questionId: q.id } });
                 savedToDb = true;
               } else {
                 savedToDb = false;
@@ -615,13 +657,52 @@ app.post('/api/answers', async (req, res) => {
           }
         }
         if (!savedToDb) {
-          answersByHash[imageHash] = answer;
+          answersByHash[canonicalHash] = answer;
           await saveAnswers();
         }
         return res.json({ ok: true });
     } catch (e) {
         return res.status(500).json({ error: 'failed to save answer' });
     }
+});
+
+app.post('/api/answers/migrate-canonical', async (req, res) => {
+  try {
+    if (!prisma) return res.status(501).json({ ok: false, error: 'DB unavailable' });
+    const userId = getAuthedUserId(req);
+    if (!userId) return res.status(401).json({ ok: false, error: 'unauthorized' });
+    const questions = await prisma.question.findMany({ where: { userId }, include: { image: true } });
+    const crypto = require('crypto');
+    let migrated = 0;
+    for (const q of questions) {
+      const url = q?.image?.url || '';
+      if (!url) continue;
+      let canonical = null;
+      try {
+        const u = new URL(url, (req.headers['x-forwarded-proto'] || req.protocol || 'http') + '://' + req.headers.host);
+        canonical = crypto.createHash('sha256').update(u.pathname).digest('hex');
+      } catch (_) {
+        canonical = crypto.createHash('sha256').update(String(url)).digest('hex');
+      }
+      if (!canonical) continue;
+      // If canonical already exists for user, skip
+      const existingCanon = await prisma.answer.findFirst({ where: { userId, imageHash: canonical } });
+      if (existingCanon) continue;
+      // Try legacy by full URL hash
+      const fullUrlHash = crypto.createHash('sha256').update(String(url)).digest('hex');
+      let legacy = await prisma.answer.findFirst({ where: { userId, imageHash: fullUrlHash } });
+      // Or any answer tied to this question (with different hash)
+      if (!legacy) legacy = await prisma.answer.findFirst({ where: { userId, questionId: q.id } });
+      if (legacy) {
+        await prisma.answer.create({ data: { value: legacy.value || '', imageHash: canonical, userId, questionId: q.id } });
+        migrated++;
+      }
+    }
+    return res.json({ ok: true, migrated });
+  } catch (e) {
+    console.error('migrate-canonical error:', e);
+    return res.status(500).json({ ok: false, error: 'migration failed' });
+  }
 });
 
 // Upload image from data URL and return a public URL
@@ -788,10 +869,11 @@ app.post('/api/pop-quiz-queue', async (req, res) => {
     if (!b.success) return res.status(400).json({ error: 'invalid' });
     const q = await prisma.question.findUnique({ where: { id: b.data.questionId } });
     if (!q || q.userId !== userId) return res.json({ item: null, persisted: false });
-    const existing = await prisma.popQuizQueue.findUnique({ where: { questionId: b.data.questionId } });
-    const item = existing
-      ? await prisma.popQuizQueue.update({ where: { id: existing.id }, data: { nextAt: b.data.nextAt } })
-      : await prisma.popQuizQueue.create({ data: { questionId: b.data.questionId, nextAt: b.data.nextAt } });
+    const item = await prisma.popQuizQueue.upsert({
+      where: { questionId: b.data.questionId },
+      update: { nextAt: b.data.nextAt },
+      create: { questionId: b.data.questionId, nextAt: b.data.nextAt }
+    });
     return res.json({ item, persisted: true });
   } catch (e) {
     console.warn('DB upsert queue failed:', e.message);

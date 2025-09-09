@@ -734,13 +734,13 @@ app.post('/api/upload-image', async (req, res) => {
         let pipeline = sharp(rawBuffer, { failOn: 'warning' }).rotate();
         switch (mime) {
           case 'image/jpeg':
-            pipeline = pipeline.jpeg({ quality: 90, mozjpeg: true }).withMetadata({ exif: false, icc: false });
+            pipeline = pipeline.jpeg({ quality: 90, mozjpeg: true });
             break;
           case 'image/png':
-            pipeline = pipeline.png({ compressionLevel: 9 }).withMetadata({});
+            pipeline = pipeline.png({ compressionLevel: 9 });
             break;
           case 'image/webp':
-            pipeline = pipeline.webp({ quality: 90 }).withMetadata({});
+            pipeline = pipeline.webp({ quality: 90 });
             break;
         }
         const sanitized = await pipeline.toBuffer();

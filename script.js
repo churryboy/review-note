@@ -245,7 +245,7 @@ async function refreshAuthUi() {
                 if (headerAvatar) headerAvatar.src = url;
             }
             if (loginBtn) {
-                loginBtn.title = '프로필';
+
             }
             // no profile visuals
         } else {
@@ -254,7 +254,7 @@ async function refreshAuthUi() {
             try { mixpanel.reset && mixpanel.reset(); } catch(_){}
             if (nickEl) nickEl.textContent = '';
             if (loginBtn) {
-                loginBtn.title = '로그인';
+
             }
             // no profile visuals
         }
@@ -558,7 +558,6 @@ async function updateVersionInfo() {
         if (branchEl) branchEl.textContent = "v2";
         if (commitEl) commitEl.textContent = "4976e7c";
     }
-}    if (successModal) successModal.style.display = 'none';
 }
 
 // Update version information in profile dropdown
@@ -1307,7 +1306,25 @@ async function updateVersionInfo() {
     function openOverlay(){ if (overlay) overlay.style.display = 'flex'; }
     function closeOverlay(){ if (overlay) overlay.style.display = 'none'; if (err) err.style.display = 'none'; }
     if (loginBtn) {
-        loginBtn.addEventListener('click', ()=> handle('/api/auth/login-pin'));
+
+    // Profile button (logoutBtn)
+    if (logoutBtn) {
+
+    // Logout button in profile dropdown
+    const profileLogoutBtn = document.getElementById(x27profileLogoutBtnx27);
+    if (profileLogoutBtn) {
+        profileLogoutBtn.addEventListener(x27clickx27, async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await doLogout();
+            profileDropdown.style.display = x27nonex27;
+        });
+    }        logoutBtn.addEventListener(x27clickx27, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleProfileDropdown();
+        });
+    }        loginBtn.addEventListener('click', ()=> handle('/api/auth/login-pin'));
     }
 
     async function handle(path){
@@ -1340,11 +1357,34 @@ function setupEventListeners() {
     // Floating camera button
     floatingCameraBtn.addEventListener('click', () => {
         cameraInput.click();
-    });
-
     // Login button (toggle dropdown, no direct login trigger)
     if (loginBtn) {
-        loginBtn.addEventListener('click', (e) => {
+        loginBtn.addEventListener(x27clickx27, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleProfileDropdown();
+        });
+    }
+
+    // Profile button (logoutBtn)
+    if (logoutBtn) {
+
+    // Logout button in profile dropdown
+    const profileLogoutBtn = document.getElementById(x27profileLogoutBtnx27);
+    if (profileLogoutBtn) {
+        profileLogoutBtn.addEventListener(x27clickx27, async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await doLogout();
+            profileDropdown.style.display = x27nonex27;
+        });
+    }        logoutBtn.addEventListener(x27clickx27, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleProfileDropdown();
+        });
+    }        });
+    }        loginBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             toggleProfileDropdown();

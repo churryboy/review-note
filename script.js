@@ -260,7 +260,7 @@ async function refreshAuthUi() {
         }
     } catch (_) {
         // Update version information
-        await updateVersionInfo();        // silent
+        updateVersionInfo();        // silent
     }
 }
 
@@ -428,7 +428,7 @@ async function updateVersionInfo() {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch (_) {}
         // Update version information
-        await updateVersionInfo();    await refreshAuthUi();
+        updateVersionInfo();    await refreshAuthUi();
     if (profileDropdown) profileDropdown.style.display = 'none';
 }
 
@@ -699,7 +699,7 @@ async function updateVersionInfo() {
                     }
                 } catch (_) {}
         // Update version information
-        await updateVersionInfo();            })();
+        updateVersionInfo();            })();
             // Pulse the 성취도 icon to indicate new card
             if (navAchievement) {
                 navAchievement.classList.add('achieve-pulse');
@@ -966,7 +966,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupEventListeners();
     // Initialize version information
-    await updateVersionInfo();    (async () => {
+    updateVersionInfo();    (async () => {
         await ensureSession();
         await refreshAuthUi();
         routeAuthOrApp();
@@ -981,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showNRoundView();
         try { if (typeof startPopQuizTimer === 'function') { startPopQuizTimer(); } } catch (_) {}
         // Update version information
-        await updateVersionInfo();    })();
+        updateVersionInfo();    })();
 
     // Refresh from server when window gains focus, so other-device actions reflect
     window.addEventListener('focus', async () => {
@@ -1049,7 +1049,7 @@ function initAuthPage() {
             if (window.currentAuthProvider === 'pin') {
                 try { await pullServerDataReplaceLocal(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();            }
+        updateVersionInfo();            }
             showNRoundView();
         } catch (e) {
             console.error('submitAuth error', e);
@@ -1183,7 +1183,7 @@ async function updateVersionInfo() {
         await refreshAuthUi();
     } catch (_) {}
         // Update version information
-        await updateVersionInfo();}
+        updateVersionInfo();}
 
 // Update version information in profile dropdown
 async function updateVersionInfo() {
@@ -1354,9 +1354,6 @@ async function updateVersionInfo() {
 
 // Set up event listeners
 function setupEventListeners() {
-    // Floating camera button
-    floatingCameraBtn.addEventListener('click', () => {
-        cameraInput.click();
     // Login button (toggle dropdown, no direct login trigger)
     if (loginBtn) {
         loginBtn.addEventListener(x27clickx27, (e) => {
@@ -1368,6 +1365,12 @@ function setupEventListeners() {
 
     // Profile button (logoutBtn)
     if (logoutBtn) {
+        logoutBtn.addEventListener(x27clickx27, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleProfileDropdown();
+        });
+    }
 
     // Logout button in profile dropdown
     const profileLogoutBtn = document.getElementById(x27profileLogoutBtnx27);
@@ -1378,7 +1381,7 @@ function setupEventListeners() {
             await doLogout();
             profileDropdown.style.display = x27nonex27;
         });
-    }        logoutBtn.addEventListener(x27clickx27, (e) => {
+    }    }        logoutBtn.addEventListener(x27clickx27, (e) => {
             e.preventDefault();
             e.stopPropagation();
             toggleProfileDropdown();
@@ -1450,7 +1453,7 @@ function setupEventListeners() {
                     });
                 } catch (_) {}
         // Update version information
-        await updateVersionInfo();            }
+        updateVersionInfo();            }
 
             // Persist into question and keep input visible
             question.userAnswer = (solutionAnswerInput.value || '').trim();
@@ -1532,7 +1535,7 @@ function setupEventListeners() {
                 }
             } catch (_) {}
         // Update version information
-        await updateVersionInfo();            const dbg = document.getElementById('reviewDebugHash');
+        updateVersionInfo();            const dbg = document.getElementById('reviewDebugHash');
             if (dbg) {
                 dbg.textContent = '';
                 dbg.style.display = 'none';
@@ -1548,7 +1551,7 @@ function setupEventListeners() {
         });
     }
 }
-
+}
 // Update version information in profile dropdown
 async function updateVersionInfo() {
     try {
@@ -1647,7 +1650,7 @@ async function persistSolutionAnswer() {
         }
     } catch (_) {}
         // Update version information
-        await updateVersionInfo();    updateQuestionCount();
+        updateVersionInfo();    updateQuestionCount();
 }
 
 // Update version information in profile dropdown
@@ -2406,7 +2409,7 @@ async function handleImageCapture(event) {
         fr.readAsDataURL(file);
     } catch (_) {}
         // Update version information
-        await updateVersionInfo();    
+        updateVersionInfo();    
     reviewImage.src = currentImageUrl;
     const reviewAnswerInput = document.getElementById('reviewAnswerInput');
     if (reviewAnswerInput) reviewAnswerInput.value = '';
@@ -2420,7 +2423,7 @@ async function handleImageCapture(event) {
         }
     } catch (_) {}
         // Update version information
-        await updateVersionInfo();
+        updateVersionInfo();
     showImageReviewView();
     cameraInput.value = '';
 }
@@ -2499,7 +2502,7 @@ function categorizeQuestion(category) {
         // Compress image to avoid localStorage quota issues
         try { dataUrl = await compressDataUrl(dataUrl, 1080, 0.82); } catch (_) {}
         // Update version information
-        await updateVersionInfo();        // Upload to server and keep URL only (reduces localStorage usage)
+        updateVersionInfo();        // Upload to server and keep URL only (reduces localStorage usage)
         try {
             const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
             const up = await fetch(base + '/api/upload-image', {
@@ -2515,7 +2518,7 @@ function categorizeQuestion(category) {
             }
         } catch (_) {}
         // Update version information
-        await updateVersionInfo();        let imageHash = null;
+        updateVersionInfo();        let imageHash = null;
         if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
             imageHash = currentImageHash || await computeSHA256HexFromDataUrl(dataUrl);
         } else {
@@ -2576,7 +2579,7 @@ function categorizeQuestion(category) {
             }
         } catch (_) {}
         // Update version information
-        await updateVersionInfo();        updateQuestionCount();
+        updateVersionInfo();        updateQuestionCount();
 
         const sys = document.getElementById('solutionSystemMsg');
         if (sys) {
@@ -2786,7 +2789,7 @@ function displayNRoundQuestions() {
         roundNQuestions = roundNQuestions.filter(q => !excludedIds.has(String(q.dbId || q.id)));
     } catch (_) {}
         // Update version information
-        await updateVersionInfo();    
+        updateVersionInfo();    
     if (roundNQuestions.length === 0) {
         if (roundNList) roundNList.style.display = 'none';
         if (roundNEmpty) roundNEmpty.style.display = 'block';
@@ -3094,7 +3097,7 @@ function showSolutionView(questionId, fromView) {
             }
         } catch (_) {}
         // Update version information
-        await updateVersionInfo();    })();
+        updateVersionInfo();    })();
 
 
     // Expose current id for chat/delete handlers
@@ -3115,7 +3118,7 @@ function showSolutionView(questionId, fromView) {
                 }
             } catch (_) {}
         // Update version information
-        await updateVersionInfo();            if (typeof answerByHash[hash] === 'string' && answerByHash[hash].length > 0) {
+        updateVersionInfo();            if (typeof answerByHash[hash] === 'string' && answerByHash[hash].length > 0) {
                 solutionAnswerInput.value = answerByHash[hash];
             }
             // Update answer container text (keep visible state)
@@ -3173,7 +3176,7 @@ function showSolutionView(questionId, fromView) {
                 sel.addRange(range);
             } catch (_) {}
         // Update version information
-        await updateVersionInfo();            valEl.focus();
+        updateVersionInfo();            valEl.focus();
         };
         const commitEdit = async () => {
             if (valEl.dataset.editing !== '1') return;
@@ -4254,7 +4257,7 @@ async function getAnswerForHash(imageHash) {
                 });
             } catch (_) {}
         // Update version information
-        await updateVersionInfo();        })();
+        updateVersionInfo();        })();
         return localTrim;
     }
     // Otherwise try server with small retry loop
@@ -4267,7 +4270,7 @@ async function getAnswerForHash(imageHash) {
             }
         } catch (_) {}
         // Update version information
-        await updateVersionInfo();        await new Promise(res => setTimeout(res, 120));
+        updateVersionInfo();        await new Promise(res => setTimeout(res, 120));
     }
     return '';
 }
@@ -4389,7 +4392,7 @@ async function canonicalHashFromUrl(url) {
         return await computeSHA256HexFromString(u.pathname);
     } catch (_) {
         // Update version information
-        await updateVersionInfo();        return await computeSHA256HexFromString(String(url));
+        updateVersionInfo();        return await computeSHA256HexFromString(String(url));
     }
 }
 
@@ -4474,18 +4477,18 @@ async function migrateAllHashesToCanonical() {
                 }
             } catch (_) {}
         // Update version information
-        await updateVersionInfo();        }
+        updateVersionInfo();        }
         if (mutated) {
             try { saveQuestions(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();            try { savePopQuizItems(); } catch (_) {}
+        updateVersionInfo();            try { savePopQuizItems(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();            try { saveAchievements(); } catch (_) {}
+        updateVersionInfo();            try { saveAchievements(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();        }
+        updateVersionInfo();        }
     } catch (_) {}
         // Update version information
-        await updateVersionInfo();}
+        updateVersionInfo();}
 
 // Update version information in profile dropdown
 async function updateVersionInfo() {
@@ -4556,7 +4559,7 @@ async function updateVersionInfo() {
             });
         } catch (_) {}
         // Update version information
-        await updateVersionInfo();    })();
+        updateVersionInfo();    })();
     inFlightSaves.set(imageHash, p);
     try { await p; } finally { inFlightSaves.delete(imageHash); }
 }
@@ -4626,7 +4629,7 @@ function handleQuizSubmit() {
         let pathOnly = '';
         try { pathOnly = new URL(src, location.origin).pathname; } catch (_) { pathOnly = typeof src === 'string' ? src : ''; }
         // Update version information
-        await updateVersionInfo();        let hash = await computeSHA256HexFromString(pathOnly);
+        updateVersionInfo();        let hash = await computeSHA256HexFromString(pathOnly);
         if (!hash) {
             const h2 = await ensureQuestionImageHash(quizItem);
             if (h2) hash = h2;
@@ -5003,7 +5006,7 @@ async function updateVersionInfo() {
             achievements = JSON.parse(saved) || [];
         } catch (_) {
         // Update version information
-        await updateVersionInfo();            achievements = [];
+        updateVersionInfo();            achievements = [];
         }
     }
 }
@@ -5119,7 +5122,7 @@ async function updateVersionInfo() {
 function saveAnswerByHash() {
     try { localStorage.setItem(storageKey('answerByHash'), JSON.stringify(answerByHash)); } catch (_) {}
         // Update version information
-        await updateVersionInfo();}
+        updateVersionInfo();}
 
 // Update version information in profile dropdown
 async function updateVersionInfo() {
@@ -5175,7 +5178,7 @@ async function updateVersionInfo() {
         answerByHash = v ? (JSON.parse(v) || {}) : {};
     } catch (_) {
         // Update version information
-        await updateVersionInfo();        answerByHash = {};
+        updateVersionInfo();        answerByHash = {};
     }
 }
 
@@ -5238,7 +5241,7 @@ async function computeSHA256HexFromString(text) {
         }
     } catch (_) {}
         // Update version information
-        await updateVersionInfo();    return simpleHash(String(text || ''));
+        updateVersionInfo();    return simpleHash(String(text || ''));
 }
 
 // Update version information in profile dropdown
@@ -5546,7 +5549,7 @@ async function updateVersionInfo() {
             hash = canonical;
         } catch (_) {
         // Update version information
-        await updateVersionInfo();            // Fallback to hashing raw string if URL parsing fails
+        updateVersionInfo();            // Fallback to hashing raw string if URL parsing fails
             hash = await computeSHA256HexFromString(url);
         }
     }
@@ -5554,7 +5557,7 @@ async function updateVersionInfo() {
         question.imageHash = hash;
         try { saveQuestions(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();    }
+        updateVersionInfo();    }
     return hash;
 }
 
@@ -6150,7 +6153,7 @@ async function updateVersionInfo() {
 async function doLogout() {
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
         // Update version information
-        await updateVersionInfo();    // Keep per-user data in localStorage to persist across sessions
+        updateVersionInfo();    // Keep per-user data in localStorage to persist across sessions
     window.currentUserId = null;
     window.currentAuthProvider = null;
     await refreshAuthUi();
@@ -6227,7 +6230,7 @@ document.addEventListener('click', (e) => {
                     if (profileNickname) profileNickname.textContent = (nick && nick.textContent) ? nick.textContent : '';
                 } catch (_) {}
         // Update version information
-        await updateVersionInfo();            }
+        updateVersionInfo();            }
         }
         return;
     }
@@ -6299,7 +6302,7 @@ function setupNRoundSwipe(item) {
                 q.round = (q.round || 0) + 1;
                 try { saveQuestions(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();                const badge = item.querySelector('.question-round');
+        updateVersionInfo();                const badge = item.querySelector('.question-round');
                 if (badge) badge.textContent = `${q.round}회독`;
                 applyRoundBadgeStyles(item.parentElement || roundNList);
                 // Persist round to DB
@@ -6311,7 +6314,7 @@ function setupNRoundSwipe(item) {
                         }
                     } catch (_) {}
         // Update version information
-        await updateVersionInfo();                })();
+        updateVersionInfo();                })();
             }
             item.style.transform = 'translateX(0) rotate(0deg)';
         } else if (deltaX > threshold) {
@@ -6347,13 +6350,13 @@ function setupNRoundSwipe(item) {
                                 popQuizItems.push(entry);
                                 try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();                                // remove from list now that it's queued
+        updateVersionInfo();                                // remove from list now that it's queued
                                 const idx = questions.findIndex(qq => String(qq.id) === String(qid));
                                 if (idx !== -1) {
                                     questions.splice(idx, 1);
                                     try { saveQuestions(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();                                    displayNRoundQuestions();
+        updateVersionInfo();                                    displayNRoundQuestions();
                                 }
                                 // Persist queue to DB
                                 (async () => { try { if (q.dbId) { const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000'; await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ questionId: String(q.dbId), nextAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString() }) }); } } catch(_){} })();
@@ -6367,13 +6370,13 @@ function setupNRoundSwipe(item) {
                     popQuizItems.push(entry);
                     try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();                    // remove from list now that it's queued
+        updateVersionInfo();                    // remove from list now that it's queued
                     const idx = questions.findIndex(qq => String(qq.id) === String(qid));
                     if (idx !== -1) {
                         questions.splice(idx, 1);
                         try { saveQuestions(); } catch (_) {}
         // Update version information
-        await updateVersionInfo();                        displayNRoundQuestions();
+        updateVersionInfo();                        displayNRoundQuestions();
                     }
                     // Persist queue to DB
                     (async () => { try { if (q.dbId) { const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000'; await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ questionId: String(q.dbId), nextAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString() }) }); } } catch(_){} })();
@@ -6390,7 +6393,7 @@ function setupNRoundSwipe(item) {
                     }
                 } catch (_) {}
         // Update version information
-        await updateVersionInfo();                // Best-effort DB persist
+        updateVersionInfo();                // Best-effort DB persist
                 (async () => {
                     try {
                         if (q.dbId) {
@@ -6399,7 +6402,7 @@ function setupNRoundSwipe(item) {
                         }
                     } catch (_) {}
         // Update version information
-        await updateVersionInfo();                })();
+        updateVersionInfo();                })();
                 // Keep card in place; do not remove from list unless explicitly handled elsewhere
             }
             item.style.transform = 'translateX(0) rotate(0deg)';
@@ -6624,10 +6627,10 @@ async function hasAnswerForQuestion(question) {
             if (v && v !== '정답을 알려주세요') return true;
         } catch (_) {}
         // Update version information
-        await updateVersionInfo();        return false;
+        updateVersionInfo();        return false;
     } catch (_) {
         // Update version information
-        await updateVersionInfo();        return false;
+        updateVersionInfo();        return false;
     }
 }
 // Update version information in profile dropdown

@@ -240,6 +240,73 @@ body {
 }
 
 .logout-btn:hover {
+
+/* Profile Version Info */
+.profile-version {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.version-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.version-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.version-item i {
+    width: 12px;
+    color: #999;
+    font-size: 0.75rem;
+}
+
+.version-label {
+    font-weight: 500;
+    min-width: 50px;
+}
+
+.version-value {
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: #333;
+    border: 1px solid #e9ecef;
+}
+
+.version-value:hover {
+
+/* Version info hover effects */
+.version-item:hover .version-value {
+    background: #e9ecef;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.version-item:hover i {
+    color: #FF5500;
+}
+
+/* Version info container */
+.profile-version {
+    background: #fafbfc;
+    margin: 8px -12px -12px -12px;
+    padding: 12px;
+    border-radius: 0 0 12px 12px;
+    border-top: 1px solid #f0f0f0;
+}
+    background: #e9ecef;
+    cursor: pointer;
+}
     background: #eef1f3;
 }
 

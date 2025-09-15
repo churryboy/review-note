@@ -1135,6 +1135,36 @@ ${ocrText}
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
+// Version information endpoint
+app.get("/api/version", (req, res) => {
+    try {
+        const { execSync } = require("child_process");
+        const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
+        const commit = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
+        const fullCommit = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+        const timestamp = execSync("git log -1 --format=%ci", { encoding: "utf8" }).trim();
+        
+        res.json({
+            branch,
+            commit,
+            fullCommit,
+            timestamp,
+            version: process.env.npm_package_version || "1.0.0",
+            nodeVersion: process.version
+        });
+    } catch (error) {
+        // Fallback if git commands fail
+        res.json({
+            branch: "unknown",
+            commit: "unknown",
+            fullCommit: "unknown",
+            timestamp: new Date().toISOString(),
+            version: "1.0.0",
+            nodeVersion: process.version,
+            error: "Failed to get git information"
+        });
+    }
+});
 // Debug health endpoint
 app.get('/api/debug/health', async (req, res) => {
   try {

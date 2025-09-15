@@ -13,7 +13,56 @@ function storageKey(base) {
     return `${base}::${uid}`;
 }
 
-// Constants
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Constants
 const POP_QUIZ_DELAY_MS = 5 * 1000; // 5 seconds readiness delay for first appearance
 const POP_QUIZ_REAPPEAR_MS = 24 * 60 * 60 * 1000; // 1 day for wrong answers
 // Default avatar (inline SVG data URI)
@@ -113,7 +162,56 @@ function closeQuizModal() {
     delete quizModal.dataset.index;
 }
 
-// New: Profile dropdown elements
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// New: Profile dropdown elements
 const loginBtn = null;
 let profileDropdown = null;
 let profileAvatar = null;
@@ -161,31 +259,229 @@ async function refreshAuthUi() {
             // no profile visuals
         }
     } catch (_) {
-        // silent
+        // Update version information
+        await updateVersionInfo();        // silent
     }
 }
 
-function toggleProfileDropdown(e) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function toggleProfileDropdown(e) {
     if (!profileDropdown) return;
     const isShown = profileDropdown.style.display !== 'none';
     profileDropdown.style.display = isShown ? 'none' : 'block';
 }
 
-function hideProfileDropdownOnOutsideClick(e) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function hideProfileDropdownOnOutsideClick(e) {
     if (!profileDropdown) return;
     const within = profileDropdown.contains(e.target) || (loginBtn && loginBtn.contains(e.target));
     if (!within) profileDropdown.style.display = 'none';
 }
 
-async function handleLogout() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}async function handleLogout() {
     try {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch (_) {}
-    await refreshAuthUi();
+        // Update version information
+        await updateVersionInfo();    await refreshAuthUi();
     if (profileDropdown) profileDropdown.style.display = 'none';
 }
 
-// New: solution steps button
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// New: solution steps button
 const viewSolutionStepsBtn = document.getElementById('viewSolutionStepsBtn');
 const stepsHeader = document.getElementById('stepsHeader');
 const stepsContent = document.getElementById('stepsContent');
@@ -212,11 +508,109 @@ const successUnderstoodBtn = document.getElementById('successUnderstoodBtn');
 function openSuccessModal() {
     if (successModal) successModal.style.display = 'flex';
 }
-function closeSuccessModal() {
-    if (successModal) successModal.style.display = 'none';
+
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}    if (successModal) successModal.style.display = 'none';
 }
 
-if (successClose) successClose.addEventListener('click', closeSuccessModal);
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}if (successClose) successClose.addEventListener('click', closeSuccessModal);
 
 function handleSuccessLater(index) {
     // Reschedule after 1 day; leave it in popQuizItems with new reappear time
@@ -232,7 +626,56 @@ function handleSuccessLater(index) {
     }
 }
 
-function handleSuccessUnderstood(index) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function handleSuccessUnderstood(index) {
     // Move to achievements and remove from pop quiz
     if (typeof index === 'number') {
         const removed = popQuizItems.splice(index, 1)[0];
@@ -256,7 +699,8 @@ function handleSuccessUnderstood(index) {
                         await fetch(base + '/api/pop-quiz-queue/by-question/' + removed.dbId, { method: 'DELETE' });
                     }
                 } catch (_) {}
-            })();
+        // Update version information
+        await updateVersionInfo();            })();
             // Pulse the 성취도 icon to indicate new card
             if (navAchievement) {
                 navAchievement.classList.add('achieve-pulse');
@@ -272,7 +716,56 @@ function handleSuccessUnderstood(index) {
     closeQuizModal();
 }
 
-if (successLaterBtn) successLaterBtn.addEventListener('click', () => {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}if (successLaterBtn) successLaterBtn.addEventListener('click', () => {
     const main = document.getElementById('successMainActions');
     const opts = document.getElementById('successDelayOptions');
     if (main) main.style.display = 'none';
@@ -296,8 +789,57 @@ function rescheduleFromSuccess(delayMs) {
         closeSuccessModal();
     }
 }
-if (success5mBtn) success5mBtn.addEventListener('click', () => rescheduleFromSuccess(5 * 60 * 1000));
-if (success1hBtn) success1hBtn.addEventListener('click', () => rescheduleFromSuccess(60 * 60 * 1000));
+
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}if (success1hBtn) success1hBtn.addEventListener('click', () => rescheduleFromSuccess(60 * 60 * 1000));
 if (success1dBtn) success1dBtn.addEventListener('click', () => rescheduleFromSuccess(24 * 60 * 60 * 1000));
 
 if (successUnderstoodBtn) successUnderstoodBtn.addEventListener('click', () => {
@@ -361,7 +903,56 @@ function rescheduleCurrentQuiz(delayMs) {
     })();
 }
 
-if (fail5mBtn) fail5mBtn.addEventListener('click', () => rescheduleCurrentQuiz(5 * 60 * 1000));
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}if (fail5mBtn) fail5mBtn.addEventListener('click', () => rescheduleCurrentQuiz(5 * 60 * 1000));
 if (fail1hBtn) fail1hBtn.addEventListener('click', () => rescheduleCurrentQuiz(60 * 60 * 1000));
 if (fail1dBtn) fail1dBtn.addEventListener('click', () => rescheduleCurrentQuiz(24 * 60 * 60 * 1000));
 
@@ -375,7 +966,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // sessionStorage.removeItem('nListCoachPending');
 
     setupEventListeners();
-    (async () => {
+    // Initialize version information
+    await updateVersionInfo();    (async () => {
         await ensureSession();
         await refreshAuthUi();
         routeAuthOrApp();
@@ -389,7 +981,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showNRoundView();
         try { if (typeof startPopQuizTimer === 'function') { startPopQuizTimer(); } } catch (_) {}
-    })();
+        // Update version information
+        await updateVersionInfo();    })();
 
     // Refresh from server when window gains focus, so other-device actions reflect
     window.addEventListener('focus', async () => {
@@ -456,7 +1049,8 @@ function initAuthPage() {
             reloadUserState();
             if (window.currentAuthProvider === 'pin') {
                 try { await pullServerDataReplaceLocal(); } catch (_) {}
-            }
+        // Update version information
+        await updateVersionInfo();            }
             showNRoundView();
         } catch (e) {
             console.error('submitAuth error', e);
@@ -467,7 +1061,56 @@ function initAuthPage() {
     btn.addEventListener('click', submitAuth);
 }
 
-function reloadUserState() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function reloadUserState() {
     // Reset and load per-user data from namespaced storage
     questions = [];
     popQuizItems = [];
@@ -484,16 +1127,115 @@ function reloadUserState() {
     if (achievementView && achievementView.style.display !== 'none') displayAchievements();
 }
 
-async function ensureSession() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}async function ensureSession() {
     try {
         const me = await fetch('/api/auth/me', { credentials: 'include' }).then(r => r.json()).catch(() => ({ user: null }));
         if (me && me.user) return;
         await fetch('/api/auth/anon', { method: 'POST', credentials: 'include' });
         await refreshAuthUi();
     } catch (_) {}
-}
+        // Update version information
+        await updateVersionInfo();}
 
-function showPinOverlayIfNeeded() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function showPinOverlayIfNeeded() {
     const overlay = document.getElementById('pinOverlay');
     if (!overlay) return;
     fetch('/api/auth/me', { credentials: 'include' }).then(r => r.json()).then(j => {
@@ -504,7 +1246,56 @@ function showPinOverlayIfNeeded() {
     }).catch(()=>{ overlay.style.display = 'flex'; });
 }
 
-// PIN overlay handlers
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// PIN overlay handlers
 (function initPinOverlay(){
     const overlay = document.getElementById('pinOverlay');
     const loginBtn = document.getElementById('pinLoginBtn');
@@ -618,7 +1409,8 @@ function setupEventListeners() {
                         body: JSON.stringify({ imageHash: useHash, answer: solutionAnswerInput.value || '' })
                     });
                 } catch (_) {}
-            }
+        // Update version information
+        await updateVersionInfo();            }
 
             // Persist into question and keep input visible
             question.userAnswer = (solutionAnswerInput.value || '').trim();
@@ -699,7 +1491,8 @@ function setupEventListeners() {
                     await saveAnswerForHash(canonical, val);
                 }
             } catch (_) {}
-            const dbg = document.getElementById('reviewDebugHash');
+        // Update version information
+        await updateVersionInfo();            const dbg = document.getElementById('reviewDebugHash');
             if (dbg) {
                 dbg.textContent = '';
                 dbg.style.display = 'none';
@@ -716,7 +1509,56 @@ function setupEventListeners() {
     }
 }
 
-// Replace persistSolutionAnswer with async version mapping by image hash
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Replace persistSolutionAnswer with async version mapping by image hash
 async function persistSolutionAnswer() {
     const questionId = parseInt(solutionView.dataset.currentId);
     if (!questionId) return;
@@ -764,15 +1606,114 @@ async function persistSolutionAnswer() {
             }
         }
     } catch (_) {}
-    updateQuestionCount();
+        // Update version information
+        await updateVersionInfo();    updateQuestionCount();
 }
 
-// Show 0회독 view (deprecated): redirect to n회독
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Show 0회독 view (deprecated): redirect to n회독
 function show0RoundView() {
     showNRoundView();
 }
 
-// Show n회독 view
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Show n회독 view
 function showNRoundView() {
     if (round0View) round0View.style.display = 'none';
     if (roundNView) roundNView.style.display = 'block';
@@ -788,7 +1729,56 @@ function showNRoundView() {
     (async () => { if (window.currentAuthProvider === 'pin') { try { await pullServerDataReplaceLocal(); } catch(_) {} } displayNRoundQuestions(); })();
 }
 
-// Show settings view (Pop Quiz)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Show settings view (Pop Quiz)
 function showSettingsView() {
     if (round0View) round0View.style.display = 'none';
     if (roundNView) roundNView.style.display = 'none';
@@ -804,7 +1794,56 @@ function showSettingsView() {
     (async () => { if (window.currentAuthProvider === 'pin') { try { await pullServerDataReplaceLocal(); } catch(_) {} } displayPopQuiz(); })();
 }
 
-function computeRankIncrements() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function computeRankIncrements() {
     const increments = [3];
     for (let i = 1; i < 4; i++) { // 5 tiers total → 4 increments
         increments[i] = Math.round(increments[i - 1] * 1.8);
@@ -812,7 +1851,56 @@ function computeRankIncrements() {
     return increments; // length 4 for 5 tiers
 }
 
-function computeRankTotals(increments) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function computeRankTotals(increments) {
     const totals = [];
     let sum = 0;
     for (let i = 0; i < increments.length; i++) {
@@ -822,7 +1910,56 @@ function computeRankTotals(increments) {
     return totals; // thresholds to reach tiers 2..8
 }
 
-function getAchievementRankInfo(achieveCount) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function getAchievementRankInfo(achieveCount) {
     const inc = computeRankIncrements();
     const totals = computeRankTotals(inc);
     let rank = 1;
@@ -855,7 +1992,56 @@ function getAchievementRankInfo(achieveCount) {
     return { rank, maxRank, achieveCount, nextStepSize, inStepProgress, remaining, progressRatio, title, nextTitle };
 }
 
-function displayAchievements() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function displayAchievements() {
     const list = document.getElementById('achievementList');
     const empty = document.getElementById('achievementEmpty');
     const status = document.getElementById('achievementStatus');
@@ -921,7 +2107,56 @@ function displayAchievements() {
     `).join('');
 }
 
-function showAchievementView() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function showAchievementView() {
     if (round0View) round0View.style.display = 'none';
     if (roundNView) roundNView.style.display = 'none';
     if (settingsView) settingsView.style.display = 'none';
@@ -936,7 +2171,56 @@ function showAchievementView() {
     (async () => { if (window.currentAuthProvider === 'pin') { try { await pullServerDataReplaceLocal(); } catch(_) {} } displayAchievements(); })();
 }
 
-// Show image review view
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Show image review view
 function showImageReviewView() {
     if (round0View) round0View.style.display = 'none';
     if (roundNView) roundNView.style.display = 'none';
@@ -949,7 +2233,56 @@ function showImageReviewView() {
     // checkAndShowCoachingGuide();
 }
 
-// Helper: derive a 9-digit short id from a hash (display only)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Helper: derive a 9-digit short id from a hash (display only)
 function shortIdFromHash(hash) {
     if (!hash || typeof hash !== 'string') return '';
     let acc = 5381;
@@ -961,7 +2294,56 @@ function shortIdFromHash(hash) {
     return String(num).padStart(9, '0');
 }
 
-// After computing currentImageHash on capture, render debug line
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// After computing currentImageHash on capture, render debug line
 async function handleImageCapture(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -983,7 +2365,8 @@ async function handleImageCapture(event) {
         };
         fr.readAsDataURL(file);
     } catch (_) {}
-    
+        // Update version information
+        await updateVersionInfo();    
     reviewImage.src = currentImageUrl;
     const reviewAnswerInput = document.getElementById('reviewAnswerInput');
     if (reviewAnswerInput) reviewAnswerInput.value = '';
@@ -996,12 +2379,62 @@ async function handleImageCapture(event) {
             dbg.style.display = 'none';
         }
     } catch (_) {}
-
+        // Update version information
+        await updateVersionInfo();
     showImageReviewView();
     cameraInput.value = '';
 }
 
-// Categorize question and store locally
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Categorize question and store locally
 function categorizeQuestion(category) {
     if (!currentImageBlob) {
         const sys = document.getElementById('solutionSystemMsg');
@@ -1025,7 +2458,8 @@ function categorizeQuestion(category) {
         const origDataUrl = dataUrl;
         // Compress image to avoid localStorage quota issues
         try { dataUrl = await compressDataUrl(dataUrl, 1080, 0.82); } catch (_) {}
-        // Upload to server and keep URL only (reduces localStorage usage)
+        // Update version information
+        await updateVersionInfo();        // Upload to server and keep URL only (reduces localStorage usage)
         try {
             const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
             const up = await fetch(base + '/api/upload-image', {
@@ -1040,7 +2474,8 @@ function categorizeQuestion(category) {
                 }
             }
         } catch (_) {}
-        let imageHash = null;
+        // Update version information
+        await updateVersionInfo();        let imageHash = null;
         if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
             imageHash = currentImageHash || await computeSHA256HexFromDataUrl(dataUrl);
         } else {
@@ -1100,7 +2535,8 @@ function categorizeQuestion(category) {
                 }
             }
         } catch (_) {}
-        updateQuestionCount();
+        // Update version information
+        await updateVersionInfo();        updateQuestionCount();
 
         const sys = document.getElementById('solutionSystemMsg');
         if (sys) {
@@ -1131,7 +2567,56 @@ function categorizeQuestion(category) {
     reader.readAsDataURL(currentImageBlob);
 }
 
-// Clean up current image resources
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Clean up current image resources
 function cleanupCurrentImage() {
     if (currentImageUrl) {
         URL.revokeObjectURL(currentImageUrl);
@@ -1141,12 +2626,110 @@ function cleanupCurrentImage() {
     currentImageHash = null;
 }
 
-// Display questions in 0회독 view (unused)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Display questions in 0회독 view (unused)
 function display0RoundQuestions() {
     // Deprecated in new flow
 }
 
-// Display questions in n회독 view
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Display questions in n회독 view
 function displayNRoundQuestions() {
     let roundNQuestions = questions.filter(q => (q.round ?? -1) >= 0);
 
@@ -1162,7 +2745,8 @@ function displayNRoundQuestions() {
         ].filter(Boolean));
         roundNQuestions = roundNQuestions.filter(q => !excludedIds.has(String(q.dbId || q.id)));
     } catch (_) {}
-    
+        // Update version information
+        await updateVersionInfo();    
     if (roundNQuestions.length === 0) {
         if (roundNList) roundNList.style.display = 'none';
         if (roundNEmpty) roundNEmpty.style.display = 'block';
@@ -1239,7 +2823,56 @@ function displayNRoundQuestions() {
     applyRoundBadgeStyles(roundNList); // Apply gradient colors after rendering
 }
 
-function sortNRoundQuestions(items, mode) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function sortNRoundQuestions(items, mode) {
     const arr = [...items];
     if (mode === 'created_recent') {
         arr.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -1257,7 +2890,56 @@ function sortNRoundQuestions(items, mode) {
     return arr;
 }
 
-// Apply dynamic styles to .question-round badges based on round count (blue -> red by 10th)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Apply dynamic styles to .question-round badges based on round count (blue -> red by 10th)
 function applyRoundBadgeStyles(container) {
     if (!container) return;
     const badges = container.querySelectorAll('.question-round');
@@ -1281,7 +2963,56 @@ function applyRoundBadgeStyles(container) {
     });
 }
 
-// Wire up sort change
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Wire up sort change
 (function initNSortHandler(){
     document.addEventListener('change', (e) => {
         const target = e.target;
@@ -1322,7 +3053,8 @@ function showSolutionView(questionId, fromView) {
             dbg.style.display = 'none';
             }
         } catch (_) {}
-    })();
+        // Update version information
+        await updateVersionInfo();    })();
 
 
     // Expose current id for chat/delete handlers
@@ -1342,7 +3074,8 @@ function showSolutionView(questionId, fromView) {
                     }
                 }
             } catch (_) {}
-            if (typeof answerByHash[hash] === 'string' && answerByHash[hash].length > 0) {
+        // Update version information
+        await updateVersionInfo();            if (typeof answerByHash[hash] === 'string' && answerByHash[hash].length > 0) {
                 solutionAnswerInput.value = answerByHash[hash];
             }
             // Update answer container text (keep visible state)
@@ -1399,7 +3132,8 @@ function showSolutionView(questionId, fromView) {
                 sel.removeAllRanges();
                 sel.addRange(range);
             } catch (_) {}
-            valEl.focus();
+        // Update version information
+        await updateVersionInfo();            valEl.focus();
         };
         const commitEdit = async () => {
             if (valEl.dataset.editing !== '1') return;
@@ -1444,7 +3178,56 @@ function showSolutionView(questionId, fromView) {
     if (solutionView) solutionView.style.display = 'block';
 }
 
-function renderChat(question) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function renderChat(question) {
     if (!chatMessages) return;
     chatMessages.innerHTML = '';
     const messages = question.chat || [];
@@ -1464,7 +3247,56 @@ function renderChat(question) {
     }
 }
 
-function formatAssistantText(text) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function formatAssistantText(text) {
     const lines = (text || '').split(/\r?\n/);
     let html = '';
     let inUl = false;
@@ -1489,11 +3321,109 @@ function formatAssistantText(text) {
     return html;
 }
 
-function escapeHtml(s){
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function escapeHtml(s){
     return (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 }
 
-function handleChatSend() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function handleChatSend() {
     if (chatSendLocked) return; // prevent double send
     const questionId = parseInt(solutionView.dataset.currentId);
     if (!questionId) return;
@@ -1547,12 +3477,110 @@ function handleChatSend() {
     });
 }
 
-// Return to previous view (n회독 in new flow)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Return to previous view (n회독 in new flow)
 function returnToPreviousView() {
     showNRoundView();
 }
 
-// Save solution notes
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Save solution notes
 function saveSolutionNotes() {
     const questionId = parseInt(solutionView.dataset.currentId);
     const question = questions.find(q => q.id === questionId);
@@ -1564,7 +3592,56 @@ function saveSolutionNotes() {
     }
 }
 
-// Handle delete from solution view
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Handle delete from solution view
 function handleDeleteCurrentSolution() {
     const questionId = parseInt(solutionView.dataset.currentId);
     const questionIndex = questions.findIndex(q => q.id === questionId);
@@ -1578,7 +3655,56 @@ function handleDeleteCurrentSolution() {
     }
 }
 
-// Open image detail view (kept for backward compatibility if needed)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Open image detail view (kept for backward compatibility if needed)
 function openImageDetail(questionId) {
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
@@ -1608,7 +3734,56 @@ function openImageDetail(questionId) {
     imageDetailView.style.display = 'flex';
 }
 
-function handleDeleteCurrentDetail() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function handleDeleteCurrentDetail() {
     const idStr = imageDetailView.dataset.currentId;
     if (!idStr) return;
     const id = parseInt(idStr);
@@ -1621,14 +3796,112 @@ function handleDeleteCurrentDetail() {
     show0RoundView();
 }
 
-// Update question count
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Update question count
 function updateQuestionCount() {
     if (totalQuestionCount) {
         totalQuestionCount.textContent = questions.length + '개';
     }
 }
 
-function updatePopQuizStatusPanel() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function updatePopQuizStatusPanel() {
     const waitingEl = document.getElementById('popQuizWaitingCountStat');
     const avgEl = document.getElementById('popQuizAvgRoundStat');
     if (!waitingEl || !avgEl) return;
@@ -1647,7 +3920,56 @@ function updatePopQuizStatusPanel() {
     avgEl.textContent = `${avg.toFixed(2)}회독`;
 }
 
-// Update pop quiz badge
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Update pop quiz badge
 function updatePopQuizBadge() {
     const now = Date.now();
     const readyCount = popQuizItems.filter(item => isPopQuizReady(item, now)).length;
@@ -1664,7 +3986,56 @@ function updatePopQuizBadge() {
     updatePopQuizStatusPanel();
 }
 
-function displayPopQuiz() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function displayPopQuiz() {
     const now = Date.now();
     const readyItems = popQuizItems
         .map((item, idx) => ({ item, idx }))
@@ -1715,7 +4086,56 @@ function displayPopQuiz() {
     });
 }
 
-function openQuizModal(index) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function openQuizModal(index) {
     const quizItem = popQuizItems[index];
     if (!quizItem) return;
     quizModal.style.display = 'flex';
@@ -1723,7 +4143,56 @@ function openQuizModal(index) {
     quizModal.dataset.index = String(index);
 }
 
-// Dedup queue for saveAnswerForHash
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Dedup queue for saveAnswerForHash
 const inFlightSaves = new Map(); // key: imageHash, value: Promise
 
 // Helper to retrieve saved answer by image hash (with light retry)
@@ -1744,7 +4213,8 @@ async function getAnswerForHash(imageHash) {
                     body: JSON.stringify({ imageHash, answer: localTrim })
                 });
             } catch (_) {}
-        })();
+        // Update version information
+        await updateVersionInfo();        })();
         return localTrim;
     }
     // Otherwise try server with small retry loop
@@ -1756,12 +4226,62 @@ async function getAnswerForHash(imageHash) {
                 if (typeof j.answer === 'string') return j.answer.trim();
             }
         } catch (_) {}
-        await new Promise(res => setTimeout(res, 120));
+        // Update version information
+        await updateVersionInfo();        await new Promise(res => setTimeout(res, 120));
     }
     return '';
 }
 
-// Normalize answers for comparison (trim, collapse spaces, convert full-width digits)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Normalize answers for comparison (trim, collapse spaces, convert full-width digits)
 function normalizeAnswer(v) {
     if (!v) return '';
     let s = String(v).trim();
@@ -1772,18 +4292,117 @@ function normalizeAnswer(v) {
     return s;
 }
 
-// Canonical hash helpers
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Canonical hash helpers
 async function canonicalHashFromUrl(url) {
     if (!url) return null;
     try {
         const u = new URL(url, location.origin);
         return await computeSHA256HexFromString(u.pathname);
     } catch (_) {
-        return await computeSHA256HexFromString(String(url));
+        // Update version information
+        await updateVersionInfo();        return await computeSHA256HexFromString(String(url));
     }
 }
 
-// Migrate all local items and answers to canonical pathname-hash
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Migrate all local items and answers to canonical pathname-hash
 async function migrateAllHashesToCanonical() {
     try {
         const candidates = [
@@ -1814,16 +4433,70 @@ async function migrateAllHashesToCanonical() {
                     await saveAnswerForHash(canonical, val);
                 }
             } catch (_) {}
-        }
+        // Update version information
+        await updateVersionInfo();        }
         if (mutated) {
             try { saveQuestions(); } catch (_) {}
-            try { savePopQuizItems(); } catch (_) {}
-            try { saveAchievements(); } catch (_) {}
-        }
+        // Update version information
+        await updateVersionInfo();            try { savePopQuizItems(); } catch (_) {}
+        // Update version information
+        await updateVersionInfo();            try { saveAchievements(); } catch (_) {}
+        // Update version information
+        await updateVersionInfo();        }
     } catch (_) {}
-}
+        // Update version information
+        await updateVersionInfo();}
 
-async function saveAnswerForHash(imageHash, answer) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}async function saveAnswerForHash(imageHash, answer) {
     if (!imageHash) return;
     const val = (answer || '').trim();
     answerByHash[imageHash] = val;
@@ -1842,12 +4515,62 @@ async function saveAnswerForHash(imageHash, answer) {
                 body: JSON.stringify({ imageHash, answer: val })
             });
         } catch (_) {}
-    })();
+        // Update version information
+        await updateVersionInfo();    })();
     inFlightSaves.set(imageHash, p);
     try { await p; } finally { inFlightSaves.delete(imageHash); }
 }
 
-// Update quiz submit to open success modal
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Update quiz submit to open success modal
 function handleQuizSubmit() {
     const indexStr = quizModal.dataset.index;
     if (!indexStr) return;
@@ -1862,7 +4585,8 @@ function handleQuizSubmit() {
         let src = (imgEl && imgEl.src) || quizItem.imageUrl || '';
         let pathOnly = '';
         try { pathOnly = new URL(src, location.origin).pathname; } catch (_) { pathOnly = typeof src === 'string' ? src : ''; }
-        let hash = await computeSHA256HexFromString(pathOnly);
+        // Update version information
+        await updateVersionInfo();        let hash = await computeSHA256HexFromString(pathOnly);
         if (!hash) {
             const h2 = await ensureQuestionImageHash(quizItem);
             if (h2) hash = h2;
@@ -1898,12 +4622,110 @@ function handleQuizSubmit() {
     })();
 }
 
-// Save questions to localStorage
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Save questions to localStorage
 function saveQuestions() {
     localStorage.setItem(storageKey('reviewNoteQuestions'), JSON.stringify(questions));
 }
 
-// Load questions from localStorage
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Load questions from localStorage
 function loadQuestions() {
     const saved = localStorage.getItem(storageKey('reviewNoteQuestions'));
     if (saved) {
@@ -1916,12 +4738,110 @@ function loadQuestions() {
     }
 }
 
-// Save pop quiz items to localStorage
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Save pop quiz items to localStorage
 function savePopQuizItems() {
     localStorage.setItem(storageKey('reviewNotePopQuiz'), JSON.stringify(popQuizItems));
 }
 
-// Load pop quiz items from localStorage
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Load pop quiz items from localStorage
 function loadPopQuizItems() {
     const saved = localStorage.getItem(storageKey('reviewNotePopQuiz'));
     if (saved) {
@@ -1934,22 +4854,170 @@ function loadPopQuizItems() {
     }
 }
 
-function saveAchievements() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function saveAchievements() {
     localStorage.setItem(storageKey('reviewNoteAchievements'), JSON.stringify(achievements));
 }
 
-function loadAchievements() {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function loadAchievements() {
     const saved = localStorage.getItem(storageKey('reviewNoteAchievements'));
     if (saved) {
         try {
             achievements = JSON.parse(saved) || [];
         } catch (_) {
-            achievements = [];
+        // Update version information
+        await updateVersionInfo();            achievements = [];
         }
     }
 }
 
-function isPopQuizReady(item, nowTs) {
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}function isPopQuizReady(item, nowTs) {
     const now = nowTs || Date.now();
     if (item.reappearAt) {
         return now >= new Date(item.reappearAt).getTime();
@@ -1958,20 +5026,169 @@ function isPopQuizReady(item, nowTs) {
     return added > 0 && (now - added) >= POP_QUIZ_DELAY_MS;
 }
 
-// Save/load answers mapped by image hash
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Save/load answers mapped by image hash
 function saveAnswerByHash() {
     try { localStorage.setItem(storageKey('answerByHash'), JSON.stringify(answerByHash)); } catch (_) {}
-}
-function loadAnswerByHash() {
+        // Update version information
+        await updateVersionInfo();}
+
+// Update version information in profile dropdown
+async function updateVersionInfo() {
     try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}    try {
         const v = localStorage.getItem(storageKey('answerByHash'));
         answerByHash = v ? (JSON.parse(v) || {}) : {};
     } catch (_) {
-        answerByHash = {};
+        // Update version information
+        await updateVersionInfo();        answerByHash = {};
     }
 }
 
-// New: Compute SHA-256 hex of an arbitrary string
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// New: Compute SHA-256 hex of an arbitrary string
 async function computeSHA256HexFromString(text) {
     try {
         if (window.crypto && window.crypto.subtle && window.TextEncoder) {
@@ -1980,10 +5197,60 @@ async function computeSHA256HexFromString(text) {
             return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
     } catch (_) {}
-    return simpleHash(String(text || ''));
+        // Update version information
+        await updateVersionInfo();    return simpleHash(String(text || ''));
 }
 
-// New: Compute SHA-256 hex of a Data URL (fallbacks to simple hash)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// New: Compute SHA-256 hex of a Data URL (fallbacks to simple hash)
 async function computeSHA256HexFromDataUrl(dataUrl) {
     try {
         const match = dataUrl.match(/^data:.*?;base64,(.*)$/);
@@ -1999,21 +5266,168 @@ async function computeSHA256HexFromDataUrl(dataUrl) {
         return simpleHash(dataUrl.slice(0, 2048));
     }
 }
-function base64ToUint8Array(base64) {
-    const binary = atob(base64);
+
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}    const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     return bytes;
 }
-function simpleHash(str) {
-    let h = 5381;
+
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}    let h = 5381;
     for (let i = 0; i < str.length; i++) {
         h = ((h << 5) + h) ^ str.charCodeAt(i);
     }
     return (h >>> 0).toString(16);
 }
-function shortIdFromHash(hash) {
-    if (!hash || typeof hash !== 'string') return '';
+
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}    if (!hash || typeof hash !== 'string') return '';
     let acc = 5381;
     for (let i = 0; i < hash.length; i++) {
         acc = ((acc << 5) + acc) ^ hash.charCodeAt(i);
@@ -2022,8 +5436,57 @@ function shortIdFromHash(hash) {
     const num = acc % 1000000000;
     return String(num).padStart(9, '0');
 }
-async function ensureQuestionImageHash(question) {
-    if (question.imageHash) return question.imageHash;
+
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}    if (question.imageHash) return question.imageHash;
     const url = question.imageUrl;
     if (!url) return null;
     let hash = null;
@@ -2042,18 +5505,69 @@ async function ensureQuestionImageHash(question) {
             }
             hash = canonical;
         } catch (_) {
-            // Fallback to hashing raw string if URL parsing fails
+        // Update version information
+        await updateVersionInfo();            // Fallback to hashing raw string if URL parsing fails
             hash = await computeSHA256HexFromString(url);
         }
     }
     if (hash) {
         question.imageHash = hash;
         try { saveQuestions(); } catch (_) {}
-    }
+        // Update version information
+        await updateVersionInfo();    }
     return hash;
 }
 
-// Show toast notification
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Show toast notification
 function showToast(message, type = 'success') {
     // Suppress green success system messages globally
     if (type === 'success') {
@@ -2113,7 +5627,56 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// No API simulation needed - we're storing images locally
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// No API simulation needed - we're storing images locally
 
 // Set up swipe gestures
 function setupSwipeGestures() {
@@ -2214,7 +5777,56 @@ function setupSwipeGestures() {
     }
 }
 
-// Set up swipe gestures for question items
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Set up swipe gestures for question items
 function setupQuestionSwipe(item) {
     let startX = 0;
     let startY = 0;
@@ -2313,7 +5925,56 @@ function setupQuestionSwipe(item) {
     }
 }
 
-// Show 3-step coaching guide for first creation
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Show 3-step coaching guide for first creation
 function showNListCoachingGuide() {
     if (!listCoachingOverlay) return;
     listCoachingOverlay.style.display = 'flex';
@@ -2334,7 +5995,56 @@ function showNListCoachingGuide() {
     render();
 }
 
-// Show N-round coaching guide
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Show N-round coaching guide
 function showNRoundCoachingGuide() {
     if (nListCoachingOverlay) nListCoachingOverlay.style.display = 'flex';
     if (nListCoachingSkip) nListCoachingSkip.addEventListener('click', () => {
@@ -2347,10 +6057,60 @@ function showNRoundCoachingGuide() {
     });
 }
 
-// Robust logout handler
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Robust logout handler
 async function doLogout() {
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
-    // Keep per-user data in localStorage to persist across sessions
+        // Update version information
+        await updateVersionInfo();    // Keep per-user data in localStorage to persist across sessions
     window.currentUserId = null;
     window.currentAuthProvider = null;
     await refreshAuthUi();
@@ -2359,7 +6119,56 @@ async function doLogout() {
     routeAuthOrApp();
 }
 
-// Delegate click for logout to avoid missing listeners
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Delegate click for logout to avoid missing listeners
 document.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
@@ -2377,7 +6186,8 @@ document.addEventListener('click', (e) => {
                     const nick = document.getElementById('headerNickname');
                     if (profileNickname) profileNickname.textContent = (nick && nick.textContent) ? nick.textContent : '';
                 } catch (_) {}
-            }
+        // Update version information
+        await updateVersionInfo();            }
         }
         return;
     }
@@ -2448,7 +6258,8 @@ function setupNRoundSwipe(item) {
             if (q) {
                 q.round = (q.round || 0) + 1;
                 try { saveQuestions(); } catch (_) {}
-                const badge = item.querySelector('.question-round');
+        // Update version information
+        await updateVersionInfo();                const badge = item.querySelector('.question-round');
                 if (badge) badge.textContent = `${q.round}회독`;
                 applyRoundBadgeStyles(item.parentElement || roundNList);
                 // Persist round to DB
@@ -2459,7 +6270,8 @@ function setupNRoundSwipe(item) {
                             await fetch(base + '/api/questions/' + String(q.dbId), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ round: q.round }) });
                         }
                     } catch (_) {}
-                })();
+        // Update version information
+        await updateVersionInfo();                })();
             }
             item.style.transform = 'translateX(0) rotate(0deg)';
         } else if (deltaX > threshold) {
@@ -2494,12 +6306,14 @@ function setupNRoundSwipe(item) {
                                 const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), questionNumber: q.questionNumber, category: q.category, lastAccessed: q.lastAccessed || q.timestamp, reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
                                 popQuizItems.push(entry);
                                 try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
-                                // remove from list now that it's queued
+        // Update version information
+        await updateVersionInfo();                                // remove from list now that it's queued
                                 const idx = questions.findIndex(qq => String(qq.id) === String(qid));
                                 if (idx !== -1) {
                                     questions.splice(idx, 1);
                                     try { saveQuestions(); } catch (_) {}
-                                    displayNRoundQuestions();
+        // Update version information
+        await updateVersionInfo();                                    displayNRoundQuestions();
                                 }
                                 // Persist queue to DB
                                 (async () => { try { if (q.dbId) { const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000'; await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ questionId: String(q.dbId), nextAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString() }) }); } } catch(_){} })();
@@ -2512,12 +6326,14 @@ function setupNRoundSwipe(item) {
                     const entry = { imageUrl: q.imageUrl, questionId: String(q.dbId || q.id), questionNumber: q.questionNumber, category: q.category, lastAccessed: q.lastAccessed || q.timestamp, reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(), round: q.round || 0 };
                     popQuizItems.push(entry);
                     try { savePopQuizItems(); updatePopQuizBadge(); } catch (_) {}
-                    // remove from list now that it's queued
+        // Update version information
+        await updateVersionInfo();                    // remove from list now that it's queued
                     const idx = questions.findIndex(qq => String(qq.id) === String(qid));
                     if (idx !== -1) {
                         questions.splice(idx, 1);
                         try { saveQuestions(); } catch (_) {}
-                        displayNRoundQuestions();
+        // Update version information
+        await updateVersionInfo();                        displayNRoundQuestions();
                     }
                     // Persist queue to DB
                     (async () => { try { if (q.dbId) { const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000'; await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ questionId: String(q.dbId), nextAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString() }) }); } } catch(_){} })();
@@ -2533,7 +6349,8 @@ function setupNRoundSwipe(item) {
                         ], { duration: 300, easing: 'ease-out' });
                     }
                 } catch (_) {}
-                // Best-effort DB persist
+        // Update version information
+        await updateVersionInfo();                // Best-effort DB persist
                 (async () => {
                     try {
                         if (q.dbId) {
@@ -2541,7 +6358,8 @@ function setupNRoundSwipe(item) {
                             await fetch(base + '/api/pop-quiz-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ questionId: String(q.dbId), nextAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString() }) });
                         }
                     } catch (_) {}
-                })();
+        // Update version information
+        await updateVersionInfo();                })();
                 // Keep card in place; do not remove from list unless explicitly handled elsewhere
             }
             item.style.transform = 'translateX(0) rotate(0deg)';
@@ -2558,7 +6376,56 @@ function setupNRoundSwipe(item) {
     item.addEventListener('mouseup', handleEnd);
 }
 
-// Pull data from server (DB) and replace local state, then persist
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Pull data from server (DB) and replace local state, then persist
 async function pullServerDataReplaceLocal() {
     try {
         const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
@@ -2655,7 +6522,56 @@ async function pullServerDataReplaceLocal() {
     } catch(_) {}
 }
 
-// Determine if a question already has any saved answer (server, local, or visible inline)
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
+    }
+}// Determine if a question already has any saved answer (server, local, or visible inline)
 async function hasAnswerForQuestion(question) {
     try {
         const hash = question.imageHash || (await ensureQuestionImageHash(question));
@@ -2667,8 +6583,60 @@ async function hasAnswerForQuestion(question) {
             const v = (valEl && valEl.textContent) ? valEl.textContent.trim() : '';
             if (v && v !== '정답을 알려주세요') return true;
         } catch (_) {}
-        return false;
+        // Update version information
+        await updateVersionInfo();        return false;
     } catch (_) {
-        return false;
+        // Update version information
+        await updateVersionInfo();        return false;
+    }
+}
+// Update version information in profile dropdown
+async function updateVersionInfo() {
+    try {
+        // Fetch version information from API
+        const response = await fetch("/api/version");
+        const versionData = await response.json();
+        
+        // Update branch info
+        const branchEl = document.getElementById("versionBranch");
+        if (branchEl) {
+            branchEl.textContent = versionData.branch || "unknown";
+        }
+        
+        // Update commit info
+        const commitEl = document.getElementById("versionCommit");
+        if (commitEl) {
+            commitEl.textContent = versionData.commit || "unknown";
+            commitEl.title = `Full commit: ${versionData.fullCommit || "unknown"}\nDate: ${versionData.timestamp || "unknown"}`;
+            
+            // Add click handler to copy commit hash
+            commitEl.addEventListener("click", () => {
+                const commitToCopy = versionData.fullCommit || versionData.commit || "unknown";
+                navigator.clipboard.writeText(commitToCopy).then(() => {
+                    // Show brief feedback
+                    const originalText = commitEl.textContent;
+                    const originalBg = commitEl.style.background;
+                    const originalColor = commitEl.style.color;
+                    commitEl.textContent = "Copied!";
+                    commitEl.style.background = "#d4edda";
+                    commitEl.style.color = "#155724";
+                    setTimeout(() => {
+                        commitEl.textContent = originalText;
+                        commitEl.style.background = originalBg;
+                        commitEl.style.color = originalColor;
+                    }, 1000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    console.log("Commit hash:", commitToCopy);
+                });
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update version info:", e);
+        // Fallback to static values
+        const branchEl = document.getElementById("versionBranch");
+        const commitEl = document.getElementById("versionCommit");
+        if (branchEl) branchEl.textContent = "v2";
+        if (commitEl) commitEl.textContent = "4976e7c";
     }
 }

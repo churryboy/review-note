@@ -5,28 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="google-site-verification" content="0OtrYCOU8M82-LcG2_Qq3Y6HZyRt_nlXg1vKK2aaHWE" />
     <title>복습노트 - 문제 스캔 & 저장</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E📝%3C/text%3E%3C/svg%3E">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E📝%3C/text%3E%3C/svg%3E">    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
       window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-    <!-- Mixpanel -->
-    <script>
-      // Defensive pre-init to avoid undefined errors during stub wiring
-      window.mixpanel = window.mixpanel || {};
-      window.mixpanel.people = window.mixpanel.people || {};
-    </script>
-    <script>(function(f,b){if(!b.__SV){var a,e,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms track_with_groups add_group set_group remove_group register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user groups.set groups.set_once groups.unset groups.remove".split(" ");for(g=0;g<i.length;g++)f(c,i[g]);var j="set set_once union unset remove delete".split(" ");c.get_group=function(){function a(c){b[c]=function(){call2_args=arguments;call2=[c].concat(Array.prototype.slice.call(call2_args,0));b.push(["get_group"].concat(call2))}}for(var b=[],d=0;d<j.length;d++)a(j[d]);return b};b._i.push([a,e,d])};b.__SV=1.2;a=f.createElement("script");a.type="text/javascript";a.async=!0;a.src="https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";e=f.getElementsByTagName("script")[0];e.parentNode.insertBefore(a,e)}})(document,window.mixpanel||[]);
-      mixpanel.init('b0ce995eb624270303e5cb57b6cfbd57',{debug:true,track_pageview:true});
-      mixpanel.set_config({batch_requests:false});
-      try{ console.log('[Mixpanel] initialized'); }catch(_){ }
-      window.trackEvent=function(name,props){ try{ mixpanel.track(name,props||{});}catch(_){ } };
-      // Guard people usage until library fully loads
-      (function waitPeople(){ try{ if (mixpanel && mixpanel.people) { /* ready */ } else { setTimeout(waitPeople, 200); } } catch(_){ setTimeout(waitPeople, 200); } })();
-    </script>
 </head>
 <body>
     <!-- Auth Page View -->
@@ -36,18 +21,11 @@
                 <i class="fas fa-book"></i>
                 <div class="auth-title">스마트 오답노트</div>
             </div>
-            <div class="auth-tabs">
-                <button id="authTabLogin" class="auth-tab active">로그인</button>
-                <button id="authTabSignup" class="auth-tab">회원가입</button>
-            </div>
             <div class="auth-body">
                 <div class="auth-row">
                     <input id="authNickname" type="text" maxlength="40" placeholder="닉네임" />
                 </div>
-                <div class="auth-row">
-                    <input id="authPin" type="password" inputmode="numeric" maxlength="12" placeholder="비밀번호 (4~12자리)" />
-                </div>
-                <button id="authActionBtn" class="save-solution-btn" style="width:100%; margin-top:8px;">로그인</button>
+                <button id="authActionBtn" class="btn-primary" style="width:100%; margin-top:8px;">시작하기</button>
                 <div id="authError" class="pin-error" style="display:none;"></div>
             </div>
         </div>
@@ -60,14 +38,13 @@
                 <i class="fas fa-book"></i>
                 <span class="logo-text">스마트 오답노트</span>
             </div>
-            <!-- Removed login/profile controls: signup is the first screen -->
             <button id="logoutBtn" class="back-btn" title="계정" style="margin-left:auto;">
                 <img id="headerAvatar" src="" alt="avatar" style="width:24px; height:24px; border-radius:999px; object-fit:cover;" />
             </button>
         </div>
         <div class="profile-dropdown" id="profileDropdown" style="display:none;">
             <div class="profile-header">
-                <img id="profileAvatar" src="" alt="avatar" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'><rect width='96' height='96' rx='48' fill='%23eee'/><circle cx='48' cy='38' r='16' fill='%23999'/><path d='M16 84c6-16 20-24 32-24s26 8 32 24' fill='%23999'/></svg>'">
+                <img id="profileAvatar" src="" alt="avatar">
                 <div class="profile-info">
                     <div class="profile-name" id="profilePublicId">-</div>
                     <div class="profile-email" id="profileNickname">-</div>
@@ -76,40 +53,23 @@
             <div class="profile-actions">
                 <button class="logout-btn" id="profileLogoutBtn"><i class="fas fa-sign-out-alt"></i><span>로그아웃</span></button>
             </div>
-            <div class="profile-version">
-                <div class="version-info">
-                    <div class="version-item">
-                        <i class="fas fa-code-branch"></i>
-                        <span class="version-label">Branch:</span>
-                        <span class="version-value" id="versionBranch">v2</span>
-                    </div>
-                    <div class="version-item">
-                        <i class="fas fa-hashtag"></i>
-                        <span class="version-label">Commit:</span>
-                        <span class="version-value" id="versionCommit">4976e7c</span>
-                    </div>
-                </div>
-            </div>
-        </div>        </div>
+        </div>
     </header>
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- 0회독 View -->
-        <!-- Removed list UI; camera now lives in n회독 view -->
         <!-- n회독 View -->
         <div class="round-view" id="roundNView">
-            <!-- Swipe description using pop-quiz-desc style -->
             <div class="pop-quiz-desc" id="roundSwipeDesc">
                 <div class="desc-text">
                     <div class="desc-body">카드를 왼쪽으로 스와이프 하면 회독이 오르고<br>오른쪽으로 스와이프하면 팝퀴즈로 보내집니다</div>
                 </div>
             </div>
+            
             <!-- Floating Camera Button -->
             <button class="floating-camera-btn" id="floatingCameraBtn">
                 <i class="fas fa-camera"></i>
             </button>
-            <!-- Hidden file input for camera -->
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
 
             <div class="list-controls" id="nListControls">
@@ -123,9 +83,7 @@
                 </select>
             </div>
 
-            <div class="question-list" id="roundNList">
-                <!-- n회독 questions will be dynamically added here -->
-            </div>
+            <div class="question-list" id="roundNList"></div>
             
             <div class="empty-state" id="roundNEmpty">
                 <i class="fas fa-inbox"></i>
@@ -152,9 +110,7 @@
                     <strong id="popQuizAvgRoundStat">0.00회독</strong>
                 </div>
             </div>
-            <div class="pop-quiz-container" id="popQuizContainer">
-                <!-- Pop quiz content will be displayed here (blank until quiz appears) -->
-            </div>
+            <div class="pop-quiz-container" id="popQuizContainer"></div>
             
             <div class="empty-state" id="popQuizEmpty">
                 <i class="fas fa-clock"></i>
@@ -180,42 +136,23 @@
                     <i class="fas fa-arrow-left"></i>
                 </button>
                 <h2>문제를 분류해주세요</h2>
-                <button class="back-btn" id="deleteFromReview" title="삭제" style="justify-self:end;">
+                <button class="back-btn" id="deleteFromReview" title="삭제">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
             
             <div class="swipe-container">
-                <!-- Swipe indicators (kept hidden by not enabling swipe) -->
-                <div class="swipe-indicator left" id="leftIndicator">
-                    <div class="indicator-content">
-                        <i class="fas fa-times-circle"></i>
-                        <span>틀린 문제</span>
-                    </div>
-                </div>
-                
-                <div class="swipe-indicator right" id="rightIndicator">
-                    <div class="indicator-content">
-                        <i class="fas fa-question-circle"></i>
-                        <span>애매한 문제</span>
-                    </div>
-                </div>
-                
-                <!-- Image card -->
                 <div class="image-card" id="imageCard">
                     <img id="reviewImage" src="" alt="문제 이미지">
                 </div>
             </div>
 
-            <!-- Inserted solution notes between swipe and actions -->
             <div class="solution-notes" style="padding: 16px 20px; background:#fff;">
                 <h3 style="margin-bottom:8px;">정답 입력란</h3>
-                <p style="color:#666; margin:0 0 10px; font-size:0.92rem;">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요. 이 문제로 퀴즈를 받고 싶으면 정답을 입력해주세요</p>
+                <p style="color:#666; margin:0 0 10px; font-size:0.92rem;">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요.</p>
                 <input id="reviewAnswerInput" type="text" placeholder="정답을 입력하세요" style="width:100%; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />
-                <div id="reviewDebugHash" class="debug-hash" style="margin-top:8px; display:none;"></div>
             </div>
             
-            <!-- Action buttons -->
             <div class="review-actions">
                 <button class="action-btn wrong" id="wrongBtn">
                     <i class="fas fa-times-circle"></i>
@@ -227,7 +164,6 @@
                 </button>
             </div>
         </div>
-        
         
         <!-- Solution View -->
         <div class="solution-view" id="solutionView" style="display: none;">
@@ -245,46 +181,31 @@
             </div>
             
             <div class="solution-content">
-                <!-- Original Image -->
                 <div class="solution-image-container">
                     <img id="solutionImage" src="" alt="문제 이미지">
                 </div>
                 
-                <!-- Answer Container -->
-                <div id="answerContainer" class="answer-container" style="margin:12px 0; padding:12px; border:2px solid #eee; border-radius:8px; font-size:0.95rem; background:#fafafa; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                <div id="answerContainer" class="answer-container">
                     <span style="font-weight:600; color:#333;">정답</span>
                     <span id="answerValue" style="color:#111; display:none;">정답을 알려주세요</span>
-                    <button id="answerReveal" class="save-solution-btn" style="padding:6px 10px; font-size:0.9rem;">보기</button>
+                    <button id="answerReveal" class="btn-secondary" style="padding:6px 10px;">보기</button>
                 </div>
                 
-                <!-- Solution Process -->
                 <div class="solution-process">
-                    
                     <div class="solution-notes">
                         <h3>정답 입력란</h3>
-                        <p style="color:#666; margin:6px 0 10px; font-size:0.92rem;">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요. 이 문제로 퀴즈를 받고 싶으면 정답을 입력해주세요</p>
-                        <div style="display:flex; gap:8px; align-items:center; position:relative;">
+                        <p style="color:#666; margin:6px 0 10px; font-size:0.92rem;">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요.</p>
+                        <div style="display:flex; gap:8px; align-items:center;">
                             <input id="solutionAnswerInput" type="text" placeholder="정답을 입력하세요" style="flex:1; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />
-                            <button id="solutionAnswerSubmit" class="save-solution-btn"><i class="fas fa-paper-plane"></i><span>제출</span></button>
-                            <div id="solutionSystemMsg" class="system-msg" style="display:none;">정답이 저장되었습니다</div>
+                            <button id="solutionAnswerSubmit" class="btn-primary"><i class="fas fa-paper-plane"></i><span>제출</span></button>
                         </div>
-                        <div id="solutionDebugHash" class="debug-hash" style="margin-top:8px; display:none;"></div>
                     </div>
-
-                    
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Image Popup Modal -->
-    <div class="image-popup-overlay" id="imagePopupOverlay" style="display: none;">
-        <div class="image-popup-content">
-            <img id="popupImage" src="" alt="문제 이미지">
-        </div>
-    </div>
-
-    <!-- Pop Quiz Modal -->
+    <!-- Quiz Modal -->
     <div class="image-popup-overlay" id="quizModal" style="display: none;">
         <div class="image-popup-content">
             <div class="quiz-image-container">
@@ -292,23 +213,16 @@
             </div>
             <div class="quiz-answer-panel">
                 <input id="quizAnswer" type="text" placeholder="정답을 입력하세요" />
-                <button id="quizSubmit" class="save-solution-btn"><i class="fas fa-paper-plane"></i><span>제출</span></button>
+                <button id="quizSubmit" class="btn-primary"><i class="fas fa-paper-plane"></i><span>제출</span></button>
                 <div id="quizResult" class="quiz-result" style="display:none;"></div>
             </div>
         </div>
     </div>
 
-    <!-- Success Modal for Correct Answer -->
+    <!-- Success Modal -->
     <div class="image-popup-overlay" id="successModal" style="display: none;">
         <div class="image-popup-content success-content">
             <div class="celebration" aria-hidden="true">
-                <span class="confetti"></span>
-                <span class="confetti"></span>
-                <span class="confetti"></span>
-                <span class="confetti"></span>
-                <span class="confetti"></span>
-                <span class="confetti"></span>
-                <span class="confetti"></span>
                 <span class="confetti"></span>
                 <span class="confetti"></span>
                 <span class="confetti"></span>
@@ -321,18 +235,18 @@
                 <p>이제 이 문제를 완벽히 이해하신 것 같네요!</p>
             </div>
             <div class="success-actions" id="successMainActions">
-                <button id="successLaterBtn" class="save-solution-btn" style="background:#f0f0f0; color:#333;"><span>나중에 또 퀴즈로 풀어볼래요</span></button>
-                <button id="successUnderstoodBtn" class="save-solution-btn"><span>이 문제는 완전히 이해했어요!</span></button>
+                <button id="successLaterBtn" class="btn-secondary">나중에 또 퀴즈로 풀어볼래요</button>
+                <button id="successUnderstoodBtn" class="btn-primary">이 문제는 완전히 이해했어요!</button>
             </div>
             <div class="success-actions" id="successDelayOptions" style="display:none; flex-direction:column; gap:8px;">
-                <button id="success5mBtn" class="save-solution-btn" style="width:100%;"><span>5분뒤에 다시 풀어볼래요</span></button>
-                <button id="success1hBtn" class="save-solution-btn" style="width:100%;"><span>1시간 뒤에 다시 풀어볼래요</span></button>
-                <button id="success1dBtn" class="save-solution-btn" style="width:100%;"><span>내일 다시 풀어볼래요</span></button>
+                <button id="success5mBtn" class="btn-primary" style="width:100%;">5분뒤에 다시 풀어볼래요</button>
+                <button id="success1hBtn" class="btn-primary" style="width:100%;">1시간 뒤에 다시 풀어볼래요</button>
+                <button id="success1dBtn" class="btn-primary" style="width:100%;">내일 다시 풀어볼래요</button>
             </div>
         </div>
     </div>
 
-    <!-- Incorrect Answer Modal -->
+    <!-- Fail Modal -->
     <div class="image-popup-overlay" id="failModal" style="display: none;">
         <div class="image-popup-content encourage-content">
             <div class="encourage-visual" aria-hidden="true">
@@ -341,17 +255,16 @@
                     <span class="sparkle"></span>
                     <span class="sparkle"></span>
                     <span class="sparkle"></span>
-                    <span class="sparkle"></span>
                 </div>
             </div>
             <div class="encourage-body">
                 <h3>조금만 더!</h3>
-                <p>아쉽지만 정답이 아니네요.. 우리 조금 더 공부한 다음에 다시 풀어보도록 해요!</p>
+                <p>아쉽지만 정답이 아니네요.. 조금 더 공부한 다음에 다시 풀어보도록 해요!</p>
             </div>
             <div class="encourage-actions">
-                <button id="fail5mBtn" class="save-solution-btn"><span>5분후에 다시 풀어볼래요</span></button>
-                <button id="fail1hBtn" class="save-solution-btn"><span>1시간 후에 다시 풀어볼래요</span></button>
-                <button id="fail1dBtn" class="save-solution-btn"><span>내일 다시 풀어볼래요</span></button>
+                <button id="fail5mBtn" class="btn-primary">5분후에 다시 풀어볼래요</button>
+                <button id="fail1hBtn" class="btn-primary">1시간 후에 다시 풀어볼래요</button>
+                <button id="fail1dBtn" class="btn-primary">내일 다시 풀어볼래요</button>
             </div>
         </div>
     </div>
@@ -367,68 +280,8 @@
             </div>
             <div style="display:flex; gap:8px; align-items:center; padding-top:6px;">
                 <input id="answerReqInput" type="text" placeholder="정답을 입력하세요" style="flex:1; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />
-                <button id="answerReqSubmit" class="save-solution-btn"><span>저장하고 퀴즈로</span></button>
+                <button id="answerReqSubmit" class="btn-primary">저장하고 퀴즈로</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Coaching Guide Overlay (unused in auth page) -->
-    <div class="coaching-overlay" id="coachingOverlay" style="display: none;"></div>
-        <div class="coaching-overlay" id="listCoachingOverlay" style="display: none;">
-        <div class="coaching-content">
-            <div class="coaching-header">
-                <h2>처음 사용 가이드</h2>
-                <button class="coaching-skip" id="listCoachingSkip">건너뛰기</button>
-            </div>
-                            <div class="coaching-steps">
-                    <div class="coaching-step">
-                        <div class="coaching-emoji">👈</div>
-                        <h3>왼쪽으로 보내면 회독 +1</h3>
-                        <p>카드를 왼쪽으로 스와이프하거나 '회독 추가 +'로 회독 수를 올릴 수 있어요.</p>
-                    </div>
-                    <div class="coaching-step">
-                        <div class="coaching-emoji">👉</div>
-                        <h3>오른쪽으로 보내면 팝퀴즈</h3>
-                        <p>카드를 오른쪽으로 스와이프하면 팝퀴즈 대기열에 들어가요.</p>
-                    </div>
-                    <div class="coaching-step">
-                        <div class="coaching-emoji">🎯</div>
-                        <h3>팝퀴즈는 뜬금없이 등장!</h3>
-                        <p>팝퀴즈는 잊을만할 때 쯤 랜덤하게 나타나요. 당장 목록에는 보이지 않을 수 있어요.</p>
-                    </div>
-                </div>
-            <div class="coaching-actions" style="padding: 0 20px 20px; text-align:center;">
-                <button id="listCoachingNext" class="save-solution-btn"><span>확인</span></button>
-            </div>
-        </div>
-    </div>
-    <div class="coaching-overlay" id="nListCoachingOverlay" style="display: none;">
-        <div class="coaching-content">
-            <div class="coaching-header">
-                <h2>n회독 가이드</h2>
-                <button class="coaching-skip" id="nListCoachingSkip">건너뛰기</button>
-            </div>
-            <div class="coaching-steps">
-                <div class="coaching-step active">
-                    <h3>왼쪽은 회독 +1, 오른쪽은 팝퀴즈</h3>
-                    <p>왼쪽은 회독 추가, 오른쪽은 팝퀴즈 대기열로 이동합니다.</p>
-                </div>
-                <div class="coaching-step">
-                    <h3>팝퀴즈는 적절한 시점에</h3>
-                    <p>당장 보이지 않아도, 시간이 되면 팝퀴즈 탭에 나타납니다.</p>
-                </div>
-            </div>
-            <div class="coaching-actions" style="padding: 0 20px 20px; text-align:center;">
-                <button id="nListCoachingNext" class="save-solution-btn"><span>확인</span></button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>문제를 분석하고 있습니다...</p>
         </div>
     </div>
 
@@ -451,4 +304,4 @@
 
     <script src="script.js"></script>
 </body>
-</html> 
+</html>

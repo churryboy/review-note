@@ -15,7 +15,7 @@
 </head>
 <body>
     <!-- Auth Page View -->
-    <div id="authView" class="auth-view" style="display:none;">
+    <div id="authView" class="auth-view" style="display:none !important;">
         <div class="auth-card">
             <div class="auth-header">
                 <i class="fas fa-book"></i>
@@ -25,8 +25,7 @@
                 <div class="auth-row">
                     <input id="authNickname" type="text" maxlength="40" placeholder="닉네임" />
                 </div>
-                <button id="authActionBtn" class="btn-primary" style="width:100%; margin-top:8px;">시작하기</button>
-                <div id="authError" class="pin-error" style="display:none;"></div>
+                <button id="authActionBtn" class="btn btn--primary btn--full btn--lg">시작하기</button>                <div id="authError" class="pin-error" style="display:none !important;"></div>
             </div>
         </div>
     </div>
@@ -38,11 +37,10 @@
                 <i class="fas fa-book"></i>
                 <span class="logo-text">스마트 오답노트</span>
             </div>
-            <button id="logoutBtn" class="back-btn" title="계정" style="margin-left:auto;">
-                <img id="headerAvatar" src="" alt="avatar" style="width:24px; height:24px; border-radius:999px; object-fit:cover;" />
+            <button id="logoutBtn" class="btn btn--ghost btn--circle btn--sm" title="계정">                <img id="headerAvatar" src="" alt="avatar" style="width:24px; height:24px; border-radius:999px; object-fit:cover;" />
             </button>
         </div>
-        <div class="profile-dropdown" id="profileDropdown" style="display:none;">
+        <div class="profile-dropdown" id="profileDropdown" style="display:none !important;">
             <div class="profile-header">
                 <img id="profileAvatar" src="" alt="avatar">
                 <div class="profile-info">
@@ -51,8 +49,7 @@
                 </div>
             </div>
             <div class="profile-actions">
-                <button class="logout-btn" id="profileLogoutBtn"><i class="fas fa-sign-out-alt"></i><span>로그아웃</span></button>
-            </div>
+                <button class="btn btn--secondary btn--sm" id="profileLogoutBtn"><i class="fas fa-sign-out-alt"></i><span>로그아웃</span></button>            </div>
         </div>
     </header>
 
@@ -121,7 +118,7 @@
 
         <!-- 성취도 View -->
         <div class="round-view" id="achievementView" style="display: none;">
-            <div class="pop-quiz-status" id="achievementStatus" style="display:none;"></div>
+            <div class="pop-quiz-status" id="achievementStatus" style="display:none !important;"></div>
             <div class="question-list" id="achievementList"></div>
             <div class="empty-state" id="achievementEmpty">
                 <i class="fas fa-trophy"></i>
@@ -214,7 +211,7 @@
             <div class="quiz-answer-panel">
                 <input id="quizAnswer" type="text" placeholder="정답을 입력하세요" />
                 <button id="quizSubmit" class="btn-primary"><i class="fas fa-paper-plane"></i><span>제출</span></button>
-                <div id="quizResult" class="quiz-result" style="display:none;"></div>
+                <div id="quizResult" class="quiz-result" style="display:none !important;"></div>
             </div>
         </div>
     </div>
@@ -270,7 +267,7 @@
     </div>
 
     <!-- Answer Required Modal -->
-    <div class="image-popup-overlay" id="answerReqModal" style="display:none;">
+    <div class="image-popup-overlay" id="answerReqModal" style="display:none !important;">
         <div class="image-popup-content" style="max-width:520px;">
             <button class="popup-close" id="answerReqClose"><i class="fas fa-times"></i></button>
             <div style="padding: 8px 0 12px; text-align:center;">

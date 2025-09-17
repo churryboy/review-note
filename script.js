@@ -245,13 +245,13 @@ function setupEventListeners() {
     if (wrongBtn) {
         wrongBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            categorizeQuestion('wrong');
+            categorizeQuestion('wrong', false);
         });
     }
     if (ambiguousBtn) {
         ambiguousBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            categorizeQuestion('ambiguous');
+            categorizeQuestion('ambiguous', false);
         });
     }
 
@@ -513,9 +513,9 @@ async function handleImageCapture(event) {
     cameraInput.value = '';
 }
 
-async function categorizeQuestion(category) {
+async function categorizeQuestion(category, checkAnswerReq = true) {
     // Check answer requirement for ambiguous category
-    if (category === 'ambiguous') {
+    if (category === 'ambiguous' && checkAnswerReq) {
         const reviewAnswerInput = document.getElementById('reviewAnswerInput');
         const hasAnswer = reviewAnswerInput && reviewAnswerInput.value && reviewAnswerInput.value.trim();
         if (!hasAnswer) {
@@ -782,8 +782,11 @@ function setupNRoundSwipe(item) {
             const qid = item.dataset.id;
             const q = questions.find(q => String(q.id) === String(qid));
             if (q) {
+                console.log("Swipe right - checking answer for question:", q.id);
                 const hasAnswer = await hasAnswerForQuestion(q);
+                console.log("Has answer:", hasAnswer);
                 if (!hasAnswer) {
+                    console.log("No answer found - showing modal");
                     const modal = document.getElementById('answerReqModal');
                     const input = document.getElementById('answerReqInput');
                     const submit = document.getElementById('answerReqSubmit');

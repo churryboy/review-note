@@ -619,6 +619,9 @@ app.get('/api/answers', async (req, res) => {
     const userId = getAuthedUserId(req);
     let allAnswers = {};
     
+    // Note: Using file-based storage for answers since they're stored by imageHash
+    // and don't require question relations in the database.
+    /*
     if (prisma && userId) {
       try {
         const answers = await prisma.answer.findMany({
@@ -633,8 +636,9 @@ app.get('/api/answers', async (req, res) => {
         console.warn('DB read all answers failed:', e.message);
       }
     }
+    */
     
-    // Merge with file-based answers (fallback)
+    // Use file-based answers storage
     Object.assign(allAnswers, answersByHash);
     
     return res.json({ answers: allAnswers });
@@ -646,10 +650,15 @@ app.get('/api/answers', async (req, res) => {
 app.post('/api/answers', async (req, res) => {
   try {
     const { imageHash, answer } = req.body;
-    if (!imageHash) return res.status(400).json({ error: 'imageHash required' });
+    if (!imageHash || typeof answer !== 'string') {
+      return res.status(400).json({ error: 'Invalid data' });
+    }
     
     const userId = getAuthedUserId(req);
     
+    // Note: Disabled database storage for answers since they're stored by imageHash
+    // and don't require question relations. Using file-based storage instead.
+    /*
     if (prisma && userId) {
       try {
         const existing = await prisma.answer.findFirst({
@@ -672,6 +681,7 @@ app.post('/api/answers', async (req, res) => {
         console.warn('DB save answer failed:', e.message);
       }
     }
+    */
     
     answersByHash[imageHash] = answer;
     await saveAnswers();

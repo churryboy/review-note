@@ -567,6 +567,7 @@ function reloadUserState() {
     loadPopQuizItems();
     loadAchievements();
     loadAnswerByHash();
+    loadWorkProcessImages(); // Load work process images
     updatePopQuizBadge();
     if (roundNView && roundNView.style.display !== 'none') displayNRoundQuestions();
     if (achievementView && achievementView.style.display !== 'none') displayAchievements();
@@ -1025,6 +1026,7 @@ async function moveQuestionToPopQuiz(question) {
         imageUrl: question.imageUrl,
         imageHash: hash,
         questionId: String(question.dbId || question.id),
+        originalClientId: String(question.id), // Preserve original client ID for work process images
         questionNumber: question.questionNumber,
         category: question.category,
         lastAccessed: question.lastAccessed || question.timestamp,
@@ -1580,7 +1582,15 @@ function handleSuccessUnderstood() {
         const removed = popQuizItems.splice(idx, 1)[0];
         if (removed) {
             removed.lastAccessed = new Date().toISOString();
-            achievements.unshift({ ...removed, achievedAt: new Date().toISOString() });
+            // Create achievement with proper ID and preserve original question ID
+            const achievement = {
+                ...removed,
+                id: removed.questionId, // Use original question ID as achievement ID
+                originalQuestionId: removed.questionId, // Preserve for work process images
+                originalClientId: removed.originalClientId, // Preserve original client ID for work process images
+                achievedAt: new Date().toISOString()
+            };
+            achievements.unshift(achievement);
             saveAchievements();
             savePopQuizItems();
             updatePopQuizBadge();
@@ -1948,19 +1958,26 @@ async function pullServerDataReplaceLocal() {
         }
 
         if (qItems.length > 0) {
-            // Create a map of existing questions to preserve userAnswer
+            // Create a map of existing questions to preserve userAnswer and work process images
             const existingQuestions = new Map();
+            const existingByHash = new Map();
             questions.forEach(q => {
                 if (q.dbId) existingQuestions.set(q.dbId, q);
                 if (q.id) existingQuestions.set(q.id, q);
+                if (q.imageHash) existingByHash.set(q.imageHash, q);
             });
 
             // Preserve work process images by mapping old IDs to new IDs
             const newWorkProcessImages = new Map();
 
             questions = qItems.map(q => {
-                const existingQ = existingQuestions.get(q.id);
                 const imageHash = (q.image && q.image.hash) || null;
+                
+                // Try to find existing question by server ID, then by imageHash
+                let existingQ = existingQuestions.get(q.id);
+                if (!existingQ && imageHash) {
+                    existingQ = existingByHash.get(imageHash);
+                }
                 
                 // Preserve userAnswer from existing question
                 let userAnswer = '';
@@ -1989,8 +2006,13 @@ async function pullServerDataReplaceLocal() {
                 if (existingQ) {
                     const oldId = String(existingQ.id);
                     const newId = String(newQuestion.id);
+                    console.log(`Mapping work process images: ${oldId} -> ${newId}`);
                     if (workProcessImages.has(oldId)) {
-                        newWorkProcessImages.set(newId, workProcessImages.get(oldId));
+                        const images = workProcessImages.get(oldId);
+                        // Store under both old and new IDs to ensure persistence
+                        newWorkProcessImages.set(newId, images);
+                        newWorkProcessImages.set(oldId, images); // Keep old ID mapping too
+                        console.log(`Preserved ${images.length} work process images under both ${oldId} and ${newId}`);
                     }
                 }
 
@@ -2126,9 +2148,15 @@ async function handleWorkProcessImageUpload(event) {
     const questionId = solutionView.dataset.currentId;
     if (!questionId) return;
     
-    // Initialize array if not exists
+    // Initialize array if not exists, or clear placeholders if they exist
     if (!workProcessImages.has(questionId)) {
         workProcessImages.set(questionId, []);
+    } else {
+        // If existing images are placeholders, clear them for fresh upload
+        const existingImages = workProcessImages.get(questionId);
+        if (existingImages.some(img => img.isPlaceholder)) {
+            workProcessImages.set(questionId, []);
+        }
     }
     
     const currentImages = workProcessImages.get(questionId);
@@ -2158,6 +2186,9 @@ async function handleWorkProcessImageUpload(event) {
     // Update display
     updateWorkProcessImagesDisplay(questionId);
     
+    // Save to localStorage for persistence
+    saveWorkProcessImages();
+    
     // Clear file input
     workProcessFileInput.value = '';
     
@@ -2178,6 +2209,35 @@ function updateWorkProcessImagesDisplay(questionId) {
         // Show camera interface, hide images container
         workProcessCameraInterface.style.display = 'flex';
         workProcessImagesContainer.style.display = 'none';
+        return;
+    }
+    
+    // Check if images are placeholders (need re-upload)
+    const hasPlaceholders = images.some(img => img.isPlaceholder);
+    
+    if (hasPlaceholders) {
+        // Show camera interface with message about re-uploading
+        workProcessCameraInterface.style.display = 'flex';
+        workProcessImagesContainer.style.display = 'block';
+        
+        // Update count to show placeholder info
+        workProcessImageCount.textContent = `${images.length}개 이미지 (재업로드 필요)`;
+        
+        // Clear and show placeholder message
+        workProcessImagesList.innerHTML = `
+            <div style="
+                padding: 20px;
+                text-align: center;
+                color: #666;
+                border: 2px dashed #ddd;
+                border-radius: 8px;
+                margin: 10px 0;
+            ">
+                <i class="fas fa-upload" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                <div>이전에 업로드한 ${images.length}개의 이미지가 있습니다</div>
+                <div style="font-size: 0.9rem; margin-top: 5px;">다시 업로드해 주세요</div>
+            </div>
+        `;
         return;
     }
     
@@ -2221,11 +2281,16 @@ function removeWorkProcessImage(questionId, imageId) {
     const imageIndex = images.findIndex(img => img.id === imageId);
     
     if (imageIndex !== -1) {
-        // Revoke object URL to prevent memory leaks
-        URL.revokeObjectURL(images[imageIndex].url);
+        // Revoke object URL to prevent memory leaks (only if not placeholder)
+        if (images[imageIndex].url && !images[imageIndex].isPlaceholder) {
+            URL.revokeObjectURL(images[imageIndex].url);
+        }
         
         // Remove from array
         images.splice(imageIndex, 1);
+        
+        // Save changes
+        saveWorkProcessImages();
         
         // Update display
         updateWorkProcessImagesDisplay(questionId);
@@ -2275,6 +2340,17 @@ function cleanupWorkProcessImages(questionId) {
 function showAchievementSolutionView(achievement) {
     previousView = 'achievement'; // Track that we came from achievement view
     
+    // Debug: Log achievement data to understand structure
+    console.log('Achievement data:', {
+        id: achievement.id,
+        questionId: achievement.questionId,
+        originalQuestionId: achievement.originalQuestionId,
+        imageHash: achievement.imageHash,
+        userAnswer: achievement.userAnswer,
+        workProcessKey: achievement.originalQuestionId || achievement.questionId || achievement.id,
+        hasWorkProcessImages: workProcessImages.has(achievement.originalQuestionId || achievement.questionId || achievement.id)
+    });
+    
     // Set up solution view with achievement data
     document.getElementById('solutionQuestionNumber').textContent = achievement.questionNumber || '문제';
     const solutionCategory = document.getElementById('solutionCategory');
@@ -2313,8 +2389,14 @@ function showAchievementSolutionView(achievement) {
     solutionView.dataset.isAchievement = 'true';
     
     if (solutionAnswerInput) {
-        // Load answer from achievement item
-        const answer = achievement.userAnswer || '';
+        // Load answer from achievement item with fallback to answerByHash
+        let answer = achievement.userAnswer || '';
+        
+        // Fallback to answerByHash if no userAnswer
+        if (!answer && achievement.imageHash && answerByHash[achievement.imageHash]) {
+            answer = answerByHash[achievement.imageHash];
+        }
+        
         solutionAnswerInput.value = answer;
         
         const valEl = document.getElementById('answerValue');
@@ -2343,9 +2425,30 @@ function showAchievementSolutionView(achievement) {
     setupAnswerReveal();
     solutionView.scrollTop = 0;
     
-    // Load work process images for this achievement (using imageHash as key)
-    if (achievement.imageHash) {
-        loadWorkProcessImagesForQuestion(achievement.imageHash);
+    // Load work process images for this achievement (try multiple keys)
+    const possibleKeys = [
+        achievement.originalClientId,
+        achievement.originalQuestionId, 
+        achievement.questionId, 
+        achievement.id
+    ].filter(Boolean); // Remove undefined values
+    
+    console.log('Achievement work process possible keys:', possibleKeys);
+    console.log('Available work process images keys:', Array.from(workProcessImages.keys()));
+    
+    let workProcessKey = null;
+    for (const key of possibleKeys) {
+        if (workProcessImages.has(key)) {
+            workProcessKey = key;
+            console.log('Found work process images under key:', key);
+            break;
+        }
+    }
+    
+    if (workProcessKey) {
+        loadWorkProcessImagesForQuestion(workProcessKey);
+    } else {
+        console.log('No work process images found for any key');
     }
     
     // Hide all other views and show solution view
@@ -2354,4 +2457,48 @@ function showAchievementSolutionView(achievement) {
     if (achievementView) achievementView.style.display = 'none';
     if (imageReviewView) imageReviewView.style.display = 'none';
     if (solutionView) solutionView.style.display = 'block';
+}
+
+// Save work process images to localStorage
+function saveWorkProcessImages() {
+    try {
+        const data = {};
+        workProcessImages.forEach((images, questionId) => {
+            // Convert images to serializable format (without blob URLs)
+            data[questionId] = images.map(img => ({
+                id: img.id,
+                name: img.name,
+                size: img.size,
+                uploadedAt: img.uploadedAt,
+                // Note: file and url are not saved as they're temporary
+            }));
+        });
+        localStorage.setItem(storageKey('workProcessImages'), JSON.stringify(data));
+    } catch (error) {
+        console.warn('Failed to save work process images:', error);
+    }
+}
+
+// Load work process images from localStorage
+function loadWorkProcessImages() {
+    try {
+        const data = localStorage.getItem(storageKey('workProcessImages'));
+        if (data) {
+            const parsed = JSON.parse(data);
+            // Note: This only loads metadata, actual images need to be re-uploaded
+            // We'll use this to show that images were previously uploaded
+            Object.entries(parsed).forEach(([questionId, images]) => {
+                if (images && images.length > 0) {
+                    // Store placeholder data to indicate images were uploaded
+                    workProcessImages.set(questionId, images.map(img => ({
+                        ...img,
+                        isPlaceholder: true // Mark as placeholder
+                    })));
+                }
+            });
+        }
+    } catch (error) {
+        console.warn('Failed to load work process images:', error);
+        workProcessImages = new Map();
+    }
 }

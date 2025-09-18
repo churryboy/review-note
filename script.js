@@ -10,6 +10,8 @@ let answerByHash = {};
 
 // Current user context
 window.currentUserId = window.currentUserId || null;
+let previousView = null; // Track which view user came from
+
 function storageKey(base) {
     const uid = window.currentUserId || 'anon';
     return `${base}::${uid}`;
@@ -283,7 +285,16 @@ function setupEventListeners() {
     if (navSettings) navSettings.addEventListener('click', showSettingsView);
     if (navAchievement) navAchievement.addEventListener('click', showAchievementView);
     if (backToCameraFromReview) backToCameraFromReview.addEventListener('click', showNRoundView);
-    if (backFromSolution) backFromSolution.addEventListener('click', showNRoundView);
+    if (backFromSolution) backFromSolution.addEventListener('click', () => {
+        // Return to the previous view based on where user came from
+        if (previousView === 'achievement') {
+            showAchievementView();
+        } else {
+            showNRoundView(); // Default fallback (includes 'nround' case)
+        }
+        // Reset previous view
+        previousView = null;
+    });
     if (deleteFromSolution) deleteFromSolution.addEventListener('click', handleDeleteCurrentSolution);
     
     if (deleteFromReview) {
@@ -1278,6 +1289,18 @@ function displayAchievements() {
             </div>
         </div>
     `).join('');
+    
+    // Add click handlers for achievement items
+    list.querySelectorAll('.success-item').forEach(item => {
+        const achievementId = item.getAttribute('data-id');
+        const achievement = achievements.find(a => String(a.id) === String(achievementId));
+        if (achievement) {
+            item.addEventListener('click', () => {
+                // Navigate to solution view for achievement item
+                showAchievementSolutionView(achievement);
+            });
+        }
+    });
 }
 
 function getAchievementRankInfo(achieveCount) {
@@ -1323,6 +1346,8 @@ function getAchievementRankInfo(achieveCount) {
 
 // FIXED: Solution view with better answer loading
 function showSolutionView(questionId) {
+    previousView = 'nround'; // Track that we came from N-Round view
+    
     const question = questions.find(q => String(q.id) === String(questionId));
     if (!question) return;
 
@@ -1333,6 +1358,14 @@ function showSolutionView(questionId) {
     const solutionCategory = document.getElementById('solutionCategory');
     solutionCategory.textContent = question.category === 'ambiguous' ? '애매했던 문제' : '틀렸던 문제';
     solutionCategory.className = `solution-category ${question.category}`;
+    
+    // Remove any view indicators for regular questions
+    const solutionHeader = document.querySelector('.solution-header');
+    if (solutionHeader) {
+        const existingIndicator = solutionHeader.querySelector('.view-indicator');
+        if (existingIndicator) existingIndicator.remove();
+    }
+    
     document.getElementById('solutionImage').src = question.imageUrl;
 
     solutionView.dataset.currentId = String(question.id);
@@ -2236,4 +2269,89 @@ function cleanupWorkProcessImages(questionId) {
         URL.revokeObjectURL(imageData.url);
     });
     workProcessImages.delete(questionId);
+}
+
+// Show solution view for achievement items
+function showAchievementSolutionView(achievement) {
+    previousView = 'achievement'; // Track that we came from achievement view
+    
+    // Set up solution view with achievement data
+    document.getElementById('solutionQuestionNumber').textContent = achievement.questionNumber || '문제';
+    const solutionCategory = document.getElementById('solutionCategory');
+    solutionCategory.textContent = achievement.category === 'ambiguous' ? '애매했던 문제' : '틀렸던 문제';
+    solutionCategory.className = `solution-category ${achievement.category || 'wrong'}`;
+    
+    // Add achievement indicator
+    const solutionHeader = document.querySelector('.solution-header');
+    if (solutionHeader) {
+        // Remove any existing indicators
+        const existingIndicator = solutionHeader.querySelector('.view-indicator');
+        if (existingIndicator) existingIndicator.remove();
+        
+        // Add achievement indicator
+        const indicator = document.createElement('div');
+        indicator.className = 'view-indicator achievement-indicator';
+        indicator.innerHTML = '🏆 달성';
+        indicator.style.cssText = `
+            display: inline-block;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        `;
+        solutionHeader.appendChild(indicator);
+    }
+    
+    document.getElementById('solutionImage').src = achievement.imageUrl;
+    
+    // Set dataset for tracking
+    solutionView.dataset.currentId = String(achievement.id);
+    solutionView.dataset.isAchievement = 'true';
+    
+    if (solutionAnswerInput) {
+        // Load answer from achievement item
+        const answer = achievement.userAnswer || '';
+        solutionAnswerInput.value = answer;
+        
+        const valEl = document.getElementById('answerValue');
+        const solutionAnswerSubmit = document.getElementById('solutionAnswerSubmit');
+        const warningText = solutionAnswerInput.closest('.solution-notes').querySelector('p');
+        const inputContainer = solutionAnswerInput.parentElement;
+        
+        if (valEl) {
+            valEl.textContent = answer || '정답을 알려주세요';
+            
+            // Show/hide input elements based on whether answer exists
+            const hasAnswer = answer && answer.trim().length > 0;
+            solutionAnswerInput.style.display = hasAnswer ? 'none' : 'block';
+            if (solutionAnswerSubmit) {
+                solutionAnswerSubmit.style.display = hasAnswer ? 'none' : 'block';
+            }
+            if (warningText) {
+                warningText.style.display = hasAnswer ? 'none' : 'block';
+            }
+            if (inputContainer) {
+                inputContainer.style.display = hasAnswer ? 'none' : 'flex';
+            }
+        }
+    }
+    
+    setupAnswerReveal();
+    solutionView.scrollTop = 0;
+    
+    // Load work process images for this achievement (using imageHash as key)
+    if (achievement.imageHash) {
+        loadWorkProcessImagesForQuestion(achievement.imageHash);
+    }
+    
+    // Hide all other views and show solution view
+    if (roundNView) roundNView.style.display = 'none';
+    if (settingsView) settingsView.style.display = 'none';
+    if (achievementView) achievementView.style.display = 'none';
+    if (imageReviewView) imageReviewView.style.display = 'none';
+    if (solutionView) solutionView.style.display = 'block';
 }

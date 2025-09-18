@@ -16,6 +16,9 @@ const rateLimit = require('express-rate-limit');
 
 // Load environment variables
 dotenv.config();
+console.log('DEBUG: Environment variables loaded');
+console.log('DEBUG: MIXPANEL_TOKEN exists:', !!process.env.MIXPANEL_TOKEN);
+console.log('DEBUG: MIXPANEL_TOKEN value:', process.env.MIXPANEL_TOKEN);
 
 // Global crash guards
 process.on('uncaughtException', (err) => {
@@ -236,14 +239,25 @@ function signSession(user) {
   return token;
 }
 
-// Static files
+// Main page (must come before static middleware)
+app.get('/', (req, res) => {
+  // Read the HTML file and inject Mixpanel token
+  const fs = require('fs');
+  const htmlPath = path.join(__dirname, 'index.html');
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  
+  // Inject Mixpanel token as a global variable
+  const mixpanelToken = process.env.MIXPANEL_TOKEN || '';
+  console.log('DEBUG: Mixpanel token from env:', mixpanelToken);
+  const scriptInjection = `<script>window.MIXPANEL_TOKEN = '${mixpanelToken}';</script>`;
+  html = html.replace('</head>', `${scriptInjection}\n</head>`);
+  
+  res.send(html);
+});
+
+// Static files (after main page route)
 app.use(express.static('.'));
 app.use('/uploads', express.static(UPLOADS_DIR));
-
-// Main page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
 
 // Auth endpoints
 app.get('/api/auth/me', async (req, res) => {

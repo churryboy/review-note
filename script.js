@@ -1,4 +1,103 @@
 // Complete Fixed script.js - Answer Persistence & Modal Logic Fixed
+// Analytics Wrapper
+class Analytics {
+    constructor() {
+        this.initialized = false;
+        this.init();
+    }
+    
+    init() {
+        // Check if we have both Mixpanel and token
+        if (typeof window.mixpanel !== 'undefined' && 
+            window.mixpanel && 
+            typeof window.mixpanel.init === 'function' && 
+            window.MIXPANEL_TOKEN) {
+            try {
+                window.mixpanel.init(window.MIXPANEL_TOKEN, {
+                    debug: true,
+                    track_pageview: true,
+                    persistence: 'localStorage'
+                });
+                this.initialized = true;
+                console.log('🎉 Mixpanel initialized successfully!');
+                console.log('Token:', window.MIXPANEL_TOKEN);
+                
+                // Test track to verify it's working
+                window.mixpanel.track('Analytics Initialized', {
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Set user properties if available
+                if (window.currentUserId) {
+                    this.identify(window.currentUserId);
+                }
+            } catch (error) {
+                console.error('Failed to initialize Mixpanel:', error);
+                // Retry after error
+                setTimeout(() => this.init(), 500);
+            }
+        } else {
+            // Retry initialization after a short delay
+            console.log('Waiting for Mixpanel...', {
+                mixpanel: typeof window.mixpanel,
+                mixpanelExists: !!window.mixpanel,
+                mixpanelInit: typeof window.mixpanel?.init,
+                token: !!window.MIXPANEL_TOKEN
+            });
+            setTimeout(() => this.init(), 300);
+        }
+    }
+    
+    identify(userId) {
+        if (this.initialized && userId) {
+            try {
+                window.mixpanel.identify(userId);
+                window.mixpanel.people.set({
+                    '$last_seen': new Date(),
+                    'user_id': userId
+                });
+            } catch (error) {
+                console.error('Failed to identify user:', error);
+            }
+        }
+    }
+    
+    track(eventName, properties = {}) {
+        if (this.initialized) {
+            try {
+                // Add common properties
+                const commonProps = {
+                    timestamp: new Date().toISOString(),
+                    user_id: window.currentUserId || 'anonymous',
+                    page_url: window.location.href,
+                    user_agent: navigator.userAgent
+                };
+                
+                window.mixpanel.track(eventName, { ...commonProps, ...properties });
+                console.log(`Analytics: ${eventName}`, properties);
+            } catch (error) {
+                console.error('Failed to track event:', error);
+            }
+        } else {
+            console.warn('Analytics not initialized, skipping event:', eventName);
+        }
+    }
+}
+
+// Initialize analytics after DOM loads
+let analytics;
+document.addEventListener('DOMContentLoaded', () => {
+    analytics = new Analytics();
+});
+
+// Fallback initialization if DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    // DOM is still loading, wait for DOMContentLoaded
+} else {
+    // DOM is already loaded
+    analytics = new Analytics();
+}
+
 // State management
 let questions = [];
 let popQuizItems = [];
@@ -156,10 +255,24 @@ class SwipeHandler {
         const hint = this.element.querySelector('.swipe-hint');
         if (hint) hint.remove();
         
+        let swipeAction = null;
         if (deltaX < -this.threshold) {
+            swipeAction = 'left';
             this.onLeft();
         } else if (deltaX > this.threshold) {
+            swipeAction = 'right';
             this.onRight();
+        }
+        
+        // Track swipe action if it occurred
+        if (swipeAction && analytics) {
+            const questionId = this.element.dataset.id || 'unknown';
+            analytics.track('Swipe Action', {
+                direction: swipeAction,
+                question_id: questionId,
+                swipe_distance: Math.abs(deltaX),
+                action: swipeAction === 'left' ? 'round_increment' : 'pop_quiz'
+            });
         }
         
         // Reset all visual effects
@@ -676,6 +789,17 @@ async function handleImageCapture(event) {
         
         currentImageHash = await computeSHA256HexFromDataUrl(dataUrl);
         console.log('DEBUG: Hash computed on capture:', currentImageHash);
+        
+        // Track Image Upload event
+        if (analytics) {
+            analytics.track('Image Upload', {
+                image_hash: currentImageHash,
+                file_size: file.size,
+                file_type: file.type,
+                file_name: file.name || 'unknown'
+            });
+        }
+        
     } catch (error) {
         console.warn('Hash generation failed:', error);
         currentImageHash = null;
@@ -1138,8 +1262,21 @@ function setupNRoundSwipe(item) {
             const qid = item.dataset.id;
             const q = questions.find(q => String(q.id) === String(qid));
             if (q) {
+                const oldRound = q.round || 0;
                 q.round = (q.round || 0) + 1;
                 saveQuestions();
+                
+                // Track Round Count event
+                if (analytics) {
+                    analytics.track('Round Count', {
+                        question_id: qid,
+                        previous_round: oldRound,
+                        new_round: q.round,
+                        question_number: q.questionNumber || 'unknown',
+                        category: q.category || 'unknown'
+                    });
+                }
+                
                 const badge = item.querySelector('.question-round');
                 if (badge) {
                     badge.textContent = `${q.round}회독`;
@@ -1563,8 +1700,43 @@ async function handleQuizSubmit() {
                       normalizeAnswer(correctAnswer).length > 0 &&
                       (normalizeAnswer(userAnswer) === normalizeAnswer(correctAnswer));
 
+    const oldQuizCount = quizItem.quizCount || 0;
     quizItem.quizCount = (quizItem.quizCount || 0) + 1;
     savePopQuizItems();
+    
+    // Track Quiz Count event
+    if (analytics) {
+        analytics.track('Quiz Count', {
+            question_id: quizItem.questionId || quizItem.originalClientId || 'unknown',
+            previous_quiz_count: oldQuizCount,
+            new_quiz_count: quizItem.quizCount,
+            question_number: quizItem.questionNumber || 'unknown',
+            category: quizItem.category || 'unknown'
+        });
+    }
+
+    // Track Pop Quiz Result events
+    if (analytics) {
+        if (isCorrect) {
+            analytics.track('Pop Quiz Correct', {
+                question_id: quizItem.questionId || quizItem.originalClientId || 'unknown',
+                question_number: quizItem.questionNumber || 'unknown',
+                category: quizItem.category || 'unknown',
+                quiz_count: quizItem.quizCount,
+                user_answer: userAnswer,
+                correct_answer: correctAnswer
+            });
+        } else {
+            analytics.track('Pop Quiz Wrong', {
+                question_id: quizItem.questionId || quizItem.originalClientId || 'unknown',
+                question_number: quizItem.questionNumber || 'unknown',
+                category: quizItem.category || 'unknown',
+                quiz_count: quizItem.quizCount,
+                user_answer: userAnswer,
+                correct_answer: correctAnswer
+            });
+        }
+    }
 
     if (settingsView && settingsView.style.display !== 'none') {
         displayPopQuiz();
@@ -1919,7 +2091,10 @@ function updatePopQuizStatusPanel() {
 
     const now = Date.now();
     const ready = (popQuizItems || []).filter(item => isPopQuizReady(item, now));
-    waitingEl.textContent = `${ready.length}개`;
+    const waiting = (popQuizItems || []).filter(item => !isPopQuizReady(item, now));
+    
+    // Show count of waiting (queued) pop quizzes, not ready ones
+    waitingEl.textContent = `${waiting.length}개`;
 
     if (ready.length === 0) {
         avgEl.textContent = '0.00회독';

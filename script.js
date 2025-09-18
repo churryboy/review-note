@@ -100,7 +100,48 @@ class SwipeHandler {
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         this.currentX = clientX;
         const deltaX = this.currentX - this.startX;
-        this.element.style.transform = `translateX(${deltaX}px)`;
+        
+        // Enhanced visual feedback for pop quiz swipe
+        if (deltaX > 0) {
+            // Swiping right (towards pop quiz)
+            const progress = Math.min(deltaX / this.threshold, 1);
+            const opacity = progress * 0.3;
+            const scale = 1 - (progress * 0.05);
+            
+            this.element.style.transform = `translateX(${deltaX}px) scale(${scale})`;
+            this.element.style.background = `linear-gradient(90deg, rgba(0, 200, 81, ${opacity}) 0%, transparent 50%)`;
+            this.element.style.borderLeft = progress > 0.5 ? '3px solid #00C851' : '';
+            
+            // Add pop quiz icon hint when close to threshold
+            if (progress > 0.7 && !this.element.querySelector('.swipe-hint')) {
+                const hint = document.createElement('div');
+                hint.className = 'swipe-hint';
+                hint.innerHTML = '📚 팝퀴즈';
+                hint.style.cssText = `
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #00C851;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    opacity: ${progress - 0.7};
+                    pointer-events: none;
+                `;
+                this.element.appendChild(hint);
+            }
+        } else if (deltaX < 0) {
+            // Swiping left (round increment)
+            const progress = Math.min(Math.abs(deltaX) / this.threshold, 1);
+            const opacity = progress * 0.3;
+            const scale = 1 - (progress * 0.05);
+            
+            this.element.style.transform = `translateX(${deltaX}px) scale(${scale})`;
+            this.element.style.background = `linear-gradient(270deg, rgba(255, 85, 0, ${opacity}) 0%, transparent 50%)`;
+            this.element.style.borderRight = progress > 0.5 ? '3px solid #FF5500' : '';
+        } else {
+            this.element.style.transform = `translateX(${deltaX}px)`;
+        }
     }
     
     handleEnd(e) {
@@ -109,12 +150,21 @@ class SwipeHandler {
         this.element.classList.remove('swiping');
         const deltaX = this.currentX - this.startX;
         
+        // Clean up visual effects
+        const hint = this.element.querySelector('.swipe-hint');
+        if (hint) hint.remove();
+        
         if (deltaX < -this.threshold) {
             this.onLeft();
         } else if (deltaX > this.threshold) {
             this.onRight();
         }
+        
+        // Reset all visual effects
         this.element.style.transform = 'translateX(0)';
+        this.element.style.background = '';
+        this.element.style.borderLeft = '';
+        this.element.style.borderRight = '';
     }
     
     destroy() {
@@ -562,23 +612,29 @@ function showImageReviewView() {
     if (solutionView) solutionView.style.display = 'none';
 }
 
-// Image handling
+// FIXED: Image handling with proper async/await
 async function handleImageCapture(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     currentImageBlob = file;
     currentImageUrl = createObjectURL(file);
-    currentImageHash = null;
-
+    
+    // FIXED: Properly await hash generation
     try {
-        const fr = new FileReader();
-        fr.onload = async (e) => {
-            const dataUrl = e.target.result;
-            currentImageHash = await computeSHA256HexFromDataUrl(dataUrl);
-        };
-        fr.readAsDataURL(file);
-    } catch (_) {}
+        const dataUrl = await new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = (e) => resolve(e.target.result);
+            fr.onerror = reject;
+            fr.readAsDataURL(file);
+        });
+        
+        currentImageHash = await computeSHA256HexFromDataUrl(dataUrl);
+        console.log('DEBUG: Hash computed on capture:', currentImageHash);
+    } catch (error) {
+        console.warn('Hash generation failed:', error);
+        currentImageHash = null;
+    }
 
     reviewImage.src = currentImageUrl;
     const reviewAnswerInput = document.getElementById('reviewAnswerInput');
@@ -588,6 +644,7 @@ async function handleImageCapture(event) {
     cameraInput.value = '';
 }
 
+// FIXED: Improved categorizeQuestion with better hash handling
 async function categorizeQuestion(category, checkAnswerReq = true) {
     // Check answer requirement for ambiguous category
     if (category === 'ambiguous' && checkAnswerReq) {
@@ -628,6 +685,14 @@ async function categorizeQuestion(category, checkAnswerReq = true) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         let dataUrl = e.target.result;
+        let finalImageHash = currentImageHash; // Use pre-computed hash
+        
+        console.log('DEBUG: Image processing', {
+            currentImageHash,
+            dataUrlType: typeof dataUrl,
+            startsWithData: dataUrl.startsWith('data:'),
+            finalImageHash,
+        });
         
         // Compress and upload to server
         try { 
@@ -646,21 +711,31 @@ async function categorizeQuestion(category, checkAnswerReq = true) {
                 const j = await up.json();
                 if (j && j.url) {
                     dataUrl = j.url;
+                    // Use server-provided hash if available, otherwise keep original
+                    if (j.hash) {
+                        finalImageHash = j.hash;
+                        console.log('DEBUG: Server provided hash:', j.hash);
+                    }
                 }
             }
         } catch (err) {
             try { dataUrl = await compressDataUrl(dataUrl, 480, 0.5); } catch (_) {}
         }
 
-        let imageHash = null;
-        if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
-            imageHash = currentImageHash || await computeSHA256HexFromDataUrl(dataUrl);
-        } else {
-            imageHash = await canonicalHashFromUrl(dataUrl);
+        // Ensure we have a hash - compute if needed
+        if (!finalImageHash) {
+            if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+                finalImageHash = await computeSHA256HexFromDataUrl(dataUrl);
+            } else {
+                finalImageHash = await canonicalHashFromUrl(dataUrl);
+            }
+            console.log('DEBUG: Computed final hash:', finalImageHash);
         }
         
         const reviewAnswerInput = document.getElementById('reviewAnswerInput');
         const initialAnswer = reviewAnswerInput ? (reviewAnswerInput.value || '') : '';
+        
+        console.log('DEBUG: Initial answer:', initialAnswer.trim());
         
         const newQuestion = {
             id: Date.now(),
@@ -668,7 +743,7 @@ async function categorizeQuestion(category, checkAnswerReq = true) {
             publisher: '출처모름',
             questionText: '이미지 문제',
             imageUrl: dataUrl,
-            imageHash: imageHash || null,
+            imageHash: finalImageHash,
             category: category,
             round: 0,
             timestamp: new Date().toISOString(),
@@ -676,11 +751,13 @@ async function categorizeQuestion(category, checkAnswerReq = true) {
             userAnswer: initialAnswer
         };
 
-        questions.unshift(newQuestion);
-        if (newQuestion.imageHash) {
-            await saveAnswerForHash(newQuestion.imageHash, initialAnswer);
+        // FIXED: Save answer to hash storage BEFORE adding to questions array
+        if (finalImageHash && initialAnswer.trim()) {
+            await saveAnswerForHash(finalImageHash, initialAnswer);
+            console.log('DEBUG: Saved answer to hash storage:', finalImageHash, initialAnswer.trim());
         }
-        
+
+        questions.unshift(newQuestion);
         saveQuestions();
         
         // Persist to server
@@ -692,7 +769,7 @@ async function categorizeQuestion(category, checkAnswerReq = true) {
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ 
-                        imageHash: imageHash, 
+                        imageHash: finalImageHash, 
                         imageUrl: dataUrl, 
                         questionNumber: newQuestion.questionNumber, 
                         category, 
@@ -834,46 +911,97 @@ function applyRoundBadgeStyles(container) {
     });
 }
 
-// FIXED: Properly check for answer from all sources
+// FIXED: Enhanced answer retrieval with comprehensive fallback
+async function getAnswerForQuestion(question) {
+    console.log('DEBUG: Getting answer for question', {
+        questionId: question.id,
+        userAnswer: question.userAnswer,
+        imageHash: question.imageHash,
+        hashStorageValue: question.imageHash ? answerByHash[question.imageHash] : 'no hash'
+    });
+
+    // Priority 1: Check userAnswer
+    if (question.userAnswer && question.userAnswer.trim()) {
+        return question.userAnswer.trim();
+    }
+    
+    // Priority 2: Check answerByHash with existing hash
+    if (question.imageHash && answerByHash[question.imageHash]) {
+        const answer = answerByHash[question.imageHash].trim();
+        if (answer) {
+            // Update question.userAnswer for consistency
+            question.userAnswer = answer;
+            saveQuestions();
+            return answer;
+        }
+    }
+    
+    // Priority 3: Ensure hash exists and check again
+    const hash = question.imageHash || await ensureQuestionImageHash(question);
+    if (hash && hash !== question.imageHash) {
+        // Hash was just computed, check answerByHash again
+        if (answerByHash[hash]) {
+            const answer = answerByHash[hash].trim();
+            if (answer) {
+                question.userAnswer = answer;
+                question.imageHash = hash; // Update hash too
+                saveQuestions();
+                return answer;
+            }
+        }
+    }
+    
+    // Priority 4: Try server if available
+    if (hash) {
+        try {
+            const serverAnswer = await getAnswerForHash(hash);
+            if (serverAnswer && serverAnswer.trim()) {
+                // Cache locally
+                question.userAnswer = serverAnswer.trim();
+                answerByHash[hash] = serverAnswer.trim();
+                saveAnswerByHash();
+                saveQuestions();
+                return serverAnswer.trim();
+            }
+        } catch (_) {}
+    }
+    
+    return '';
+}
+
+// FIXED: Enhanced hasAnswerForQuestion function
 async function hasAnswerForQuestion(question) {
     try {
-        // Check userAnswer first
+        // Quick check first
         if (question.userAnswer && question.userAnswer.trim().length > 0) {
             return true;
         }
         
-        // Check answerByHash with imageHash
+        // Check hash storage
         if (question.imageHash && answerByHash[question.imageHash]) {
-            return true;
+            const answer = answerByHash[question.imageHash].trim();
+            if (answer.length > 0) return true;
         }
         
-        // Try to get/compute hash and check
+        // Ensure hash and check comprehensively
         const hash = question.imageHash || await ensureQuestionImageHash(question);
         if (hash) {
-            const answer = await getAnswerForHash(hash);
-            return answer && answer.trim().length > 0;
+            // Check local storage again with correct hash
+            if (answerByHash[hash] && answerByHash[hash].trim().length > 0) {
+                return true;
+            }
+            
+            // Check server
+            try {
+                const serverAnswer = await getAnswerForHash(hash);
+                return serverAnswer && serverAnswer.trim().length > 0;
+            } catch (_) {}
         }
         
         return false;
     } catch (_) {
         return false;
     }
-}
-
-// FIXED: Get answer from all possible sources
-async function getAnswerForQuestion(question) {
-    // Check userAnswer first
-    if (question.userAnswer && question.userAnswer.trim()) {
-        return question.userAnswer.trim();
-    }
-    
-    // Check answerByHash
-    const hash = question.imageHash || await ensureQuestionImageHash(question);
-    if (hash) {
-        return await getAnswerForHash(hash);
-    }
-    
-    return '';
 }
 
 // FIXED: Move question to pop quiz with answer
@@ -896,18 +1024,52 @@ async function moveQuestionToPopQuiz(question) {
     
     popQuizItems.push(entry);
     savePopQuizItems();
+    
+    // Enhanced microinteraction feedback
+    const questionCard = document.querySelector(`[data-id="${question.id}"]`);
+    
+    // 1. Animate the card before removal
+    if (questionCard) {
+        questionCard.style.transform = 'translateX(100%) scale(0.9)';
+        questionCard.style.opacity = '0.7';
+        questionCard.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    }
+    
+    // 2. Update badge with pronounced animation
     updatePopQuizBadge();
     
-    // Remove from questions
-    const idx = questions.findIndex(q => String(q.id) === String(question.id));
-    if (idx !== -1) {
-        // Clean up work process images
-        cleanupWorkProcessImages(questionId);
-        
-        questions.splice(idx, 1);
-        saveQuestions();
-        displayNRoundQuestions();
+    // 3. Animate the pop quiz badge
+    if (quizBadge && quizBadge.style.display !== 'none') {
+        quizBadge.classList.add('pop-quiz-added');
+        setTimeout(() => {
+            quizBadge.classList.remove('pop-quiz-added');
+        }, 600);
     }
+    
+    // 3.5. Highlight the navigation area
+    const navSettings = document.getElementById('navSettings');
+    if (navSettings) {
+        navSettings.classList.add('pop-quiz-highlight');
+        setTimeout(() => {
+            navSettings.classList.remove('pop-quiz-highlight');
+        }, 800);
+    }
+    
+    // 4. Show enhanced toast with pop quiz branding
+    showToast('📚 팝퀴즈에 추가되었습니다!', 'success');
+    
+    // 5. Remove from questions after animation
+    setTimeout(() => {
+        const idx = questions.findIndex(q => String(q.id) === String(question.id));
+        if (idx !== -1) {
+            // Clean up work process images
+            cleanupWorkProcessImages(String(question.id));
+            
+            questions.splice(idx, 1);
+            saveQuestions();
+            displayNRoundQuestions();
+        }
+    }, 300);
 }
 
 // FIXED: Swipe handler
@@ -1159,7 +1321,7 @@ function getAchievementRankInfo(achieveCount) {
     return { rank, maxRank, achieveCount, nextStepSize, inStepProgress, remaining, progressRatio, title, nextTitle };
 }
 
-// FIXED: Solution view
+// FIXED: Solution view with better answer loading
 function showSolutionView(questionId) {
     const question = questions.find(q => String(q.id) === String(questionId));
     if (!question) return;
@@ -1176,8 +1338,10 @@ function showSolutionView(questionId) {
     solutionView.dataset.currentId = String(question.id);
 
     if (solutionAnswerInput) {
-        // Load answer from question or hash storage
-        getAnswerForQuestion(question).then(answer => {
+        // Load answer comprehensively
+        (async () => {
+            const answer = await getAnswerForQuestion(question);
+            
             solutionAnswerInput.value = answer || '';
             
             const valEl = document.getElementById('answerValue');
@@ -1201,7 +1365,7 @@ function showSolutionView(questionId) {
                     inputContainer.style.display = hasAnswer ? 'none' : 'flex';
                 }
             }
-        });
+        })();
     }
 
     setupAnswerReveal();
@@ -1229,7 +1393,7 @@ function setupAnswerReveal() {
     }
 }
 
-// FIXED: Ensure answer is persisted to all storage locations
+// FIXED: Enhanced persistSolutionAnswer with immediate sync
 async function persistSolutionAnswer() {
     const questionId = parseInt(solutionView.dataset.currentId);
     if (!questionId) return;
@@ -1239,15 +1403,24 @@ async function persistSolutionAnswer() {
     
     const answer = (solutionAnswerInput && solutionAnswerInput.value) || '';
     
-    // Save to question object
+    // Save to question object immediately
     question.userAnswer = answer;
     
-    // Save to hash storage
+    // Ensure hash exists
     const hash = question.imageHash || await ensureQuestionImageHash(question);
-    if (hash && answer) {
-        await saveAnswerForHash(hash, answer);
+    
+    // Save to hash storage immediately
+    if (hash && answer.trim()) {
+        answerByHash[hash] = answer.trim();
+        saveAnswerByHash();
+        
+        // Also save to server asynchronously
+        try {
+            await saveAnswerForHash(hash, answer.trim());
+        } catch (_) {}
     }
     
+    // Save questions last
     saveQuestions();
 }
 
@@ -1471,9 +1644,12 @@ function loadAchievements() {
     }
 }
 
+// FIXED: Enhanced answer storage with explicit flushes
 function saveAnswerByHash() {
     try { 
         localStorage.setItem(storageKey('answerByHash'), JSON.stringify(answerByHash)); 
+        // Force a read to ensure it's committed
+        localStorage.getItem(storageKey('answerByHash'));
     } catch (_) {}
 }
 
@@ -1707,10 +1883,11 @@ async function pullServerDataReplaceLocal() {
         let serverAnswers = {};
         
         try {
-            const [qRes, pqRes, aRes] = await Promise.all([
+            const [qRes, pqRes, aRes, answersRes] = await Promise.all([
                 fetch(base + '/api/questions', { credentials: 'include' }),
                 fetch(base + '/api/pop-quiz-queue', { credentials: 'include' }),
-                fetch(base + '/api/achievements', { credentials: 'include' })
+                fetch(base + '/api/achievements', { credentials: 'include' }),
+                fetch(base + '/api/answers', { credentials: 'include' })
             ]);
             
             if (qRes.ok) {
@@ -1725,7 +1902,17 @@ async function pullServerDataReplaceLocal() {
                 const j = await aRes.json();
                 aItems = (j && j.items) || [];
             }
+            if (answersRes.ok) {
+                const j = await answersRes.json();
+                serverAnswers = (j && j.answers) || {};
+            }
         } catch(_) {}
+
+        // Merge server answers with local answerByHash
+        if (Object.keys(serverAnswers).length > 0) {
+            Object.assign(answerByHash, serverAnswers);
+            saveAnswerByHash();
+        }
 
         if (qItems.length > 0) {
             // Create a map of existing questions to preserve userAnswer
@@ -1734,6 +1921,9 @@ async function pullServerDataReplaceLocal() {
                 if (q.dbId) existingQuestions.set(q.dbId, q);
                 if (q.id) existingQuestions.set(q.id, q);
             });
+
+            // Preserve work process images by mapping old IDs to new IDs
+            const newWorkProcessImages = new Map();
 
             questions = qItems.map(q => {
                 const existingQ = existingQuestions.get(q.id);
@@ -1747,7 +1937,7 @@ async function pullServerDataReplaceLocal() {
                     userAnswer = answerByHash[imageHash];
                 }
 
-                return {
+                const newQuestion = {
                     id: q.id || Date.now(),
                     questionNumber: q.questionNumber || '문제',
                     publisher: q.publisher || '출처모름',
@@ -1761,7 +1951,25 @@ async function pullServerDataReplaceLocal() {
                     userAnswer: userAnswer,
                     dbId: q.id
                 };
+
+                // Preserve work process images for this question
+                if (existingQ) {
+                    const oldId = String(existingQ.id);
+                    const newId = String(newQuestion.id);
+                    if (workProcessImages.has(oldId)) {
+                        newWorkProcessImages.set(newId, workProcessImages.get(oldId));
+                    }
+                }
+
+                return newQuestion;
             });
+
+            // Update work process images with new mappings
+            workProcessImages.clear();
+            newWorkProcessImages.forEach((images, questionId) => {
+                workProcessImages.set(questionId, images);
+            });
+
             saveQuestions();
         }
 
@@ -1856,7 +2064,7 @@ function showToast(message, type = 'success') {
                 opacity: 1;
             }
         }
-    `;
+    `
 
     if (!document.querySelector('style[data-toast]')) {
         style.setAttribute('data-toast', 'true');
@@ -1925,6 +2133,12 @@ async function handleWorkProcessImageUpload(event) {
 
 // Update images display
 function updateWorkProcessImagesDisplay(questionId) {
+    // Check if DOM elements are available
+    if (!workProcessCameraInterface || !workProcessImagesContainer || !workProcessImagesList || !workProcessImageCount) {
+        console.warn('Work process DOM elements not yet available');
+        return;
+    }
+    
     const images = workProcessImages.get(questionId) || [];
     
     if (images.length === 0) {
@@ -2004,7 +2218,15 @@ function closeWorkProcessImageModal() {
 
 // Load work process images for a question
 function loadWorkProcessImagesForQuestion(questionId) {
+    // Try to update display immediately
     updateWorkProcessImagesDisplay(questionId);
+    
+    // If DOM elements weren't available, retry after a short delay
+    if (!workProcessCameraInterface || !workProcessImagesContainer) {
+        setTimeout(() => {
+            updateWorkProcessImagesDisplay(questionId);
+        }, 100);
+    }
 }
 
 // Clean up work process images when question is deleted

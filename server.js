@@ -613,6 +613,36 @@ app.get('/api/answers/:hash', async (req, res) => {
   }
 });
 
+// Bulk answers API - get all answers for current user
+app.get('/api/answers', async (req, res) => {
+  try {
+    const userId = getAuthedUserId(req);
+    let allAnswers = {};
+    
+    if (prisma && userId) {
+      try {
+        const answers = await prisma.answer.findMany({
+          where: { userId }
+        });
+        answers.forEach(ans => {
+          if (ans.imageHash && ans.value) {
+            allAnswers[ans.imageHash] = ans.value;
+          }
+        });
+      } catch (e) {
+        console.warn('DB read all answers failed:', e.message);
+      }
+    }
+    
+    // Merge with file-based answers (fallback)
+    Object.assign(allAnswers, answersByHash);
+    
+    return res.json({ answers: allAnswers });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to load answers' });
+  }
+});
+
 app.post('/api/answers', async (req, res) => {
   try {
     const { imageHash, answer } = req.body;

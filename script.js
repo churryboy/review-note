@@ -1,6 +1,4 @@
-
-
-// Optimized script.js - Fixed Version
+// Complete Fixed script.js - Answer Persistence & Modal Logic Fixed
 // State management
 let questions = [];
 let popQuizItems = [];
@@ -142,6 +140,7 @@ const navAchievement = document.getElementById('navAchievement');
 const backToCameraFromReview = document.getElementById('backToCameraFromReview');
 const backFromSolution = document.getElementById('backFromSolution');
 const deleteFromSolution = document.getElementById('deleteFromSolution');
+const deleteFromReview = document.getElementById('deleteFromReview');
 const reviewImage = document.getElementById('reviewImage');
 const imageCard = document.getElementById('imageCard');
 const wrongBtn = document.getElementById('wrongBtn');
@@ -183,13 +182,17 @@ document.addEventListener('DOMContentLoaded', () => {
         reloadUserState();
         if (window.currentAuthProvider === 'pin') {
             try { await pullServerDataReplaceLocal(); } catch(_) {}
-            try { await fetch('/api/answers/migrate-canonical', { method: 'POST', credentials: 'include' }); } catch(_) {}
         }
         showNRoundView();
     })();
 
-    // Refresh from server when window gains focus
+    // Refresh from server when window gains focus (throttled)
+    let lastFocusTime = 0;
     window.addEventListener('focus', async () => {
+        const now = Date.now();
+        if (now - lastFocusTime < 5000) return; // Throttle to max once per 5 seconds
+        lastFocusTime = now;
+        
         if (window.currentAuthProvider === 'pin') {
             try { await pullServerDataReplaceLocal(); } catch(_) {}
             if (roundNView && roundNView.style.display !== 'none') displayNRoundQuestions();
@@ -217,6 +220,14 @@ function setupEventListeners() {
     if (backToCameraFromReview) backToCameraFromReview.addEventListener('click', showNRoundView);
     if (backFromSolution) backFromSolution.addEventListener('click', showNRoundView);
     if (deleteFromSolution) deleteFromSolution.addEventListener('click', handleDeleteCurrentSolution);
+    
+    if (deleteFromReview) {
+        deleteFromReview.addEventListener('click', () => {
+            cleanupCurrentImage();
+            showNRoundView();
+            showToast('이미지가 삭제되었습니다');
+        });
+    }
 
     if (solutionAnswerInput) {
         const handleAnswerSave = async () => {
@@ -236,9 +247,31 @@ function setupEventListeners() {
     const solutionAnswerSubmit = document.getElementById('solutionAnswerSubmit');
     if (solutionAnswerSubmit) {
         solutionAnswerSubmit.addEventListener('click', async () => {
-            await persistSolutionAnswer();
-            showToast('답안이 저장되었습니다!');
-            showNRoundView();
+            const solutionAnswerInput = document.getElementById('solutionAnswerInput');
+            const answerValue = document.getElementById('answerValue');
+            
+            if (solutionAnswerInput && answerValue) {
+                const inputValue = solutionAnswerInput.value.trim();
+                if (inputValue) {
+                    answerValue.textContent = inputValue;
+                    
+                    solutionAnswerInput.style.display = 'none';
+                    solutionAnswerSubmit.style.display = 'none';
+                    
+                    const warningText = solutionAnswerInput.closest('.solution-notes').querySelector('p');
+                    if (warningText) {
+                        warningText.style.display = 'none';
+                    }
+                    
+                    const inputContainer = solutionAnswerInput.parentElement;
+                    if (inputContainer) {
+                        inputContainer.style.display = 'none';
+                    }
+                    
+                    await persistSolutionAnswer();
+                    showToast('답안이 저장되었습니다!');
+                }
+            }
         });
     }
 
@@ -362,11 +395,9 @@ function initAuthPage() {
             return;
         }
         
-        // Create a simple PIN based on nickname for compatibility
         const pin = '1234'; // Default PIN for all users
         
         try {
-            // Try to register first, then login if user already exists
             let res = await fetch('/api/auth/register-pin', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
@@ -374,7 +405,6 @@ function initAuthPage() {
                 body: JSON.stringify({ nickname, pin }) 
             });
             
-            // If registration fails (user exists), try login
             if (!res.ok && res.status === 400) {
                 res = await fetch('/api/auth/login-pin', { 
                     method: 'POST', 
@@ -538,7 +568,7 @@ async function categorizeQuestion(category, checkAnswerReq = true) {
                     if (!answer) { input.focus(); return; }
                     if (reviewAnswerInput) reviewAnswerInput.value = answer;
                     cleanup();
-                    categorizeQuestion(category);
+                    categorizeQuestion(category, false);
                 };
                 return;
             }
@@ -570,11 +600,10 @@ async function categorizeQuestion(category, checkAnswerReq = true) {
             if (up.ok) {
                 const j = await up.json();
                 if (j && j.url) {
-                    dataUrl = j.url; // Store URL instead of base64
+                    dataUrl = j.url;
                 }
             }
         } catch (err) {
-            // Fallback: compress more aggressively
             try { dataUrl = await compressDataUrl(dataUrl, 480, 0.5); } catch (_) {}
         }
 
@@ -760,6 +789,80 @@ function applyRoundBadgeStyles(container) {
     });
 }
 
+// FIXED: Properly check for answer from all sources
+async function hasAnswerForQuestion(question) {
+    try {
+        // Check userAnswer first
+        if (question.userAnswer && question.userAnswer.trim().length > 0) {
+            return true;
+        }
+        
+        // Check answerByHash with imageHash
+        if (question.imageHash && answerByHash[question.imageHash]) {
+            return true;
+        }
+        
+        // Try to get/compute hash and check
+        const hash = question.imageHash || await ensureQuestionImageHash(question);
+        if (hash) {
+            const answer = await getAnswerForHash(hash);
+            return answer && answer.trim().length > 0;
+        }
+        
+        return false;
+    } catch (_) {
+        return false;
+    }
+}
+
+// FIXED: Get answer from all possible sources
+async function getAnswerForQuestion(question) {
+    // Check userAnswer first
+    if (question.userAnswer && question.userAnswer.trim()) {
+        return question.userAnswer.trim();
+    }
+    
+    // Check answerByHash
+    const hash = question.imageHash || await ensureQuestionImageHash(question);
+    if (hash) {
+        return await getAnswerForHash(hash);
+    }
+    
+    return '';
+}
+
+// FIXED: Move question to pop quiz with answer
+async function moveQuestionToPopQuiz(question) {
+    // Get the answer before moving
+    const answer = await getAnswerForQuestion(question);
+    const hash = question.imageHash || await ensureQuestionImageHash(question);
+    
+    const entry = {
+        imageUrl: question.imageUrl,
+        imageHash: hash,
+        questionId: String(question.dbId || question.id),
+        questionNumber: question.questionNumber,
+        category: question.category,
+        lastAccessed: question.lastAccessed || question.timestamp,
+        reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(),
+        round: question.round || 0,
+        userAnswer: answer // Store answer in popQuizItem
+    };
+    
+    popQuizItems.push(entry);
+    savePopQuizItems();
+    updatePopQuizBadge();
+    
+    // Remove from questions
+    const idx = questions.findIndex(q => String(q.id) === String(question.id));
+    if (idx !== -1) {
+        questions.splice(idx, 1);
+        saveQuestions();
+        displayNRoundQuestions();
+    }
+}
+
+// FIXED: Swipe handler
 function setupNRoundSwipe(item) {
     new SwipeHandler(item, {
         threshold: 110,
@@ -782,75 +885,54 @@ function setupNRoundSwipe(item) {
             const qid = item.dataset.id;
             const q = questions.find(q => String(q.id) === String(qid));
             if (q) {
-                console.log("Swipe right - checking answer for question:", q.id);
+                // Check for answer properly
                 const hasAnswer = await hasAnswerForQuestion(q);
-                console.log("Has answer:", hasAnswer);
+                
                 if (!hasAnswer) {
-                    console.log("No answer found - showing modal");
+                    // Show answer required modal
                     const modal = document.getElementById('answerReqModal');
                     const input = document.getElementById('answerReqInput');
                     const submit = document.getElementById('answerReqSubmit');
                     const closeBtn = document.getElementById('answerReqClose');
+                    
                     if (modal && input && submit) {
                         modal.style.display = 'flex';
                         input.value = '';
                         input.focus();
+                        
                         const cleanup = () => {
                             modal.style.display = 'none';
                             submit.onclick = null;
                             if (closeBtn) closeBtn.onclick = null;
                         };
+                        
                         if (closeBtn) closeBtn.onclick = cleanup;
+                        
                         submit.onclick = async () => {
-                            const v = input.value.trim();
-                            if (!v) { input.focus(); return; }
-                            const h2 = q.imageHash || (await ensureQuestionImageHash(q));
-                            if (h2) { await saveAnswerForHash(h2, v); }
-                            
-                            const entry = {
-                                imageUrl: q.imageUrl,
-                                questionId: String(q.dbId || q.id),
-                                questionNumber: q.questionNumber,
-                                category: q.category,
-                                lastAccessed: q.lastAccessed || q.timestamp,
-                                reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(),
-                                round: q.round || 0
-                            };
-                            popQuizItems.push(entry);
-                            savePopQuizItems();
-                            updatePopQuizBadge();
-                            
-                            const idx = questions.findIndex(qq => String(qq.id) === String(qid));
-                            if (idx !== -1) {
-                                questions.splice(idx, 1);
-                                saveQuestions();
-                                displayNRoundQuestions();
+                            const answer = input.value.trim();
+                            if (!answer) { 
+                                input.focus(); 
+                                return; 
                             }
+                            
+                            // Save answer to question and hash storage
+                            q.userAnswer = answer;
+                            const hash = q.imageHash || await ensureQuestionImageHash(q);
+                            if (hash) {
+                                await saveAnswerForHash(hash, answer);
+                            }
+                            saveQuestions();
+                            
+                            // Move to pop quiz with answer
+                            await moveQuestionToPopQuiz(q);
                             cleanup();
                         };
                     }
                     return;
                 }
                 
-                const entry = {
-                    imageUrl: q.imageUrl,
-                    questionId: String(q.dbId || q.id),
-                    questionNumber: q.questionNumber,
-                    category: q.category,
-                    lastAccessed: q.lastAccessed || q.timestamp,
-                    reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(),
-                    round: q.round || 0
-                };
-                popQuizItems.push(entry);
-                savePopQuizItems();
-                updatePopQuizBadge();
-                
-                const idx = questions.findIndex(qq => String(qq.id) === String(qid));
-                if (idx !== -1) {
-                    questions.splice(idx, 1);
-                    saveQuestions();
-                    displayNRoundQuestions();
-                }
+                // Has answer, move to pop quiz
+                await moveQuestionToPopQuiz(q);
             }
         }
     });
@@ -1029,7 +1111,7 @@ function getAchievementRankInfo(achieveCount) {
     return { rank, maxRank, achieveCount, nextStepSize, inStepProgress, remaining, progressRatio, title, nextTitle };
 }
 
-// Solution view
+// FIXED: Solution view
 function showSolutionView(questionId) {
     const question = questions.find(q => String(q.id) === String(questionId));
     if (!question) return;
@@ -1046,16 +1128,30 @@ function showSolutionView(questionId) {
     solutionView.dataset.currentId = String(question.id);
 
     if (solutionAnswerInput) {
-        solutionAnswerInput.value = question.userAnswer || '';
-        ensureQuestionImageHash(question).then(async (hash) => {
-            if (!hash) return;
-            const answer = await getAnswerForHash(hash);
-            if (answer) solutionAnswerInput.value = answer;
+        // Load answer from question or hash storage
+        getAnswerForQuestion(question).then(answer => {
+            solutionAnswerInput.value = answer || '';
             
             const valEl = document.getElementById('answerValue');
+            const solutionAnswerSubmit = document.getElementById('solutionAnswerSubmit');
+            const warningText = solutionAnswerInput.closest('.solution-notes').querySelector('p');
+            const inputContainer = solutionAnswerInput.parentElement;
+            
             if (valEl) {
-                const v = (answer || '').trim();
-                valEl.textContent = v ? v : '정답을 알려주세요';
+                valEl.textContent = answer || '정답을 알려주세요';
+                
+                // Show/hide input elements based on whether answer exists
+                const hasAnswer = answer && answer.trim().length > 0;
+                solutionAnswerInput.style.display = hasAnswer ? 'none' : 'block';
+                if (solutionAnswerSubmit) {
+                    solutionAnswerSubmit.style.display = hasAnswer ? 'none' : 'block';
+                }
+                if (warningText) {
+                    warningText.style.display = hasAnswer ? 'none' : 'block';
+                }
+                if (inputContainer) {
+                    inputContainer.style.display = hasAnswer ? 'none' : 'flex';
+                }
             }
         });
     }
@@ -1082,18 +1178,25 @@ function setupAnswerReveal() {
     }
 }
 
+// FIXED: Ensure answer is persisted to all storage locations
 async function persistSolutionAnswer() {
     const questionId = parseInt(solutionView.dataset.currentId);
     if (!questionId) return;
+    
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
+    
     const answer = (solutionAnswerInput && solutionAnswerInput.value) || '';
+    
+    // Save to question object
     question.userAnswer = answer;
-    const hash = await ensureQuestionImageHash(question);
-    if (hash) {
-        question.imageHash = hash;
+    
+    // Save to hash storage
+    const hash = question.imageHash || await ensureQuestionImageHash(question);
+    if (hash && answer) {
         await saveAnswerForHash(hash, answer);
     }
+    
     saveQuestions();
 }
 
@@ -1127,6 +1230,7 @@ function openQuizModal(index) {
     quizModal.style.display = 'flex';
     quizImage.src = quizItem.imageUrl;
     quizModal.dataset.index = String(index);
+    if (quizAnswer) quizAnswer.value = '';
 }
 
 function closeQuizModal() {
@@ -1137,6 +1241,7 @@ function closeQuizModal() {
     delete quizModal.dataset.index;
 }
 
+// FIXED: Quiz submit to properly check answers
 async function handleQuizSubmit() {
     const indexStr = quizModal.dataset.index;
     if (!indexStr) return;
@@ -1145,9 +1250,22 @@ async function handleQuizSubmit() {
     if (!quizItem) return;
 
     const userAnswer = (quizAnswer.value || '').trim();
-    const hash = await ensureQuestionImageHash(quizItem);
-    if (hash) quizItem.imageHash = hash;
-    const correctAnswer = await getAnswerForHash(hash);
+    
+    // Get correct answer from multiple sources
+    let correctAnswer = '';
+    
+    // 1. Check popQuizItem's stored answer
+    if (quizItem.userAnswer) {
+        correctAnswer = quizItem.userAnswer.trim();
+    }
+    // 2. Check answerByHash
+    else if (quizItem.imageHash && answerByHash[quizItem.imageHash]) {
+        correctAnswer = answerByHash[quizItem.imageHash].trim();
+    }
+    // 3. Try to fetch from server/storage
+    else if (quizItem.imageHash) {
+        correctAnswer = await getAnswerForHash(quizItem.imageHash);
+    }
 
     const isCorrect = normalizeAnswer(userAnswer).length > 0 &&
                       normalizeAnswer(correctAnswer).length > 0 &&
@@ -1366,7 +1484,7 @@ function normalizeAnswer(v) {
     let s = String(v).trim();
     s = s.replace(/[\uFF10-\uFF19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 0x30));
     s = s.replace(/\s+/g, ' ');
-    return s;
+    return s.toLowerCase(); // Make case-insensitive
 }
 
 function isPopQuizReady(item, nowTs) {
@@ -1407,17 +1525,6 @@ function updatePopQuizStatusPanel() {
     const sumRounds = ready.reduce((sum, item) => sum + (item.round || 0), 0);
     const avg = sumRounds / ready.length;
     avgEl.textContent = `${avg.toFixed(2)}회독`;
-}
-
-async function hasAnswerForQuestion(question) {
-    try {
-        const hash = question.imageHash || (await ensureQuestionImageHash(question));
-        const serverOrLocal = await getAnswerForHash(hash);
-        if (serverOrLocal && serverOrLocal.length > 0) return true;
-        return false;
-    } catch (_) {
-        return false;
-    }
 }
 
 // Hash functions
@@ -1556,6 +1663,7 @@ async function pullServerDataReplaceLocal() {
         let qItems = [];
         let pqItems = [];
         let aItems = [];
+        let serverAnswers = {};
         
         try {
             const [qRes, pqRes, aRes] = await Promise.all([
@@ -1579,43 +1687,77 @@ async function pullServerDataReplaceLocal() {
         } catch(_) {}
 
         if (qItems.length > 0) {
-            questions = qItems.map(q => ({
-                id: q.id || Date.now(),
-                questionNumber: q.questionNumber || '문제',
-                publisher: q.publisher || '출처모름',
-                questionText: '이미지 문제',
-                imageUrl: (q.image && q.image.url) || '',
-                imageHash: (q.image && q.image.hash) || null,
-                category: q.category || 'wrong',
-                round: q.round || 0,
-                timestamp: q.timestamp || new Date().toISOString(),
-                lastAccessed: q.lastAccessed || new Date().toISOString(),
-                userAnswer: '',
-                dbId: q.id
-            }));
+            // Create a map of existing questions to preserve userAnswer
+            const existingQuestions = new Map();
+            questions.forEach(q => {
+                if (q.dbId) existingQuestions.set(q.dbId, q);
+                if (q.id) existingQuestions.set(q.id, q);
+            });
+
+            questions = qItems.map(q => {
+                const existingQ = existingQuestions.get(q.id);
+                const imageHash = (q.image && q.image.hash) || null;
+                
+                // Preserve userAnswer from existing question
+                let userAnswer = '';
+                if (existingQ && existingQ.userAnswer) {
+                    userAnswer = existingQ.userAnswer;
+                } else if (imageHash && answerByHash[imageHash]) {
+                    userAnswer = answerByHash[imageHash];
+                }
+
+                return {
+                    id: q.id || Date.now(),
+                    questionNumber: q.questionNumber || '문제',
+                    publisher: q.publisher || '출처모름',
+                    questionText: '이미지 문제',
+                    imageUrl: (q.image && q.image.url) || '',
+                    imageHash: imageHash,
+                    category: q.category || 'wrong',
+                    round: q.round || 0,
+                    timestamp: q.timestamp || new Date().toISOString(),
+                    lastAccessed: q.lastAccessed || new Date().toISOString(),
+                    userAnswer: userAnswer,
+                    dbId: q.id
+                };
+            });
             saveQuestions();
         }
 
         if (pqItems.length > 0) {
-            popQuizItems = pqItems.map(p => ({
-                id: p.questionId,
-                questionNumber: (p.question && p.question.questionNumber) || '문제',
-                imageUrl: (p.question && p.question.image && p.question.image.url) || '',
-                imageHash: (p.question && p.question.image && p.question.image.hash) || null,
-                category: (p.question && p.question.category) || 'wrong',
-                round: (p.question && p.question.round) || 0,
-                lastAccessed: (p.question && p.question.lastAccessed) || new Date().toISOString(),
-                quizCount: (p.question && p.question.quizCount) || 0,
-                popQuizAdded: (p.createdAt) || new Date().toISOString(),
-                reappearAt: p.nextAt || null,
-                dbId: p.questionId
-            }));
+            // Preserve userAnswer in popQuizItems
+            popQuizItems = pqItems.map(p => {
+                const imageHash = (p.question && p.question.image && p.question.image.hash) || null;
+                let userAnswer = '';
+                
+                // Find answer from various sources
+                if (imageHash && answerByHash[imageHash]) {
+                    userAnswer = answerByHash[imageHash];
+                }
+                
+                return {
+                    id: p.questionId,
+                    questionId: p.questionId,
+                    questionNumber: (p.question && p.question.questionNumber) || '문제',
+                    imageUrl: (p.question && p.question.image && p.question.image.url) || '',
+                    imageHash: imageHash,
+                    category: (p.question && p.question.category) || 'wrong',
+                    round: (p.question && p.question.round) || 0,
+                    lastAccessed: (p.question && p.question.lastAccessed) || new Date().toISOString(),
+                    quizCount: (p.question && p.question.quizCount) || 0,
+                    popQuizAdded: (p.createdAt) || new Date().toISOString(),
+                    reappearAt: p.nextAt || null,
+                    userAnswer: userAnswer, // Include userAnswer
+                    dbId: p.questionId
+                };
+            });
             savePopQuizItems();
         }
 
         if (aItems.length > 0) {
             achievements = aItems.map(a => ({
                 id: a.questionId,
+                questionId: a.questionId,
                 questionNumber: (a.question && a.question.questionNumber) || '문제',
                 imageUrl: (a.question && a.question.image && a.question.image.url) || '',
                 imageHash: (a.question && a.question.image && a.question.image.hash) || null,

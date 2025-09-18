@@ -35,46 +35,464 @@ body {
     padding-bottom: var(--nav-height);
 }
 
-/* Utility Classes */
-.btn-primary {
-    background: var(--primary-gradient);
-    color: white;
+/* =================================
+   UNIFIED BUTTON DESIGN SYSTEM
+   Replace your existing button styles with this
+   ================================= */
+
+/* Button Base - All buttons inherit from this */
+.btn {
+    /* Reset */
+    margin: 0;
     border: none;
-    border-radius: var(--border-radius);
-    padding: 12px 20px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
+    outline: none;
+    text-decoration: none;
+    
+    /* Layout */
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    
+    /* Typography */
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    
+    /* Sizing */
+    min-height: 44px;
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    
+    /* Interaction */
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition);
+    
+    /* Accessibility */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.btn-primary:hover {
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Size Variants */
+.btn--sm {
+    min-height: 36px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+
+.btn--lg {
+    min-height: 52px;
+    padding: 16px 24px;
+    font-size: 1.05rem;
+}
+
+.btn--xl {
+    min-height: 60px;
+    padding: 18px 32px;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Shape Variants */
+.btn--round {
+    border-radius: 999px;
+}
+
+.btn--square {
+    border-radius: 4px;
+}
+
+.btn--circle {
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    min-height: auto;
+}
+
+.btn--circle.btn--sm {
+    width: 36px;
+    height: 36px;
+}
+
+.btn--circle.btn--lg {
+    width: 60px;
+    height: 60px;
+}
+
+/* Width Variants */
+.btn--full {
+    width: 100%;
+}
+
+.btn--auto {
+    width: auto;
+}
+
+/* Color Variants */
+.btn--primary {
+    background: var(--primary-gradient);
+    color: white;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn--primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.btn--primary:hover::before {
+    opacity: 1;
+}
+
+.btn--primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 85, 0, 0.3);
+    box-shadow: 0 6px 20px rgba(255, 85, 0, 0.4);
 }
 
-.btn-primary:active {
+.btn--primary:active {
     transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(255, 85, 0, 0.3);
+}
+
+.btn--secondary {
+    background: white;
+    color: #495057;
+    border: 2px solid #dee2e6;
+}
+
+.btn--secondary:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn--secondary:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn--ghost {
+    background: transparent;
+    color: var(--primary-color);
+    border: 2px solid transparent;
+}
+
+.btn--ghost:hover {
+    background: rgba(255, 85, 0, 0.08);
+    color: var(--primary-color);
+}
+
+.btn--ghost:active {
+    background: rgba(255, 85, 0, 0.12);
+}
+
+.btn--danger {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    border: 2px solid transparent;
+}
+
+.btn--danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.btn--danger:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+}
+
+.btn--success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border: 2px solid transparent;
+}
+
+.btn--success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.btn--success:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+}
+
+.btn--warning {
+    background: linear-gradient(135deg, #ffc107, #ffca2c);
+    color: #212529;
+    border: 2px solid transparent;
+}
+
+.btn--warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+}
+
+.btn--warning:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(255, 193, 7, 0.3);
+}
+
+/* Specialized Button Types */
+.btn--floating {
+    position: fixed;
+    bottom: 90px;
+    left: 20px;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(255, 85, 0, 0.3);
+}
+
+.btn--floating:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(255, 85, 0, 0.4);
+}
+
+.btn--floating:active {
+    transform: scale(0.95);
+}
+
+.btn--nav {
+    background: none;
+    border: none;
+    padding: 8px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #999;
+    font-size: 0.75rem;
+    min-height: auto;
+    flex: 1;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.btn--nav:hover {
+    color: var(--primary-color);
+    transform: none;
+    box-shadow: none;
+}
+
+.btn--nav.active {
+    color: var(--primary-color);
+}
+
+.btn--nav i {
+    font-size: 1.2rem;
+}
+
+/* Action Button Styles (for review screen) */
+.btn--action {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 12px;
+    border-radius: var(--border-radius-lg);
+    font-size: 0.9rem;
+    min-height: auto;
+}
+
+.btn--action i {
+    font-size: 1.5rem;
+}
+
+.btn--action-wrong {
+    background: rgba(255, 85, 0, 0.1);
+    color: var(--primary-color);
+    border: 2px solid rgba(255, 85, 0, 0.2);
+}
+
+.btn--action-wrong:hover {
+    background: rgba(255, 85, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn--action-ambiguous {
+    background: rgba(255, 165, 0, 0.1);
+    color: #FFA500;
+    border: 2px solid rgba(255, 165, 0, 0.2);
+}
+
+.btn--action-ambiguous:hover {
+    background: rgba(255, 165, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Loading State */
+.btn--loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.btn--loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: btn-spin 1s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes btn-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Icon Only Buttons */
+.btn--icon-only {
+    padding: 12px;
+    min-width: 44px;
+}
+
+.btn--icon-only.btn--sm {
+    padding: 8px;
+    min-width: 36px;
+}
+
+.btn--icon-only.btn--lg {
+    padding: 16px;
+    min-width: 60px;
+}
+
+/* Focus States for Accessibility */
+.btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.btn--ghost:focus-visible {
+    outline: 2px solid var(--primary-color);
+}
+
+.btn--secondary:focus-visible {
+    outline: 2px solid var(--primary-color);
+}
+
+/* Group Layouts */
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-group--stack {
+    flex-direction: column;
+}
+
+.btn-group--stretch .btn {
+    flex: 1;
+}
+
+.btn-group--center {
+    justify-content: center;
+}
+
+.btn-group--end {
+    justify-content: flex-end;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+    .btn {
+        min-height: 48px;
+        padding: 14px 20px;
+        font-size: 0.9rem;
+    }
+    
+    .btn--sm {
+        min-height: 40px;
+        padding: 10px 16px;
+        font-size: 0.85rem;
+    }
+    
+    .btn--lg {
+        min-height: 56px;
+        padding: 18px 24px;
+        font-size: 1rem;
+    }
+    
+    .btn--circle {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .btn--floating {
+        width: 56px;
+        height: 56px;
+        font-size: 1.3rem;
+    }
+}
+
+/* Legacy Support - Map old classes to new system */
+.btn-primary { @extend .btn, .btn--primary; }
+.btn-secondary { @extend .btn, .btn--secondary; }
+.action-btn { @extend .btn, .btn--action; }
+.back-btn { @extend .btn, .btn--ghost, .btn--sm; }
+.logout-btn { @extend .btn, .btn--secondary, .btn--sm; }
+.floating-camera-btn { @extend .btn, .btn--primary, .btn--circle, .btn--lg, .btn--floating; }
+.nav-item { @extend .btn, .btn--nav; }
+
+/* If your CSS doesn't support @extend, use these instead: */
+.btn-primary {
+    background: var(--primary-gradient);
+    color: white;
+    border: 2px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1;
+    min-height: 44px;
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-secondary {
-    background: #f0f0f0;
-    color: #333;
-    border: none;
-    border-radius: var(--border-radius);
-    padding: 10px 16px;
-    font-size: 0.9rem;
+    background: white;
+    color: #495057;
+    border: 2px solid #dee2e6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-family);
+    font-size: 0.95rem;
     font-weight: 600;
+    line-height: 1;
+    min-height: 44px;
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
     cursor: pointer;
     transition: var(--transition);
-}
-
-.btn-secondary:hover {
-    background: #e5e5e5;
 }
 
 .card {
@@ -240,37 +658,32 @@ body {
 /* Floating Camera Button */
 .floating-camera-btn {
     position: fixed;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #ff5500, #ff7700);
+    bottom: 90px;
+    left: 20px;
+    background: var(--primary-gradient);
     color: white;
     border: none;
     border-radius: 50%;
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 8px 25px rgba(255, 85, 0, 0.4), 0 0 0 0 rgba(255, 85, 0, 0.1);
-    z-index: 1000;
-    backdrop-filter: blur(10px);
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(255, 85, 0, 0.3);
+    z-index: 100;
 }
 
-
-
-.floating-camera-btn i {
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-    transition: transform 0.2s ease;
+.floating-camera-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 85, 0, 0.4);
 }
 
-.floating-camera-btn:hover i {
-    transform: scale(1.1);
+.floating-camera-btn:active {
+    transform: scale(0.95);
 }
-
 
 /* Question List */
 .question-list {
@@ -591,6 +1004,7 @@ body {
 }
 
 .solution-content {
+    padding: 20px;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -629,11 +1043,15 @@ body {
 
 .solution-process {
     background: white;
-    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    margin-bottom: 8px;
 }
 
 .solution-notes {
     display: flex;
+    padding: 12px;
     flex-direction: column;
     gap: 12px;
 }

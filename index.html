@@ -182,15 +182,13 @@
                     <img id="solutionImage" src="" alt="문제 이미지">
                 </div>
                 
-                <div id="answerContainer" class="answer-container">
-                    <span style="font-weight:600; color:#333;">정답</span>
-                    <span id="answerValue" style="color:#111; display:none;">정답을 알려주세요</span>
-                    <button id="answerReveal" class="btn-secondary" style="padding:6px 10px;">보기</button>
-                </div>
-                
                 <div class="solution-process">
                     <div class="solution-notes">
-                        <h3>정답 입력란</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <h3 style="margin: 0;">정답 입력란</h3>
+                            <span id="answerValue" style="color:#111; display:none; font-weight:600; margin: 0 10px;">정답을 알려주세요</span>
+                            <button id="answerReveal" class="btn-secondary" style="padding:6px 10px;">보기</button>
+                        </div>
                         <p style="color:#666; margin:6px 0 10px; font-size:0.92rem;">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요.</p>
                         <div style="display:flex; gap:8px; align-items:center;">
                             <input id="solutionAnswerInput" type="text" placeholder="정답을 입력하세요" style="flex:1; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />

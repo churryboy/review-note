@@ -1884,3 +1884,80 @@ body {
 #workProcessImageModal .popup-close:hover {
     background: rgba(0,0,0,0.9);
 }
+
+/* Scholarship CTA Button */
+.scholarship-cta-row {
+  margin-top: 16px !important;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+#achievementStatus .scholarship-cta-row {
+  margin-top: 0 !important;
+  padding-top: 0;
+  border-top: none;
+}
+
+.scholarship-cta-btn {
+  width: 100%;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.scholarship-cta-btn:disabled {
+  background: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.scholarship-cta-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.scholarship-cta-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.scholarship-cta-btn i {
+  font-size: 18px;
+}
+
+.scholarship-cta-btn small {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-left: 4px;
+}
+
+.scholarship-cta-btn:disabled small {
+  opacity: 0.6;
+}
+
+/* Active state animation */
+.scholarship-cta-btn.active {
+  animation: scholarshipPulse 2s infinite;
+}
+
+@keyframes scholarshipPulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  }
+  50% {
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+  }
+}

@@ -235,6 +235,13 @@ const workProcessImageModal = document.getElementById('workProcessImageModal');
 const workProcessModalImage = document.getElementById('workProcessModalImage');
 const workProcessImageClose = document.getElementById('workProcessImageClose');
 
+// Scholarship CTA functionality
+const scholarshipCtaBtn = document.getElementById('scholarshipCtaBtn');
+const scholarshipProgress = document.getElementById('scholarshipProgress');
+
+// Track scholarship button usage
+let scholarshipClickedAt = 0; // Achievement count when button was last clicked
+
 // Store work process images per question
 let workProcessImages = new Map(); // questionId -> array of image data
 
@@ -248,7 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
         initAuthPage();
         reloadUserState();
         if (window.currentAuthProvider === 'pin') {
-            try { await pullServerDataReplaceLocal(); } catch(_) {}
+            try { 
+                await pullServerDataReplaceLocal(); 
+                // Sync any local achievements that might not be on server
+                await syncAchievementsToServer();
+            } catch(_) {}
         }
         showNRoundView();
     })();
@@ -261,7 +272,11 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFocusTime = now;
         
         if (window.currentAuthProvider === 'pin') {
-            try { await pullServerDataReplaceLocal(); } catch(_) {}
+            try { 
+                await pullServerDataReplaceLocal(); 
+                // Sync any local achievements that might not be on server after focus
+                await syncAchievementsToServer();
+            } catch(_) {}
             if (roundNView && roundNView.style.display !== 'none') displayNRoundQuestions();
             if (settingsView && settingsView.style.display !== 'none') displayPopQuiz();
             if (achievementView && achievementView.style.display !== 'none') displayAchievements();
@@ -430,6 +445,26 @@ function setupEventListeners() {
             }
         });
     }
+    
+    // Scholarship CTA button
+    if (scholarshipCtaBtn) {
+        scholarshipCtaBtn.addEventListener('click', () => {
+            if (!scholarshipCtaBtn.disabled) {
+                // Track that button was clicked at current achievement count
+                scholarshipClickedAt = achievements.length;
+                saveScholarshipState();
+                
+                // Redirect to scholarship form
+                window.open('https://forms.gle/ox4kDqXxHDxxY3Sy9', '_blank');
+                
+                // Update button state immediately
+                updateScholarshipButton();
+                
+                // Show confirmation toast
+                showToast('🎓 장학금 신청 페이지로 이동했습니다!', 'success');
+            }
+        });
+    }
 }
 
 // Auth functions
@@ -568,7 +603,9 @@ function reloadUserState() {
     loadAchievements();
     loadAnswerByHash();
     loadWorkProcessImages(); // Load work process images
+    loadScholarshipState(); // Load scholarship button state
     updatePopQuizBadge();
+    updateScholarshipButton(); // Update scholarship button on load
     if (roundNView && roundNView.style.display !== 'none') displayNRoundQuestions();
     if (achievementView && achievementView.style.display !== 'none') displayAchievements();
 }
@@ -1223,32 +1260,13 @@ function displayAchievements() {
     const status = document.getElementById('achievementStatus');
     if (!list || !empty) return;
 
-    if (status) {
-        const info = getAchievementRankInfo((achievements || []).length);
+    // Show scholarship CTA button if there are achievements
+    if (status && achievements && achievements.length > 0) {
         status.style.display = 'block';
-        const percent = Math.round(info.progressRatio * 100);
-        const progressFill = info.rank >= info.maxRank ? 100 : percent;
-        
-        const badges = Array.from({ length: info.maxRank }, (_, i) => {
-            const idx = i + 1;
-            const active = idx <= info.rank ? 'active' : '';
-            return `<div class="rank-badge ${active}">${idx <= info.rank ? '⭐' : '☆'}</div>`;
-        }).join('');
-        
-        const nextText = info.rank >= info.maxRank ? '최고 등급 도달' : `${info.remaining}개 남음`;
-        status.innerHTML = `
-            <div class="rank-panel fun">
-                <div class="rank-tier-title">
-                    <span class="rank-emoji">${info.title.e}</span>${info.title.t}
-                </div>
-                <div class="rank-badges">${badges}</div>
-                <div class="rank-stats">
-                    <span>${info.nextTitle ? info.nextTitle.t : '다음 등급'}까지: <strong>${nextText}</strong></span>
-                </div>
-                <div class="rank-progress">
-                    <div class="rank-progress-bar" style="width:${progressFill}%"></div>
-                </div>
-            </div>`;
+        // The scholarship button is already in the HTML, just make sure it's visible
+        updateScholarshipButton();
+    } else if (status) {
+        status.style.display = 'none';
     }
 
     if (!achievements || achievements.length === 0) {
@@ -1592,6 +1610,25 @@ function handleSuccessUnderstood() {
             };
             achievements.unshift(achievement);
             saveAchievements();
+            
+            // CRITICAL: Send achievement to server to ensure persistence
+            if (window.currentAuthProvider === 'pin') {
+                serverQueue.add(async () => {
+                    try {
+                        const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+                        await fetch(base + '/api/achievements', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ questionId: achievement.questionId })
+                        });
+                        console.log(`Achievement ${achievement.questionId} sent to server`);
+                    } catch (e) {
+                        console.warn('Failed to save achievement to server:', e.message);
+                    }
+                });
+            }
+            
             savePopQuizItems();
             updatePopQuizBadge();
             
@@ -1687,6 +1724,46 @@ function loadAchievements() {
     }
 }
 
+// Sync local achievements to server (for achievements created offline)
+async function syncAchievementsToServer() {
+    if (window.currentAuthProvider !== 'pin' || achievements.length === 0) return;
+    
+    try {
+        const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
+        
+        // Get server achievements to compare
+        const serverRes = await fetch(base + '/api/achievements', { credentials: 'include' });
+        let serverAchievements = [];
+        if (serverRes.ok) {
+            const j = await serverRes.json();
+            serverAchievements = (j && j.items) || [];
+        }
+        
+        const serverAchievementIds = new Set(serverAchievements.map(a => a.questionId));
+        
+        // Send local achievements that don't exist on server
+        for (const achievement of achievements) {
+            if (!serverAchievementIds.has(achievement.questionId)) {
+                serverQueue.add(async () => {
+                    try {
+                        await fetch(base + '/api/achievements', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ questionId: achievement.questionId })
+                        });
+                        console.log(`Synced local achievement ${achievement.questionId} to server`);
+                    } catch (e) {
+                        console.warn('Failed to sync achievement to server:', e.message);
+                    }
+                });
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to sync achievements to server:', e.message);
+    }
+}
+
 // FIXED: Enhanced answer storage with explicit flushes
 function saveAnswerByHash() {
     try { 
@@ -1767,6 +1844,51 @@ function updatePopQuizBadge() {
         quizBadge.style.display = 'none';
     }
     updatePopQuizStatusPanel();
+    updateScholarshipButton(); // Add scholarship button update
+}
+
+// Update scholarship button based on achievement count
+function updateScholarshipButton() {
+    if (!scholarshipCtaBtn || !scholarshipProgress) return;
+    
+    const achievementCount = achievements.length;
+    const requiredForReactivation = scholarshipClickedAt + 5;
+    const isEligible = achievementCount >= Math.max(5, requiredForReactivation);
+    
+    // Calculate progress based on whether button was clicked before
+    let progressText;
+    if (scholarshipClickedAt === 0) {
+        // First time - need 5 total achievements
+        progressText = `(${achievementCount}/5 달성완료)`;
+    } else {
+        // After clicking - need 5 additional achievements
+        const additionalNeeded = Math.max(0, requiredForReactivation - achievementCount);
+        const additionalAchieved = Math.max(0, achievementCount - scholarshipClickedAt);
+        progressText = `(${additionalAchieved}/5 추가 달성완료)`;
+    }
+    
+    scholarshipProgress.textContent = progressText;
+    
+    // Update button state
+    if (isEligible) {
+        scholarshipCtaBtn.disabled = false;
+        scholarshipCtaBtn.classList.add('active');
+        if (scholarshipClickedAt === 0) {
+            scholarshipCtaBtn.title = '5개 문제를 달성했습니다! 클릭하여 장학금을 신청하세요.';
+        } else {
+            scholarshipCtaBtn.title = '5개 추가 문제를 달성했습니다! 다시 장학금을 신청할 수 있습니다.';
+        }
+    } else {
+        scholarshipCtaBtn.disabled = true;
+        scholarshipCtaBtn.classList.remove('active');
+        if (scholarshipClickedAt === 0) {
+            const needed = 5 - achievementCount;
+            scholarshipCtaBtn.title = `${needed}개 더 달성하면 장학금을 신청할 수 있습니다.`;
+        } else {
+            const additionalNeeded = requiredForReactivation - achievementCount;
+            scholarshipCtaBtn.title = `${additionalNeeded}개 더 달성하면 장학금을 다시 신청할 수 있습니다.`;
+        }
+    }
 }
 
 function updatePopQuizStatusPanel() {
@@ -1957,6 +2079,32 @@ async function pullServerDataReplaceLocal() {
             saveAnswerByHash();
         }
 
+        // CRITICAL: Process achievements FIRST to filter out achieved questions
+        if (aItems.length > 0) {
+            achievements = aItems.map(a => ({
+                id: a.questionId,
+                questionId: a.questionId,
+                questionNumber: (a.question && a.question.questionNumber) || '문제',
+                imageUrl: (a.question && a.question.image && a.question.image.url) || '',
+                imageHash: (a.question && a.question.image && a.question.image.hash) || null,
+                category: (a.question && a.question.category) || 'wrong',
+                round: (a.question && a.question.round) || 0,
+                lastAccessed: (a.question && a.question.lastAccessed) || new Date().toISOString(),
+                quizCount: (a.question && a.question.quizCount) || 0,
+                achievedAt: a.achievedAt || new Date().toISOString(),
+                dbId: a.questionId
+            }));
+            saveAchievements();
+        }
+
+        // CRITICAL FIX: Filter out questions that are already achievements
+        if (qItems.length > 0 && achievements.length > 0) {
+            const achievementQuestionIds = new Set(achievements.map(a => a.questionId || a.id));
+            const originalCount = qItems.length;
+            qItems = qItems.filter(q => !achievementQuestionIds.has(q.id));
+            console.log(`Filtered out ${originalCount - qItems.length} achieved questions from ${originalCount} total questions`);
+        }
+
         if (qItems.length > 0) {
             // Create a map of existing questions to preserve userAnswer and work process images
             const existingQuestions = new Map();
@@ -2056,23 +2204,6 @@ async function pullServerDataReplaceLocal() {
                 };
             });
             savePopQuizItems();
-        }
-
-        if (aItems.length > 0) {
-            achievements = aItems.map(a => ({
-                id: a.questionId,
-                questionId: a.questionId,
-                questionNumber: (a.question && a.question.questionNumber) || '문제',
-                imageUrl: (a.question && a.question.image && a.question.image.url) || '',
-                imageHash: (a.question && a.question.image && a.question.image.hash) || null,
-                category: (a.question && a.question.category) || 'wrong',
-                round: (a.question && a.question.round) || 0,
-                lastAccessed: (a.question && a.question.lastAccessed) || new Date().toISOString(),
-                quizCount: (a.question && a.question.quizCount) || 0,
-                achievedAt: a.achievedAt || new Date().toISOString(),
-                dbId: a.questionId
-            }));
-            saveAchievements();
         }
         
         updatePopQuizBadge();
@@ -2500,5 +2631,17 @@ function loadWorkProcessImages() {
     } catch (error) {
         console.warn('Failed to load work process images:', error);
         workProcessImages = new Map();
+    }
+}
+
+// Scholarship state persistence
+function saveScholarshipState() {
+    localStorage.setItem(storageKey('scholarshipClickedAt'), String(scholarshipClickedAt));
+}
+
+function loadScholarshipState() {
+    const saved = localStorage.getItem(storageKey('scholarshipClickedAt'));
+    if (saved) {
+        scholarshipClickedAt = parseInt(saved) || 0;
     }
 }

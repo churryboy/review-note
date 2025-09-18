@@ -110,15 +110,29 @@
             <div class="pop-quiz-container" id="popQuizContainer"></div>
             
             <div class="empty-state" id="popQuizEmpty">
-                <i class="fas fa-clock"></i>
-                <p>팝퀴즈 대기 중...</p>
-                <small>n회독에서 스와이프한 문제들이 랜덤하게 나타납니다</small>
+                <i class="fas fa-inbox"></i>
+                <p>아직 팝퀴즈 문제가 없습니다</p>
             </div>
         </div>
-
-        <!-- 성취도 View -->
+        
+        <!-- Achievement View -->
         <div class="round-view" id="achievementView" style="display: none;">
-            <div class="pop-quiz-status" id="achievementStatus" style="display:none !important;"></div>
+            <div class="pop-quiz-desc">
+                <div class="desc-icon">🏆</div>
+                <div class="desc-text">
+                    <div class="desc-title">달성 완료</div>
+                    <div class="desc-body">팝퀴즈에서 정답을 맞힌 문제들입니다.<br/>복습이 완료된 문제들을 확인해보세요.</div>
+                </div>
+            </div>
+            <div class="pop-quiz-status" id="achievementStatus" style="display:none !important;">
+                <div class="status-row scholarship-cta-row">
+                    <button id="scholarshipCtaBtn" class="scholarship-cta-btn" disabled>
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>장학금 받기</span>
+                        <small id="scholarshipProgress">(0/5 달성완료)</small>
+                    </button>
+                </div>
+            </div>
             <div class="question-list" id="achievementList"></div>
             <div class="empty-state" id="achievementEmpty">
                 <i class="fas fa-trophy"></i>

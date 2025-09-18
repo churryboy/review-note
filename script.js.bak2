@@ -983,11 +983,7 @@ async function getAnswerForQuestion(question) {
     
     // Priority 3: Ensure hash exists and check again
     const hash = question.imageHash || await ensureQuestionImageHash(question);
-    
-    // Generate random delay between 30 seconds and 60 seconds
-    const minDelay = 1 * 60 * 60 * 1000; // 5 minutes
-    const maxDelay = 24 * 60 * 60 * 1000; // 15 minutes
-    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;    if (hash && hash !== question.imageHash) {
+    if (hash && hash !== question.imageHash) {
         // Hash was just computed, check answerByHash again
         if (answerByHash[hash]) {
             const answer = answerByHash[hash].trim();
@@ -1034,11 +1030,7 @@ async function hasAnswerForQuestion(question) {
         
         // Ensure hash and check comprehensively
         const hash = question.imageHash || await ensureQuestionImageHash(question);
-    
-    // Generate random delay between 30 seconds and 60 seconds
-    const minDelay = 30 * 1000; // 30 seconds
-    const maxDelay = 60 * 1000; // 60 seconds
-    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;        if (hash) {
+        if (hash) {
             // Check local storage again with correct hash
             if (answerByHash[hash] && answerByHash[hash].trim().length > 0) {
                 return true;
@@ -1063,10 +1055,6 @@ async function moveQuestionToPopQuiz(question) {
     const answer = await getAnswerForQuestion(question);
     const hash = question.imageHash || await ensureQuestionImageHash(question);
     
-    // Generate random delay between 30 seconds and 60 seconds
-    const minDelay = 30 * 1000; // 30 seconds
-    const maxDelay = 60 * 1000; // 60 seconds
-    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;    
     const entry = {
         imageUrl: question.imageUrl,
         imageHash: hash,
@@ -1470,10 +1458,6 @@ async function persistSolutionAnswer() {
     // Ensure hash exists
     const hash = question.imageHash || await ensureQuestionImageHash(question);
     
-    // Generate random delay between 30 seconds and 60 seconds
-    const minDelay = 30 * 1000; // 30 seconds
-    const maxDelay = 60 * 1000; // 60 seconds
-    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;    
     // Save to hash storage immediately
     if (hash && answer.trim()) {
         answerByHash[hash] = answer.trim();
@@ -1689,7 +1673,7 @@ function rescheduleCurrentQuiz(delayMs) {
 // Reschedule current quiz with random delay (5 minutes to 24 hours)
 function rescheduleCurrentQuizWithRandomDelay() {
     // Generate random delay between 5 minutes (300,000ms) and 24 hours (86,400,000ms)
-    const minDelay = 2 * 60 * 60 * 1000; // 2 hours
+    const minDelay = 5 * 60 * 1000; // 5 minutes
     const maxDelay = 24 * 60 * 60 * 1000; // 24 hours
     const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
     

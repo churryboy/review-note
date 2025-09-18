@@ -16,9 +16,6 @@ const rateLimit = require('express-rate-limit');
 
 // Load environment variables
 dotenv.config();
-console.log('DEBUG: Environment variables loaded');
-console.log('DEBUG: MIXPANEL_TOKEN exists:', !!process.env.MIXPANEL_TOKEN);
-console.log('DEBUG: MIXPANEL_TOKEN value:', process.env.MIXPANEL_TOKEN);
 
 // Global crash guards
 process.on('uncaughtException', (err) => {
@@ -111,11 +108,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Configure trust proxy for Render
+app.set('trust proxy', 1);
+
 // Rate limiting
 const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // limit each IP to 50 requests per windowMs
-  message: 'Too many uploads from this IP, please try again later.'
+  message: 'Too many uploads from this IP, please try again later.',
+  trustProxy: true
 });
 
 // Configure multer for image uploads
@@ -248,7 +249,6 @@ app.get('/', (req, res) => {
   
   // Inject Mixpanel token as a global variable
   const mixpanelToken = process.env.MIXPANEL_TOKEN || '';
-  console.log('DEBUG: Mixpanel token from env:', mixpanelToken);
   const scriptInjection = `<script>window.MIXPANEL_TOKEN = '${mixpanelToken}';</script>`;
   html = html.replace('</head>', `${scriptInjection}\n</head>`);
   

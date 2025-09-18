@@ -33,6 +33,9 @@
   id        String   @id @default(cuid())
   hash      String   @unique
   url       String
+  data      Bytes?
+  mimeType  String?
+  size      Int?
   createdAt DateTime @default(now())
   questions Question[]
  }

@@ -1035,9 +1035,9 @@ async function hasAnswerForQuestion(question) {
         // Ensure hash and check comprehensively
         const hash = question.imageHash || await ensureQuestionImageHash(question);
     
-    // Generate random delay between 30 seconds and 60 seconds
-    const minDelay = 30 * 1000; // 30 seconds
-    const maxDelay = 60 * 1000; // 60 seconds
+    // Generate random delay between 15 minutes and 3 hours
+    const minDelay = 15 * 60 * 1000; // 15 minutes
+    const maxDelay = 3 * 60 * 60 * 1000; // 3 hours
     const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;        if (hash) {
             // Check local storage again with correct hash
             if (answerByHash[hash] && answerByHash[hash].trim().length > 0) {
@@ -1063,9 +1063,9 @@ async function moveQuestionToPopQuiz(question) {
     const answer = await getAnswerForQuestion(question);
     const hash = question.imageHash || await ensureQuestionImageHash(question);
     
-    // Generate random delay between 30 seconds and 60 seconds
-    const minDelay = 30 * 1000; // 30 seconds
-    const maxDelay = 60 * 1000; // 60 seconds
+    // Generate random delay between 15 minutes and 3 hours
+    const minDelay = 15 * 60 * 1000; // 15 minutes
+    const maxDelay = 3 * 60 * 60 * 1000; // 3 hours
     const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;    
     const entry = {
         imageUrl: question.imageUrl,
@@ -1470,9 +1470,9 @@ async function persistSolutionAnswer() {
     // Ensure hash exists
     const hash = question.imageHash || await ensureQuestionImageHash(question);
     
-    // Generate random delay between 30 seconds and 60 seconds
-    const minDelay = 30 * 1000; // 30 seconds
-    const maxDelay = 60 * 1000; // 60 seconds
+    // Generate random delay between 15 minutes and 3 hours
+    const minDelay = 15 * 60 * 1000; // 15 minutes
+    const maxDelay = 3 * 60 * 60 * 1000; // 3 hours
     const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;    
     // Save to hash storage immediately
     if (hash && answer.trim()) {

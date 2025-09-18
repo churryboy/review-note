@@ -1947,9 +1947,6 @@ body {
   margin-left: 4px;
 }
 
-.scholarship-cta-btn:disabled span {
-  color: #999;
-}
 .scholarship-cta-btn:disabled small {
   opacity: 0.6;
 }

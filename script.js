@@ -171,6 +171,21 @@ const fail5mBtn = document.getElementById('fail5mBtn');
 const fail1hBtn = document.getElementById('fail1hBtn');
 const fail1dBtn = document.getElementById('fail1dBtn');
 
+// Work Process Images functionality
+const workProcessCameraBtn = document.getElementById('workProcessCameraBtn');
+const workProcessAddMoreBtn = document.getElementById('workProcessAddMoreBtn');
+const workProcessFileInput = document.getElementById('workProcessFileInput');
+const workProcessCameraInterface = document.getElementById('workProcessCameraInterface');
+const workProcessImagesContainer = document.getElementById('workProcessImagesContainer');
+const workProcessImagesList = document.getElementById('workProcessImagesList');
+const workProcessImageCount = document.getElementById('workProcessImageCount');
+const workProcessImageModal = document.getElementById('workProcessImageModal');
+const workProcessModalImage = document.getElementById('workProcessModalImage');
+const workProcessImageClose = document.getElementById('workProcessImageClose');
+
+// Store work process images per question
+let workProcessImages = new Map(); // questionId -> array of image data
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
@@ -325,6 +340,35 @@ function setupEventListeners() {
     if (nSortSelect) {
         nSortSelect.addEventListener('change', displayNRoundQuestions);
     }
+
+    // Work Process Images functionality
+    if (workProcessCameraBtn) {
+        workProcessCameraBtn.addEventListener('click', () => {
+            workProcessFileInput.click();
+        });
+    }
+    
+    if (workProcessAddMoreBtn) {
+        workProcessAddMoreBtn.addEventListener('click', () => {
+            workProcessFileInput.click();
+        });
+    }
+    
+    if (workProcessFileInput) {
+        workProcessFileInput.addEventListener('change', handleWorkProcessImageUpload);
+    }
+    
+    if (workProcessImageClose) {
+        workProcessImageClose.addEventListener('click', closeWorkProcessImageModal);
+    }
+    
+    if (workProcessImageModal) {
+        workProcessImageModal.addEventListener('click', (e) => {
+            if (e.target === workProcessImageModal) {
+                closeWorkProcessImageModal();
+            }
+        });
+    }
 }
 
 // Auth functions
@@ -405,7 +449,8 @@ function initAuthPage() {
                 body: JSON.stringify({ nickname, pin }) 
             });
             
-            if (!res.ok && res.status === 400) {
+            // If registration fails (user exists), try login
+            if (!res.ok && (res.status === 400 || res.status === 409)) {
                 res = await fetch('/api/auth/login-pin', { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
@@ -856,6 +901,9 @@ async function moveQuestionToPopQuiz(question) {
     // Remove from questions
     const idx = questions.findIndex(q => String(q.id) === String(question.id));
     if (idx !== -1) {
+        // Clean up work process images
+        cleanupWorkProcessImages(questionId);
+        
         questions.splice(idx, 1);
         saveQuestions();
         displayNRoundQuestions();
@@ -1159,6 +1207,9 @@ function showSolutionView(questionId) {
     setupAnswerReveal();
     solutionView.scrollTop = 0;
 
+    // Load work process images for this question
+    loadWorkProcessImagesForQuestion(questionId);
+
     if (roundNView) roundNView.style.display = 'none';
     if (settingsView) settingsView.style.display = 'none';
     if (achievementView) achievementView.style.display = 'none';
@@ -1205,6 +1256,9 @@ async function handleDeleteCurrentSolution() {
     const questionIndex = questions.findIndex(q => String(q.id) === String(questionId));
 
     if (questionIndex !== -1) {
+        // Clean up work process images
+        cleanupWorkProcessImages(questionId);
+        
         questions.splice(questionIndex, 1);
         saveQuestions();
         
@@ -1372,21 +1426,8 @@ function rescheduleCurrentQuiz(delayMs) {
 function saveQuestions() {
     localStorage.setItem(storageKey('reviewNoteQuestions'), JSON.stringify(questions));
 
-    if (window.currentAuthProvider === 'pin') {
-        serverQueue.add(async () => {
-            try {
-                const base = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:3000';
-                await fetch(base + '/api/sync/questions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ questions })
-                });
-            } catch (e) {
-                console.warn('Server sync failed:', e);
-            }
-        });
-    }
+    // Note: Individual questions are synced when created via /api/questions
+    // No bulk sync endpoint is available
 }
 
 function loadQuestions() {
@@ -1827,4 +1868,150 @@ function showToast(message, type = 'success') {
     setTimeout(() => {
         toast.remove();
     }, 3000);
+}
+
+// Work Process Images functionality
+// Initialize work process functionality
+function initWorkProcessImages() {
+    // Event listeners are already set up in setupEventListeners()
+    // This function can be used for other initialization if needed
+}
+
+// Handle image upload
+async function handleWorkProcessImageUpload(event) {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+    
+    const questionId = solutionView.dataset.currentId;
+    if (!questionId) return;
+    
+    // Initialize array if not exists
+    if (!workProcessImages.has(questionId)) {
+        workProcessImages.set(questionId, []);
+    }
+    
+    const currentImages = workProcessImages.get(questionId);
+    
+    // Process each file
+    for (const file of files) {
+        if (file.type.startsWith('image/')) {
+            try {
+                // Create image data object
+                const imageData = {
+                    id: Date.now() + Math.random(),
+                    file: file,
+                    url: URL.createObjectURL(file),
+                    name: file.name,
+                    size: file.size,
+                    uploadedAt: new Date().toISOString()
+                };
+                
+                currentImages.push(imageData);
+            } catch (error) {
+                console.error('Error processing image:', error);
+                showToast('이미지 처리 중 오류가 발생했습니다.', 'error');
+            }
+        }
+    }
+    
+    // Update display
+    updateWorkProcessImagesDisplay(questionId);
+    
+    // Clear file input
+    workProcessFileInput.value = '';
+    
+    showToast(`${files.length}개 이미지가 추가되었습니다.`);
+}
+
+// Update images display
+function updateWorkProcessImagesDisplay(questionId) {
+    const images = workProcessImages.get(questionId) || [];
+    
+    if (images.length === 0) {
+        // Show camera interface, hide images container
+        workProcessCameraInterface.style.display = 'flex';
+        workProcessImagesContainer.style.display = 'none';
+        return;
+    }
+    
+    // Hide camera interface, show images container
+    workProcessCameraInterface.style.display = 'none';
+    workProcessImagesContainer.style.display = 'block';
+    
+    // Update count
+    workProcessImageCount.textContent = `${images.length}개 이미지`;
+    
+    // Clear and rebuild images list
+    workProcessImagesList.innerHTML = '';
+    
+    images.forEach((imageData, index) => {
+        const container = document.createElement('div');
+        container.className = 'work-process-image-container';
+        
+        const img = document.createElement('img');
+        img.src = imageData.url;
+        img.className = 'work-process-image';
+        img.alt = `풀이 과정 ${index + 1}`;
+        img.addEventListener('click', () => openWorkProcessImageModal(imageData.url));
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'work-process-image-delete';
+        deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeWorkProcessImage(questionId, imageData.id);
+        });
+        
+        container.appendChild(img);
+        container.appendChild(deleteBtn);
+        workProcessImagesList.appendChild(container);
+    });
+}
+
+// Remove image
+function removeWorkProcessImage(questionId, imageId) {
+    const images = workProcessImages.get(questionId) || [];
+    const imageIndex = images.findIndex(img => img.id === imageId);
+    
+    if (imageIndex !== -1) {
+        // Revoke object URL to prevent memory leaks
+        URL.revokeObjectURL(images[imageIndex].url);
+        
+        // Remove from array
+        images.splice(imageIndex, 1);
+        
+        // Update display
+        updateWorkProcessImagesDisplay(questionId);
+        
+        showToast('이미지가 삭제되었습니다.');
+    }
+}
+
+// Open image modal
+function openWorkProcessImageModal(imageUrl) {
+    if (workProcessModalImage && workProcessImageModal) {
+        workProcessModalImage.src = imageUrl;
+        workProcessImageModal.style.display = 'flex';
+    }
+}
+
+// Close image modal
+function closeWorkProcessImageModal() {
+    if (workProcessImageModal) {
+        workProcessImageModal.style.display = 'none';
+    }
+}
+
+// Load work process images for a question
+function loadWorkProcessImagesForQuestion(questionId) {
+    updateWorkProcessImagesDisplay(questionId);
+}
+
+// Clean up work process images when question is deleted
+function cleanupWorkProcessImages(questionId) {
+    const images = workProcessImages.get(questionId) || [];
+    images.forEach(imageData => {
+        URL.revokeObjectURL(imageData.url);
+    });
+    workProcessImages.delete(questionId);
 }

@@ -1,0 +1,25 @@
+--- script.js.orig
++++ script.js
+@@ -1050,6 +1050,11 @@ async function moveQuestionToPopQuiz(question) {
+     // Get the answer before moving
+     const answer = await getAnswerForQuestion(question);
+     const hash = question.imageHash || await ensureQuestionImageHash(question);
+     
++    // Generate random delay between 30 seconds and 60 seconds
++    const minDelay = 30 * 1000; // 30 seconds
++    const maxDelay = 60 * 1000; // 60 seconds
++    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
++    
+     const entry = {
+         imageUrl: question.imageUrl,
+         imageHash: hash,
+         questionId: String(question.dbId || question.id),
+         originalClientId: String(question.id), // Preserve original client ID for work process images
+         questionNumber: question.questionNumber,
+         category: question.category,
+         lastAccessed: question.lastAccessed || question.timestamp,
+-        reappearAt: new Date(Date.now() + POP_QUIZ_DELAY_MS).toISOString(),
++        reappearAt: new Date(Date.now() + randomDelay).toISOString(),
+         round: question.round || 0,
+         userAnswer: answer // Store answer in popQuizItem
+     };

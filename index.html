@@ -58,7 +58,7 @@
     <main class="main-content">
         <!-- n회독 View -->
         <div class="round-view" id="roundNView">
-            <div class="pop-quiz-desc" id="roundSwipeDesc">
+            <div class="pop-quiz-desc" id="popQuizDesc">
                 <div class="desc-text">
                     <div class="desc-body">카드를 왼쪽으로 스와이프 하면 회독이 오르고<br>오른쪽으로 스와이프하면 팝퀴즈로 보내집니다</div>
                 </div>
@@ -111,15 +111,29 @@
             <div class="pop-quiz-container" id="popQuizContainer"></div>
             
             <div class="empty-state" id="popQuizEmpty">
-                <i class="fas fa-clock"></i>
-                <p>팝퀴즈 대기 중...</p>
-                <small>n회독에서 스와이프한 문제들이 랜덤하게 나타납니다</small>
+                <i class="fas fa-inbox"></i>
+                <p>아직 팝퀴즈 문제가 없습니다</p>
             </div>
         </div>
-
-        <!-- 성취도 View -->
+        
+        <!-- Achievement View -->
         <div class="round-view" id="achievementView" style="display: none;">
-            <div class="pop-quiz-status" id="achievementStatus" style="display:none !important;"></div>
+            <div class="pop-quiz-desc">
+                <div class="desc-icon">🏆</div>
+                <div class="desc-text">
+                    <div class="desc-title">달성 완료</div>
+                    <div class="desc-body">팝퀴즈에서 정답을 맞힌 문제들입니다.<br/>정답 문제 5개 마다 네이버 포인트 1,000원을 받을 수 있어요.</div>
+                </div>
+            </div>
+            <div class="pop-quiz-status" id="achievementStatus" style="display:none !important;">
+                <div class="status-row scholarship-cta-row">
+                    <button id="scholarshipCtaBtn" class="scholarship-cta-btn" disabled>
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>장학금 받기 - 네이버 포인트 1,000원</span>
+                        <small id="scholarshipProgress">(0/5 달성완료)</small>
+                    </button>
+                </div>
+            </div>
             <div class="question-list" id="achievementList"></div>
             <div class="empty-state" id="achievementEmpty">
                 <i class="fas fa-trophy"></i>
@@ -291,9 +305,7 @@
                 <p>아쉽지만 정답이 아니네요.. 조금 더 공부한 다음에 다시 풀어보도록 해요!</p>
             </div>
             <div class="encourage-actions">
-                <button id="fail5mBtn" class="btn-primary">5분후에 다시 풀어볼래요</button>
-                <button id="fail1hBtn" class="btn-primary">1시간 후에 다시 풀어볼래요</button>
-                <button id="fail1dBtn" class="btn-primary">내일 다시 풀어볼래요</button>
+                <button id="failRetryBtn" class="btn-primary">다시 풀어볼래요</button>
             </div>
         </div>
     </div>

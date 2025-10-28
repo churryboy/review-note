@@ -21,7 +21,7 @@ function storageKey(base) {
 }
 
 // Constants
-const POP_QUIZ_DELAY_MS = 50 * 1000; // 5 seconds
+const POP_QUIZ_DELAY_MS = 15 * 60 * 1000; // 15 minutes (minimum delay for pop quiz appearance)
 const POP_QUIZ_REAPPEAR_MS = 24 * 60 * 60 * 1000; // 1 day
 
 // Memory leak prevention
@@ -1313,12 +1313,8 @@ async function moveQuestionToPopQuiz(question) {
     const hash = question.imageHash || await ensureQuestionImageHash(question);
     
     // Generate random delay between 15 minutes and 3 hours
-    // 🧪 TEST MODE: Set to 3-5 seconds for immediate testing
-    const minDelay = 3 * 1000; // 3 seconds (TEST MODE)
-    const maxDelay = 5 * 1000; // 5 seconds (TEST MODE)
-    // PRODUCTION MODE (uncomment these and comment out above):
-    // const minDelay = 15 * 60 * 1000; // 15 minutes
-    // const maxDelay = 3 * 60 * 60 * 1000; // 3 hours
+    const minDelay = 15 * 60 * 1000; // 15 minutes
+    const maxDelay = 3 * 60 * 60 * 1000; // 3 hours
     const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;    
     const entry = {
         imageUrl: question.imageUrl,

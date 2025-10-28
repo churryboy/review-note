@@ -44,14 +44,16 @@ class Analytics {
         }
     }
     
-    identify(userId) {
+    identify(userId, properties = {}) {
         if (this.initialized && userId) {
             try {
                 window.mixpanel.identify(userId);
                 window.mixpanel.people.set({
                     '$last_seen': new Date(),
-                    'user_id': userId
+                    'user_id': userId,
+                    ...properties
                 });
+                console.log('📊 Analytics identified:', userId);
             } catch (error) {
                 console.error('Analytics identify failed:', error);
             }

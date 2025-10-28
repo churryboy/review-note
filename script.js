@@ -603,7 +603,25 @@ async function refreshAuthUi() {
             window.currentUserId = user.id || null;
             window.currentAuthProvider = user.provider || 'anon';
             window.currentPublicId = user.publicId || null;
+            window.currentNickname = user.nickname || user.name || null;
             
+            // Identify user in Mixpanel with nickname as distinct_id
+            if (window.currentNickname && window.analytics && window.analytics.initialized) {
+                try {
+                    window.mixpanel.identify(window.currentNickname);
+                    window.mixpanel.people.set({
+                        '$name': window.currentNickname,
+                        'nickname': window.currentNickname,
+                        'user_id': user.id,
+                        'public_id': user.publicId,
+                        'provider': user.provider,
+                        '$last_seen': new Date()
+                    });
+                    console.log('📊 Mixpanel identified with nickname:', window.currentNickname);
+                } catch (error) {
+                    console.error('❌ Mixpanel identify failed:', error);
+                }
+            }
             
             const seed = user.publicId || user.id || 'user';
             const url = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`;
@@ -614,6 +632,7 @@ async function refreshAuthUi() {
         } else {
             window.currentUserId = null;
             window.currentAuthProvider = null;
+            window.currentNickname = null;
         }
     } catch (_) {}
 }

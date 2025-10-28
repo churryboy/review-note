@@ -1,102 +1,5 @@
-// Complete Fixed script.js - Answer Persistence & Modal Logic Fixed
-// Analytics Wrapper
-class Analytics {
-    constructor() {
-        this.initialized = false;
-        this.init();
-    }
-    
-    init() {
-        // Check if we have both Mixpanel and token
-        if (typeof window.mixpanel !== 'undefined' && 
-            window.mixpanel && 
-            typeof window.mixpanel.init === 'function' && 
-            window.MIXPANEL_TOKEN) {
-            try {
-                window.mixpanel.init(window.MIXPANEL_TOKEN, {
-                    debug: true,
-                    track_pageview: true,
-                    persistence: 'localStorage'
-                });
-                this.initialized = true;
-                console.log('🎉 Mixpanel initialized successfully!');
-                console.log('Token:', window.MIXPANEL_TOKEN);
-                
-                // Test track to verify it's working
-                window.mixpanel.track('Analytics Initialized', {
-                    timestamp: new Date().toISOString()
-                });
-                
-                // Set user properties if available
-                if (window.currentUserId) {
-                    this.identify(window.currentUserId);
-                }
-            } catch (error) {
-                console.error('Failed to initialize Mixpanel:', error);
-                // Retry after error
-                setTimeout(() => this.init(), 500);
-            }
-        } else {
-            // Retry initialization after a short delay
-            console.log('Waiting for Mixpanel...', {
-                mixpanel: typeof window.mixpanel,
-                mixpanelExists: !!window.mixpanel,
-                mixpanelInit: typeof window.mixpanel?.init,
-                token: !!window.MIXPANEL_TOKEN
-            });
-            setTimeout(() => this.init(), 300);
-        }
-    }
-    
-    identify(userId) {
-        if (this.initialized && userId) {
-            try {
-                window.mixpanel.identify(userId);
-                window.mixpanel.people.set({
-                    '$last_seen': new Date(),
-                    'user_id': userId
-                });
-            } catch (error) {
-                console.error('Failed to identify user:', error);
-            }
-        }
-    }
-    
-    track(eventName, properties = {}) {
-        if (this.initialized) {
-            try {
-                // Add common properties
-                const commonProps = {
-                    timestamp: new Date().toISOString(),
-                    user_id: window.currentUserId || 'anonymous',
-                    page_url: window.location.href,
-                    user_agent: navigator.userAgent
-                };
-                
-                window.mixpanel.track(eventName, { ...commonProps, ...properties });
-                console.log(`Analytics: ${eventName}`, properties);
-            } catch (error) {
-                console.error('Failed to track event:', error);
-            }
-        } else {
-            console.warn('Analytics not initialized, skipping event:', eventName);
-        }
-    }
-}
-
-// Initialize analytics after DOM loads
-let analytics;
-document.addEventListener('DOMContentLoaded', () => {
-    analytics = new Analytics();
-});
-
-// Fallback initialization if DOMContentLoaded already fired
-if (document.readyState === 'loading') {
-    // DOM is still loading, wait for DOMContentLoaded
-} else {
-    // DOM is already loaded
-    analytics = new Analytics();
-}
+// Optimized script.js - Refactored with modular architecture
+// Analytics, Storage, and Utils are loaded from separate modules
 
 // State management
 let questions = [];
@@ -111,6 +14,7 @@ let answerByHash = {};
 window.currentUserId = window.currentUserId || null;
 let previousView = null; // Track which view user came from
 
+// Storage key helper function
 function storageKey(base) {
     const uid = window.currentUserId || 'anon';
     return `${base}::${uid}`;
@@ -326,6 +230,8 @@ const quizResult = document.getElementById('quizResult');
 const successModal = document.getElementById('successModal');
 const successLaterBtn = document.getElementById('successLaterBtn');
 const successUnderstoodBtn = document.getElementById('successUnderstoodBtn');
+const successBackBtn = document.getElementById('successBackBtn');
+const successCloseBtn = document.getElementById('successCloseBtn');
 const success5mBtn = document.getElementById('success5mBtn');
 const success1hBtn = document.getElementById('success1hBtn');
 const success1dBtn = document.getElementById('success1dBtn');
@@ -451,12 +357,15 @@ function setupEventListeners() {
         solutionAnswerSubmit.addEventListener('click', async () => {
             const solutionAnswerInput = document.getElementById('solutionAnswerInput');
             const answerValue = document.getElementById('answerValue');
+            const answerReveal = document.getElementById('answerReveal');
             
             if (solutionAnswerInput && answerValue) {
                 const inputValue = solutionAnswerInput.value.trim();
                 if (inputValue) {
+                    // Set answer value
                     answerValue.textContent = inputValue;
                     
+                    // Hide input elements
                     solutionAnswerInput.style.display = 'none';
                     solutionAnswerSubmit.style.display = 'none';
                     
@@ -470,6 +379,15 @@ function setupEventListeners() {
                         inputContainer.style.display = 'none';
                     }
                     
+                    // Show answer value and reveal button
+                    answerValue.classList.remove('hidden');
+                    answerValue.style.display = 'none'; // Start hidden, user clicks to reveal
+                    if (answerReveal) {
+                        answerReveal.style.display = 'inline-block';
+                        answerReveal.textContent = '보기';
+                    }
+                    
+                    // Save the answer
                     await persistSolutionAnswer();
                     showToast('답안이 저장되었습니다!');
                 }
@@ -480,12 +398,38 @@ function setupEventListeners() {
     if (wrongBtn) {
         wrongBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            
+            // Track wrong button click
+            if (analytics) {
+                analytics.track('Wrong Button Clicked', {
+                    image_hash: currentImageHash || 'unknown',
+                    timestamp: new Date().toISOString(),
+                    user_id: window.currentUserId || 'anonymous',
+                    action: 'categorize_wrong',
+                    button_type: 'wrong',
+                    context: 'image_review'
+                });
+            }
+            
             categorizeQuestion('wrong', false);
         });
     }
     if (ambiguousBtn) {
         ambiguousBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            
+            // Track ambiguous button click
+            if (analytics) {
+                analytics.track('Ambiguous Button Clicked', {
+                    image_hash: currentImageHash || 'unknown',
+                    timestamp: new Date().toISOString(),
+                    user_id: window.currentUserId || 'anonymous',
+                    action: 'categorize_ambiguous',
+                    button_type: 'ambiguous',
+                    context: 'image_review'
+                });
+            }
+            
             categorizeQuestion('ambiguous', false);
         });
     }
@@ -493,6 +437,12 @@ function setupEventListeners() {
     if (quizSubmit) quizSubmit.addEventListener('click', handleQuizSubmit);
     if (successLaterBtn) successLaterBtn.addEventListener('click', handleSuccessLater);
     if (successUnderstoodBtn) successUnderstoodBtn.addEventListener('click', handleSuccessUnderstood);
+    if (successBackBtn) successBackBtn.addEventListener('click', handleSuccessBack);
+    if (successCloseBtn) successCloseBtn.addEventListener('click', () => {
+        closeSuccessModal();
+        closeQuizModal();
+        displayPopQuiz();
+    });
     if (success5mBtn) success5mBtn.addEventListener('click', () => rescheduleFromSuccess(5 * 60 * 1000));
     if (success1hBtn) success1hBtn.addEventListener('click', () => rescheduleFromSuccess(60 * 60 * 1000));
     if (success1dBtn) success1dBtn.addEventListener('click', () => rescheduleFromSuccess(24 * 60 * 60 * 1000));
@@ -506,17 +456,70 @@ function setupEventListeners() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            
             if (profileDropdown) {
-                const visible = profileDropdown.style.display !== 'none';
-                profileDropdown.style.display = visible ? 'none' : 'block';
+                const isVisible = !profileDropdown.classList.contains('hidden');
+                
+                if (isVisible) {
+                    // Hide dropdown
+                    profileDropdown.classList.add('hidden');
+                    profileDropdown.style.display = 'none';
+                    console.log('🔒 Profile dropdown hidden');
+                } else {
+                    // Show dropdown
+                    profileDropdown.classList.remove('hidden');
+                    profileDropdown.style.display = 'block';
+                    console.log('🔓 Profile dropdown shown');
+                }
             }
         });
     }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (profileDropdown && logoutBtn) {
+            const isClickInside = profileDropdown.contains(e.target) || logoutBtn.contains(e.target);
+            if (!isClickInside && !profileDropdown.classList.contains('hidden')) {
+                profileDropdown.classList.add('hidden');
+                profileDropdown.style.display = 'none';
+            }
+        }
+    });
 
     if (profileLogoutBtn) {
         profileLogoutBtn.addEventListener('click', async () => {
-            if (profileDropdown) profileDropdown.style.display = 'none';
+            if (profileDropdown) {
+                profileDropdown.classList.add('hidden');
+                profileDropdown.style.display = 'none';
+            }
             await doLogout();
+        });
+    }
+
+    // Tutorial modal event listeners
+    const tutorialClose = document.getElementById('tutorialClose');
+    const tutorialStart = document.getElementById('tutorialStart');
+    const tutorialModal = document.getElementById('tutorialModal');
+    
+    if (tutorialClose) {
+        tutorialClose.addEventListener('click', () => {
+            hideTutorialModal();
+        });
+    }
+    
+    if (tutorialStart) {
+        tutorialStart.addEventListener('click', () => {
+            hideTutorialModal();
+        });
+    }
+    
+    // Close tutorial modal when clicking outside
+    if (tutorialModal) {
+        tutorialModal.addEventListener('click', (e) => {
+            if (e.target === tutorialModal) {
+                hideTutorialModal();
+            }
         });
     }
 
@@ -601,6 +604,7 @@ async function refreshAuthUi() {
             window.currentAuthProvider = user.provider || 'anon';
             window.currentPublicId = user.publicId || null;
             
+            
             const seed = user.publicId || user.id || 'user';
             const url = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`;
             if (headerAvatar) headerAvatar.src = url;
@@ -616,13 +620,51 @@ async function refreshAuthUi() {
 
 function routeAuthOrApp() {
     const authView = document.getElementById('authView');
-    const showAuth = !window.currentAuthProvider || window.currentAuthProvider !== 'pin';
-    if (authView) authView.style.display = showAuth ? 'flex' : 'none';
-    if (roundNView) roundNView.style.display = showAuth ? 'none' : 'block';
-    if (settingsView) settingsView.style.display = 'none';
-    if (achievementView) achievementView.style.display = 'none';
-    if (imageReviewView) imageReviewView.style.display = 'none';
-    if (solutionView) solutionView.style.display = 'none';
+    // Only show auth if NO provider, or provider is explicitly not 'pin'
+    // 'anon' provider should also show auth screen
+    const showAuth = !window.currentAuthProvider || window.currentAuthProvider === 'anon' || window.currentAuthProvider !== 'pin';
+    
+    console.log('🔀 Routing:', showAuth ? 'Auth Screen' : 'Main App', { 
+        authProvider: window.currentAuthProvider,
+        userId: window.currentUserId 
+    });
+    
+    if (authView) {
+        if (showAuth) {
+            authView.classList.remove('hidden');
+            authView.style.display = 'flex';
+        } else {
+            authView.classList.add('hidden');
+            authView.style.display = 'none';
+        }
+    }
+    
+    if (roundNView) {
+        if (showAuth) {
+            roundNView.classList.add('hidden');
+            roundNView.style.display = 'none';
+        } else {
+            roundNView.classList.remove('hidden');
+            roundNView.style.display = 'block';
+        }
+    }
+    
+    if (settingsView) {
+        settingsView.classList.add('hidden');
+        settingsView.style.display = 'none';
+    }
+    if (achievementView) {
+        achievementView.classList.add('hidden');
+        achievementView.style.display = 'none';
+    }
+    if (imageReviewView) {
+        imageReviewView.classList.add('hidden');
+        imageReviewView.style.display = 'none';
+    }
+    if (solutionView) {
+        solutionView.classList.add('hidden');
+        solutionView.style.display = 'none';
+    }
 }
 
 function initAuthPage() {
@@ -634,7 +676,9 @@ function initAuthPage() {
     if (!authView || !btn || !nn) return;
 
     async function submitAuth() {
-        const nickname = (nn.value || '').trim();
+        let nickname = (nn.value || '').trim();
+        
+        console.log('🔐 Attempting auth with nickname:', nickname);
         
         if (!nickname) {
             if (err) { 
@@ -644,34 +688,68 @@ function initAuthPage() {
             return;
         }
         
-        const pin = '1234'; // Default PIN for all users
-        
         try {
+            console.log('📝 Attempting registration (nickname only)...');
+            
+            // Generate a strong random numeric PIN automatically (10 digits minimum)
+            const autoPin = Math.floor(1000000000 + Math.random() * 9000000000).toString(); // 10-digit number
+            console.log('🔑 Generated auto PIN length:', autoPin.length);
+            
             let res = await fetch('/api/auth/register-pin', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 credentials: 'include', 
-                body: JSON.stringify({ nickname, pin }) 
+                body: JSON.stringify({ nickname, pin: autoPin }) 
             });
             
-            // If registration fails (user exists), try login
-            if (!res.ok && (res.status === 400 || res.status === 409)) {
-                res = await fetch('/api/auth/login-pin', { 
+            console.log('📝 Registration response:', res.status, res.statusText);
+            
+            // If registration succeeds, we're done!
+            if (res.ok) {
+                console.log('✅ Registration successful!');
+            }
+            // If nickname exists, just create a unique one automatically
+            else if (res.status === 400 || res.status === 409) {
+                console.log('🔄 Nickname exists, creating unique version...');
+                const uniqueNickname = `${nickname}_${Date.now().toString().slice(-6)}`;
+                console.log('🆕 Attempting registration with:', uniqueNickname);
+                
+                res = await fetch('/api/auth/register-pin', { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     credentials: 'include', 
-                    body: JSON.stringify({ nickname, pin }) 
+                    body: JSON.stringify({ nickname: uniqueNickname, pin: autoPin }) 
                 });
+                
+                console.log('🆕 Unique registration response:', res.status, res.statusText);
+                
+                if (res.ok) {
+                    nickname = uniqueNickname;
+                    if (err) {
+                        err.textContent = `닉네임이 사용중이어서 "${uniqueNickname}"로 등록되었습니다.`;
+                        err.style.display = 'block';
+                        err.style.color = '#00C851'; // Green color for success message
+                        setTimeout(() => {
+                            if (err) err.style.display = 'none';
+                        }, 3000);
+                    }
+                }
             }
             
             if (!res.ok) {
+                console.error('❌ Auth failed:', res.status);
+                const errorData = await res.json().catch(() => ({}));
+                console.error('❌ Error details:', errorData);
+                
                 if (err) {
-                    err.textContent = '닉네임을 확인해 주세요.';
+                    err.style.color = '#ff1744'; // Red color for error
+                    err.textContent = errorData.error || '로그인에 실패했습니다. 다른 닉네임을 시도해보세요.';
                     err.style.display = 'block';
                 }
                 return;
             }
             
+            console.log('✅ Auth successful with nickname:', nickname);
             if (err) err.style.display = 'none';
             await refreshAuthUi();
             routeAuthOrApp();
@@ -681,6 +759,7 @@ function initAuthPage() {
             }
             showNRoundView();
         } catch (e) {
+            console.error('❌ Auth exception:', e);
             if (err) { 
                 err.textContent = '요청에 실패했습니다.'; 
                 err.style.display = 'block'; 
@@ -692,14 +771,44 @@ function initAuthPage() {
 }
 
 async function doLogout() {
+    console.log('🚪 Logging out...');
+    
     try { 
-        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); 
-    } catch (_) {}
+        const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        console.log('✅ Logout API response:', response.status);
+    } catch (error) {
+        console.error('❌ Logout API error:', error);
+    }
+    
+    // Clear all window variables
     window.currentUserId = null;
     window.currentAuthProvider = null;
+    window.currentPublicId = null;
+    window.currentNickname = null;
+    
+    // Clear localStorage
+    localStorage.removeItem('reviewNoteQuestions');
+    localStorage.removeItem('reviewNotePopQuizItems');
+    localStorage.removeItem('reviewNoteAchievements');
+    localStorage.removeItem('reviewNoteAnswerByHash');
+    localStorage.removeItem('hasSeenTutorial');
+    
+    console.log('🔄 Refreshing auth UI...');
     await refreshAuthUi();
+    
+    console.log('🔄 Reloading user state...');
     reloadUserState();
+    
+    console.log('🔄 Routing to auth screen...');
     routeAuthOrApp();
+    
+    // Force page reload to ensure clean state
+    console.log('🔄 Reloading page for clean state...');
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+    
+    console.log('✅ Logout complete');
 }
 
 // State management
@@ -721,11 +830,26 @@ function reloadUserState() {
 
 // View navigation
 function showNRoundView() {
-    if (roundNView) roundNView.style.display = 'block';
-    if (settingsView) settingsView.style.display = 'none';
-    if (achievementView) achievementView.style.display = 'none';
-    if (imageReviewView) imageReviewView.style.display = 'none';
-    if (solutionView) solutionView.style.display = 'none';
+    if (roundNView) {
+        roundNView.classList.remove('hidden');
+        roundNView.style.display = 'block';
+    }
+    if (settingsView) {
+        settingsView.style.display = 'none';
+        settingsView.classList.add('hidden');
+    }
+    if (achievementView) {
+        achievementView.style.display = 'none';
+        achievementView.classList.add('hidden');
+    }
+    if (imageReviewView) {
+        imageReviewView.style.display = 'none';
+        imageReviewView.classList.add('hidden');
+    }
+    if (solutionView) {
+        solutionView.style.display = 'none';
+        solutionView.classList.add('hidden');
+    }
 
     if (navNRound) navNRound.classList.add('active');
     if (navSettings) navSettings.classList.remove('active');
@@ -735,11 +859,26 @@ function showNRoundView() {
 }
 
 function showSettingsView() {
-    if (roundNView) roundNView.style.display = 'none';
-    if (settingsView) settingsView.style.display = 'block';
-    if (achievementView) achievementView.style.display = 'none';
-    if (imageReviewView) imageReviewView.style.display = 'none';
-    if (solutionView) solutionView.style.display = 'none';
+    if (roundNView) {
+        roundNView.style.display = 'none';
+        roundNView.classList.add('hidden');
+    }
+    if (settingsView) {
+        settingsView.classList.remove('hidden');
+        settingsView.style.display = 'block';
+    }
+    if (achievementView) {
+        achievementView.style.display = 'none';
+        achievementView.classList.add('hidden');
+    }
+    if (imageReviewView) {
+        imageReviewView.style.display = 'none';
+        imageReviewView.classList.add('hidden');
+    }
+    if (solutionView) {
+        solutionView.style.display = 'none';
+        solutionView.classList.add('hidden');
+    }
 
     if (navNRound) navNRound.classList.remove('active');
     if (navSettings) navSettings.classList.add('active');
@@ -749,11 +888,26 @@ function showSettingsView() {
 }
 
 function showAchievementView() {
-    if (roundNView) roundNView.style.display = 'none';
-    if (settingsView) settingsView.style.display = 'none';
-    if (achievementView) achievementView.style.display = 'block';
-    if (imageReviewView) imageReviewView.style.display = 'none';
-    if (solutionView) solutionView.style.display = 'none';
+    if (roundNView) {
+        roundNView.style.display = 'none';
+        roundNView.classList.add('hidden');
+    }
+    if (settingsView) {
+        settingsView.style.display = 'none';
+        settingsView.classList.add('hidden');
+    }
+    if (achievementView) {
+        achievementView.classList.remove('hidden');
+        achievementView.style.display = 'block';
+    }
+    if (imageReviewView) {
+        imageReviewView.style.display = 'none';
+        imageReviewView.classList.add('hidden');
+    }
+    if (solutionView) {
+        solutionView.style.display = 'none';
+        solutionView.classList.add('hidden');
+    }
 
     if (navNRound) navNRound.classList.remove('active');
     if (navSettings) navSettings.classList.remove('active');
@@ -763,11 +917,26 @@ function showAchievementView() {
 }
 
 function showImageReviewView() {
-    if (roundNView) roundNView.style.display = 'none';
-    if (settingsView) settingsView.style.display = 'none';
-    if (achievementView) achievementView.style.display = 'none';
-    if (imageReviewView) imageReviewView.style.display = 'flex';
-    if (solutionView) solutionView.style.display = 'none';
+    if (roundNView) {
+        roundNView.style.display = 'none';
+        roundNView.classList.add('hidden');
+    }
+    if (settingsView) {
+        settingsView.style.display = 'none';
+        settingsView.classList.add('hidden');
+    }
+    if (achievementView) {
+        achievementView.style.display = 'none';
+        achievementView.classList.add('hidden');
+    }
+    if (imageReviewView) {
+        imageReviewView.classList.remove('hidden');
+        imageReviewView.style.display = 'flex';
+    }
+    if (solutionView) {
+        solutionView.style.display = 'none';
+        solutionView.classList.add('hidden');
+    }
 }
 
 // FIXED: Image handling with proper async/await
@@ -957,6 +1126,9 @@ async function categorizeQuestion(category, checkAnswerReq = true) {
         cleanupCurrentImage();
         showNRoundView();
         showToast((category === 'ambiguous') ? '애매한 문제로 저장되었습니다' : '틀린 문제로 저장되었습니다');
+        
+        // Show tutorial modal if this is the first card
+        checkAndShowTutorial();
     };
 
     reader.readAsDataURL(currentImageBlob);
@@ -970,6 +1142,37 @@ function cleanupCurrentImage() {
     currentImageBlob = null;
     currentImageUrl = null;
     currentImageHash = null;
+}
+
+// Tutorial Modal Logic
+function checkAndShowTutorial() {
+    // Check if user has seen the tutorial before
+    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
+    
+    // Only show if this is their first card AND they haven't seen the tutorial
+    if (!hasSeenTutorial && questions.length === 1) {
+        // Small delay to allow the view to settle after showing the card
+        setTimeout(() => {
+            showTutorialModal();
+        }, 500);
+    }
+}
+
+function showTutorialModal() {
+    const tutorialModal = document.getElementById('tutorialModal');
+    if (tutorialModal) {
+        tutorialModal.classList.remove('hidden');
+        
+        // Mark tutorial as seen
+        localStorage.setItem('hasSeenTutorial', 'true');
+    }
+}
+
+function hideTutorialModal() {
+    const tutorialModal = document.getElementById('tutorialModal');
+    if (tutorialModal) {
+        tutorialModal.classList.add('hidden');
+    }
 }
 
 // Display functions
@@ -1080,105 +1283,27 @@ function applyRoundBadgeStyles(container) {
     });
 }
 
-// FIXED: Enhanced answer retrieval with comprehensive fallback
+// FIXED: Only return answer if explicitly set for THIS question
 async function getAnswerForQuestion(question) {
     console.log('DEBUG: Getting answer for question', {
         questionId: question.id,
-        userAnswer: question.userAnswer,
-        imageHash: question.imageHash,
-        hashStorageValue: question.imageHash ? answerByHash[question.imageHash] : 'no hash'
+        userAnswer: question.userAnswer
     });
 
-    // Priority 1: Check userAnswer
+    // ONLY check userAnswer - this is the answer explicitly entered for THIS question
+    // DO NOT use answerByHash as it causes cross-contamination between questions
     if (question.userAnswer && question.userAnswer.trim()) {
         return question.userAnswer.trim();
     }
     
-    // Priority 2: Check answerByHash with existing hash
-    if (question.imageHash && answerByHash[question.imageHash]) {
-        const answer = answerByHash[question.imageHash].trim();
-        if (answer) {
-            // Update question.userAnswer for consistency
-            question.userAnswer = answer;
-            saveQuestions();
-            return answer;
-        }
-    }
-    
-    // Priority 3: Ensure hash exists and check again
-    const hash = question.imageHash || await ensureQuestionImageHash(question);
-    
-    // Generate random delay between 30 seconds and 60 seconds
-    const minDelay = 1 * 60 * 60 * 1000; // 5 minutes
-    const maxDelay = 24 * 60 * 60 * 1000; // 15 minutes
-    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;    if (hash && hash !== question.imageHash) {
-        // Hash was just computed, check answerByHash again
-        if (answerByHash[hash]) {
-            const answer = answerByHash[hash].trim();
-            if (answer) {
-                question.userAnswer = answer;
-                question.imageHash = hash; // Update hash too
-                saveQuestions();
-                return answer;
-            }
-        }
-    }
-    
-    // Priority 4: Try server if available
-    if (hash) {
-        try {
-            const serverAnswer = await getAnswerForHash(hash);
-            if (serverAnswer && serverAnswer.trim()) {
-                // Cache locally
-                question.userAnswer = serverAnswer.trim();
-                answerByHash[hash] = serverAnswer.trim();
-                saveAnswerByHash();
-                saveQuestions();
-                return serverAnswer.trim();
-            }
-        } catch (_) {}
-    }
-    
+    // No answer found - return empty string so input field is shown
     return '';
 }
 
-// FIXED: Enhanced hasAnswerForQuestion function
+// FIXED: Only check if THIS question has an answer
 async function hasAnswerForQuestion(question) {
-    try {
-        // Quick check first
-        if (question.userAnswer && question.userAnswer.trim().length > 0) {
-            return true;
-        }
-        
-        // Check hash storage
-        if (question.imageHash && answerByHash[question.imageHash]) {
-            const answer = answerByHash[question.imageHash].trim();
-            if (answer.length > 0) return true;
-        }
-        
-        // Ensure hash and check comprehensively
-        const hash = question.imageHash || await ensureQuestionImageHash(question);
-    
-    // Generate random delay between 15 minutes and 3 hours
-    const minDelay = 15 * 60 * 1000; // 15 minutes
-    const maxDelay = 3 * 60 * 60 * 1000; // 3 hours
-    const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;        if (hash) {
-            // Check local storage again with correct hash
-            if (answerByHash[hash] && answerByHash[hash].trim().length > 0) {
-                return true;
-            }
-            
-            // Check server
-            try {
-                const serverAnswer = await getAnswerForHash(hash);
-                return serverAnswer && serverAnswer.trim().length > 0;
-            } catch (_) {}
-        }
-        
-        return false;
-    } catch (_) {
-        return false;
-    }
+    // ONLY check userAnswer - don't use answerByHash cross-contamination
+    return question.userAnswer && question.userAnswer.trim().length > 0;
 }
 
 // FIXED: Move question to pop quiz with answer
@@ -1188,8 +1313,12 @@ async function moveQuestionToPopQuiz(question) {
     const hash = question.imageHash || await ensureQuestionImageHash(question);
     
     // Generate random delay between 15 minutes and 3 hours
-    const minDelay = 15 * 60 * 1000; // 15 minutes
-    const maxDelay = 3 * 60 * 60 * 1000; // 3 hours
+    // 🧪 TEST MODE: Set to 3-5 seconds for immediate testing
+    const minDelay = 3 * 1000; // 3 seconds (TEST MODE)
+    const maxDelay = 5 * 1000; // 5 seconds (TEST MODE)
+    // PRODUCTION MODE (uncomment these and comment out above):
+    // const minDelay = 15 * 60 * 1000; // 15 minutes
+    // const maxDelay = 3 * 60 * 60 * 1000; // 3 hours
     const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;    
     const entry = {
         imageUrl: question.imageUrl,
@@ -1289,9 +1418,12 @@ function setupNRoundSwipe(item) {
         onRight: async () => {
             const qid = item.dataset.id;
             const q = questions.find(q => String(q.id) === String(qid));
+            console.log('🔄 Right swipe detected for question:', qid, q);
+            
             if (q) {
                 // Check for answer properly
                 const hasAnswer = await hasAnswerForQuestion(q);
+                console.log('📝 Has answer?', hasAnswer);
                 
                 if (!hasAnswer) {
                     // Show answer required modal
@@ -1302,11 +1434,13 @@ function setupNRoundSwipe(item) {
                     
                     if (modal && input && submit) {
                         modal.style.display = 'flex';
+                        modal.classList.remove('hidden');
                         input.value = '';
                         input.focus();
                         
                         const cleanup = () => {
                             modal.style.display = 'none';
+                            modal.classList.add('hidden');
                             submit.onclick = null;
                             if (closeBtn) closeBtn.onclick = null;
                         };
@@ -1337,6 +1471,7 @@ function setupNRoundSwipe(item) {
                 }
                 
                 // Has answer, move to pop quiz
+                console.log('✅ Moving to pop quiz...');
                 await moveQuestionToPopQuiz(q);
             }
         }
@@ -1393,9 +1528,28 @@ function displayPopQuiz() {
         </div>
     `).join('');
 
+    // Attach click handlers with visual feedback
     popQuizContainer.querySelectorAll('.pop-quiz-card').forEach(card => {
         const index = parseInt(card.getAttribute('data-index'));
-        card.addEventListener('click', () => openQuizModal(index));
+        
+        // Add cursor pointer style
+        card.style.cursor = 'pointer';
+        
+        // Add click event
+        card.addEventListener('click', () => {
+            console.log('📚 Pop quiz card clicked, opening modal for index:', index);
+            openQuizModal(index);
+        });
+        
+        // Add hover effect
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'scale(1.02)';
+            card.style.transition = 'transform 0.2s ease';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'scale(1)';
+        });
     });
 }
 
@@ -1534,15 +1688,19 @@ function showSolutionView(questionId) {
     document.getElementById('solutionImage').src = question.imageUrl;
 
     solutionView.dataset.currentId = String(question.id);
+    solutionView.dataset.isAchievement = 'false';
 
     if (solutionAnswerInput) {
         // Load answer comprehensively
         (async () => {
             const answer = await getAnswerForQuestion(question);
             
+            console.log('Loading answer for question:', answer);
+            
             solutionAnswerInput.value = answer || '';
             
             const valEl = document.getElementById('answerValue');
+            const revealBtn = document.getElementById('answerReveal');
             const solutionAnswerSubmit = document.getElementById('solutionAnswerSubmit');
             const warningText = solutionAnswerInput.closest('.solution-notes').querySelector('p');
             const inputContainer = solutionAnswerInput.parentElement;
@@ -1552,15 +1710,31 @@ function showSolutionView(questionId) {
                 
                 // Show/hide input elements based on whether answer exists
                 const hasAnswer = answer && answer.trim().length > 0;
-                solutionAnswerInput.style.display = hasAnswer ? 'none' : 'block';
-                if (solutionAnswerSubmit) {
-                    solutionAnswerSubmit.style.display = hasAnswer ? 'none' : 'block';
-                }
-                if (warningText) {
-                    warningText.style.display = hasAnswer ? 'none' : 'block';
-                }
-                if (inputContainer) {
-                    inputContainer.style.display = hasAnswer ? 'none' : 'flex';
+                
+                if (hasAnswer) {
+                    // Hide input elements
+                    solutionAnswerInput.style.display = 'none';
+                    if (solutionAnswerSubmit) solutionAnswerSubmit.style.display = 'none';
+                    if (warningText) warningText.style.display = 'none';
+                    if (inputContainer) inputContainer.style.display = 'none';
+                    
+                    // Show answer value (hidden by default)
+                    valEl.classList.remove('hidden');
+                    valEl.style.display = 'none'; // Start hidden, user clicks "보기" to reveal
+                    if (revealBtn) {
+                        revealBtn.style.display = 'inline-block';
+                        revealBtn.textContent = '보기';
+                    }
+                } else {
+                    // Show input elements
+                    solutionAnswerInput.style.display = 'block';
+                    if (solutionAnswerSubmit) solutionAnswerSubmit.style.display = 'block';
+                    if (warningText) warningText.style.display = 'block';
+                    if (inputContainer) inputContainer.style.display = 'flex';
+                    
+                    // Hide answer value and reveal button
+                    valEl.classList.add('hidden');
+                    if (revealBtn) revealBtn.style.display = 'none';
                 }
             }
         })();
@@ -1572,11 +1746,27 @@ function showSolutionView(questionId) {
     // Load work process images for this question
     loadWorkProcessImagesForQuestion(questionId);
 
-    if (roundNView) roundNView.style.display = 'none';
-    if (settingsView) settingsView.style.display = 'none';
-    if (achievementView) achievementView.style.display = 'none';
-    if (imageReviewView) imageReviewView.style.display = 'none';
-    if (solutionView) solutionView.style.display = 'block';
+    // Properly hide all other views and show solution view
+    if (roundNView) {
+        roundNView.classList.add('hidden');
+        roundNView.style.display = 'none';
+    }
+    if (settingsView) {
+        settingsView.classList.add('hidden');
+        settingsView.style.display = 'none';
+    }
+    if (achievementView) {
+        achievementView.classList.add('hidden');
+        achievementView.style.display = 'none';
+    }
+    if (imageReviewView) {
+        imageReviewView.classList.add('hidden');
+        imageReviewView.style.display = 'none';
+    }
+    if (solutionView) {
+        solutionView.classList.remove('hidden');
+        solutionView.style.display = 'block';
+    }
 }
 
 function setupAnswerReveal() {
@@ -1655,15 +1845,35 @@ async function handleDeleteCurrentSolution() {
 // Quiz handling
 function openQuizModal(index) {
     const quizItem = popQuizItems[index];
-    if (!quizItem) return;
+    if (!quizItem) {
+        console.error('❌ Quiz item not found for index:', index);
+        return;
+    }
+    
+    console.log('✅ Opening quiz modal for item:', quizItem);
+    
+    if (!quizModal) {
+        console.error('❌ quizModal element not found');
+        return;
+    }
+    
+    // Remove hidden class and show modal
+    quizModal.classList.remove('hidden');
     quizModal.style.display = 'flex';
-    quizImage.src = quizItem.imageUrl;
+    
+    if (quizImage) quizImage.src = quizItem.imageUrl;
     quizModal.dataset.index = String(index);
-    if (quizAnswer) quizAnswer.value = '';
+    if (quizAnswer) {
+        quizAnswer.value = '';
+        quizAnswer.focus();
+    }
+    
+    console.log('✅ Quiz modal opened successfully');
 }
 
 function closeQuizModal() {
     if (!quizModal) return;
+    quizModal.classList.add('hidden');
     quizModal.style.display = 'none';
     if (quizResult) quizResult.style.display = 'none';
     if (quizAnswer) quizAnswer.value = '';
@@ -1756,26 +1966,67 @@ async function handleQuizSubmit() {
 }
 
 function openSuccessModal() {
-    if (successModal) successModal.style.display = 'flex';
+    if (successModal) {
+        // Reset to main actions view
+        const main = document.getElementById('successMainActions');
+        const opts = document.getElementById('successDelayOptions');
+        if (main) main.style.display = 'flex';
+        if (opts) opts.style.display = 'none';
+        
+        successModal.classList.remove('hidden');
+        successModal.style.display = 'flex';
+    }
 }
 
 function closeSuccessModal() {
-    if (successModal) successModal.style.display = 'none';
+    if (successModal) {
+        // Reset to main actions view when closing
+        const main = document.getElementById('successMainActions');
+        const opts = document.getElementById('successDelayOptions');
+        if (main) main.style.display = 'flex';
+        if (opts) opts.style.display = 'none';
+        
+        successModal.classList.add('hidden');
+        successModal.style.display = 'none';
+    }
 }
 
 function openFailModal() {
-    if (failModal) failModal.style.display = 'flex';
+    if (failModal) {
+        failModal.classList.remove('hidden');
+        failModal.style.display = 'flex';
+    }
 }
 
 function closeFailModal() {
-    if (failModal) failModal.style.display = 'none';
+    if (failModal) {
+        failModal.classList.add('hidden');
+        failModal.style.display = 'none';
+    }
 }
 
 function handleSuccessLater() {
+    // Instead of showing delay options, directly reschedule with default delay and navigate
+    const idx = quizModal && quizModal.dataset.index ? parseInt(quizModal.dataset.index) : undefined;
+    if (typeof idx === 'number' && popQuizItems[idx]) {
+        // Default delay: 1 day
+        popQuizItems[idx].reappearAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        savePopQuizItems();
+        updatePopQuizBadge();
+    }
+    
+    // Close modals and navigate to pop quiz view
+    closeSuccessModal();
+    closeQuizModal();
+    showSettingsView();
+    displayPopQuiz();
+}
+
+function handleSuccessBack() {
     const main = document.getElementById('successMainActions');
     const opts = document.getElementById('successDelayOptions');
-    if (main) main.style.display = 'none';
-    if (opts) opts.style.display = 'flex';
+    if (main) main.style.display = 'flex';
+    if (opts) opts.style.display = 'none';
 }
 
 function handleSuccessUnderstood() {
@@ -1828,6 +2079,11 @@ function handleSuccessUnderstood() {
     }
     closeSuccessModal();
     closeQuizModal();
+    
+    // Refresh pop quiz display to remove the card immediately
+    if (settingsView && settingsView.style.display !== 'none') {
+        displayPopQuiz();
+    }
 }
 
 function rescheduleFromSuccess(delayMs) {
@@ -1838,9 +2094,13 @@ function rescheduleFromSuccess(delayMs) {
         updatePopQuizBadge();
         closeSuccessModal();
         closeQuizModal();
-        if (settingsView.style.display !== 'none') displayPopQuiz();
+        
+        // Navigate to pop quiz view
+        showSettingsView();
+        displayPopQuiz();
     } else {
         closeSuccessModal();
+        closeQuizModal();
     }
 }
 
@@ -2532,9 +2792,12 @@ function updateWorkProcessImagesDisplay(questionId) {
     
     const images = workProcessImages.get(questionId) || [];
     
+    console.log(`Updating work process images display for ${questionId}:`, images.length, 'images');
+    
     if (images.length === 0) {
         // Show camera interface, hide images container
         workProcessCameraInterface.style.display = 'flex';
+        workProcessImagesContainer.classList.add('hidden');
         workProcessImagesContainer.style.display = 'none';
         return;
     }
@@ -2545,6 +2808,7 @@ function updateWorkProcessImagesDisplay(questionId) {
     if (hasPlaceholders) {
         // Show camera interface with message about re-uploading
         workProcessCameraInterface.style.display = 'flex';
+        workProcessImagesContainer.classList.remove('hidden');
         workProcessImagesContainer.style.display = 'block';
         
         // Update count to show placeholder info
@@ -2570,6 +2834,7 @@ function updateWorkProcessImagesDisplay(questionId) {
     
     // Hide camera interface, show images container
     workProcessCameraInterface.style.display = 'none';
+    workProcessImagesContainer.classList.remove('hidden');
     workProcessImagesContainer.style.display = 'block';
     
     // Update count
@@ -2724,9 +2989,12 @@ function showAchievementSolutionView(achievement) {
             answer = answerByHash[achievement.imageHash];
         }
         
+        console.log('Loading answer for achievement:', answer);
+        
         solutionAnswerInput.value = answer;
         
         const valEl = document.getElementById('answerValue');
+        const revealBtn = document.getElementById('answerReveal');
         const solutionAnswerSubmit = document.getElementById('solutionAnswerSubmit');
         const warningText = solutionAnswerInput.closest('.solution-notes').querySelector('p');
         const inputContainer = solutionAnswerInput.parentElement;
@@ -2736,15 +3004,31 @@ function showAchievementSolutionView(achievement) {
             
             // Show/hide input elements based on whether answer exists
             const hasAnswer = answer && answer.trim().length > 0;
-            solutionAnswerInput.style.display = hasAnswer ? 'none' : 'block';
-            if (solutionAnswerSubmit) {
-                solutionAnswerSubmit.style.display = hasAnswer ? 'none' : 'block';
-            }
-            if (warningText) {
-                warningText.style.display = hasAnswer ? 'none' : 'block';
-            }
-            if (inputContainer) {
-                inputContainer.style.display = hasAnswer ? 'none' : 'flex';
+            
+            if (hasAnswer) {
+                // Hide input elements
+                solutionAnswerInput.style.display = 'none';
+                if (solutionAnswerSubmit) solutionAnswerSubmit.style.display = 'none';
+                if (warningText) warningText.style.display = 'none';
+                if (inputContainer) inputContainer.style.display = 'none';
+                
+                // Show answer value (hidden by default)
+                valEl.classList.remove('hidden');
+                valEl.style.display = 'none'; // Start hidden, user clicks "보기" to reveal
+                if (revealBtn) {
+                    revealBtn.style.display = 'inline-block';
+                    revealBtn.textContent = '보기';
+                }
+            } else {
+                // Show input elements
+                solutionAnswerInput.style.display = 'block';
+                if (solutionAnswerSubmit) solutionAnswerSubmit.style.display = 'block';
+                if (warningText) warningText.style.display = 'block';
+                if (inputContainer) inputContainer.style.display = 'flex';
+                
+                // Hide answer value and reveal button
+                valEl.classList.add('hidden');
+                if (revealBtn) revealBtn.style.display = 'none';
             }
         }
     }
@@ -2779,11 +3063,26 @@ function showAchievementSolutionView(achievement) {
     }
     
     // Hide all other views and show solution view
-    if (roundNView) roundNView.style.display = 'none';
-    if (settingsView) settingsView.style.display = 'none';
-    if (achievementView) achievementView.style.display = 'none';
-    if (imageReviewView) imageReviewView.style.display = 'none';
-    if (solutionView) solutionView.style.display = 'block';
+    if (roundNView) {
+        roundNView.classList.add('hidden');
+        roundNView.style.display = 'none';
+    }
+    if (settingsView) {
+        settingsView.classList.add('hidden');
+        settingsView.style.display = 'none';
+    }
+    if (achievementView) {
+        achievementView.classList.add('hidden');
+        achievementView.style.display = 'none';
+    }
+    if (imageReviewView) {
+        imageReviewView.classList.add('hidden');
+        imageReviewView.style.display = 'none';
+    }
+    if (solutionView) {
+        solutionView.classList.remove('hidden');
+        solutionView.style.display = 'block';
+    }
 }
 
 // Save work process images to localStorage

@@ -1,37 +1,77 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <!-- Version: v2.5.0 - Production Deployment -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="google-site-verification" content="0OtrYCOU8M82-LcG2_Qq3Y6HZyRt_nlXg1vKK2aaHWE" />
-    <title>복습노트 v2.5 - 문제 스캔 & 저장</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E📝%3C/text%3E%3C/svg%3E">    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="google-site-verification" content="0OtrYCOU8M82-LcG2_Qq3Y6HZyRt_nlXg1vKK2aaHWE">
+    
+    <!-- SEO Meta Tags -->
+    <title>스마트 오답노트 - AI 기반 학습 도우미</title>
+    <meta name="description" content="사진으로 문제를 저장하고 팝퀴즈로 복습하는 스마트한 학습 도구">
+    <meta name="keywords" content="오답노트, 스터디, 학습, 팝퀴즈, 복습">
+    <meta name="author" content="Smart Study">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="스마트 오답노트">
+    <meta property="og:description" content="사진으로 문제를 저장하고 팝퀴즈로 복습하는 스마트한 학습 도구">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ko_KR">
+    
+    <!-- PWA Support -->
+    <meta name="theme-color" content="#FF5500">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="오답노트">
+    
+    <!-- Icons -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E📝%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E📝%3C/text%3E%3C/svg%3E">
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
+    
+    <!-- Pretendard Font (Design System Standard) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    
+    <!-- MathJax for formula support -->
     <script>
-      window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+      window.MathJax = { 
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, 
+        svg: { fontCache: 'global' },
+        startup: { typeset: false }
+      };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
     
     <!-- Mixpanel SDK -->
-    <script type="text/javascript">
-    (function(c,a){if(!a.__SV){var b=window;try{var d,m,j,k=b.location,f=k.hash;d=function(a,b){return(m=a.match(RegExp(b+"=([^&]*)")))?m[1]:null};f&&d(f,"state")&&(j=JSON.parse(decodeURIComponent(d(f,"state"))),"mpeditor"===j.action&&(b.sessionStorage.setItem("_mpcehash",f),history.replaceState(j.desiredHash||"",c.title,k.pathname+k.search)))}catch(n){}var l,h;window.mixpanel=a;a._i=[];a.init=function(b,d,g){function c(b,i){var a=i.split(".");2==a.length&&(b=b[a[0]],i=a[1]);b[i]=function(){b.push([i].concat(Array.prototype.slice.call(arguments,0)))}}var e=a;"undefined"!==typeof g?e=a[g]=[]:g="mixpanel";e.people=e.people||[];e.toString=function(b){var a="mixpanel";"mixpanel"!==g&&(a+="."+g);b||(a+=" (stub)");return a};e.people.toString=function(){return e.toString(1)+".people (stub)"};l="disable time_event track track_pageview track_links track_forms track_with_groups add_group set_group remove_group register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking start_batch_senders people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user people.remove".split(" ");for(h=0;h<l.length;h++)c(e,l[h]);var f="set set_once union unset remove delete".split(" ");e.get_group=function(){function a(c){b[c]=function(){call2_args=arguments;call2=[c].concat(Array.prototype.slice.call(call2_args,0));e.push([d,call2])}}for(var b={},d=["get_group"].concat(Array.prototype.slice.call(arguments,0)),c=0;c<f.length;c++)a(f[c]);return b};a._i.push([b,d,g])};a.__SV=1.2;b=c.createElement("script");b.type="text/javascript";b.async=!0;b.src="https://cdn4.mxpnl.com/libs/mixpanel-2-latest.min.js";d=c.getElementsByTagName("script")[0];d.parentNode.insertBefore(b,d);window.mixpanelLoaded = true;}})(document,window.mixpanel||[]);
+    <script>
+    (function(c,a){if(!a.__SV){var b=window;try{var d,m,j,k=b.location,f=k.hash;d=function(a,b){return(m=a.match(RegExp(b+"=([^&]*)")))?m[1]:null};f&&d(f,"state")&&(j=JSON.parse(decodeURIComponent(d(f,"state"))),"mpeditor"===j.action&&(b.sessionStorage.setItem("_mpcehash",f),history.replaceState(j.desiredHash||"",c.title,k.pathname+k.search)))}catch(n){}var l,h;window.mixpanel=a;a._i=[];a.init=function(b,d,g){function c(b,i){var a=i.split(".");2==a.length&&(b=b[a[0]],i=a[1]);b[i]=function(){b.push([i].concat(Array.prototype.slice.call(arguments,0)))}}var e=a;"undefined"!==typeof g?e=a[g]=[]:g="mixpanel";e.people=e.people||[];e.toString=function(b){var a="mixpanel";"mixpanel"!==g&&(a+="."+g);b||(a+=" (stub)");return a};e.people.toString=function(){return e.toString(1)+".people (stub)"};l="disable time_event track track_pageview track_links track_forms track_with_groups add_group set_group remove_group register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking start_batch_senders people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user people.remove".split(" ");for(h=0;h<l.length;h++)c(e,l[h]);var f="set set_once union unset remove delete".split(" ");e.get_group=function(){function a(c){b[c]=function(){call2_args=arguments;call2=[c].concat(Array.prototype.slice.call(call2_args,0));e.push([d,call2])}}for(var b={},d=["get_group"].concat(Array.prototype.slice.call(arguments,0)),c=0;c<f.length;c++)a(f[c]);return b};a._i.push([b,d,g])};a.__SV=1.2;b=c.createElement("script");b.type="text/javascript";b.async=!0;b.src="https://cdn4.mxpnl.com/libs/mixpanel-2-latest.min.js";d=c.getElementsByTagName("script")[0];d.parentNode.insertBefore(b,d);window.mixpanelLoaded=true}})(document,window.mixpanel||[]);
     </script>
+    
+    <!-- Application Modules -->
+    <script src="storage.js" defer></script>
+    <script src="utils.js" defer></script>
+    <script src="analytics.js" defer></script>
 </head>
 <body>
     <!-- Auth Page View -->
-    <div id="authView" class="auth-view" style="display:none !important;">
+    <div id="authView" class="auth-view hidden">
         <div class="auth-card">
             <div class="auth-header">
-                <i class="fas fa-book"></i>
+                <i class="fas fa-book" aria-hidden="true"></i>
                 <div class="auth-title">스마트 오답노트</div>
             </div>
             <div class="auth-body">
                 <div class="auth-row">
-                    <input id="authNickname" type="text" maxlength="40" placeholder="닉네임" />
+                    <input id="authNickname" type="text" maxlength="40" placeholder="닉네임" aria-label="닉네임" autocomplete="username">
                 </div>
-                <button id="authActionBtn" class="btn btn--primary btn--full btn--lg">시작하기</button>                <div id="authError" class="pin-error" style="display:none !important;"></div>
+                <button id="authActionBtn" class="btn btn--primary btn--full btn--lg">시작하기</button>
+                <div id="authError" class="pin-error hidden" role="alert"></div>
             </div>
         </div>
     </div>
@@ -40,29 +80,34 @@
     <header class="app-header">
         <div class="header-content">
             <div class="logo">
-                <i class="fas fa-book"></i>
+                <i class="fas fa-book" aria-hidden="true"></i>
                 <span class="logo-text">스마트 오답노트</span>
             </div>
-            <button id="logoutBtn" class="btn btn--ghost btn--circle btn--sm" title="계정">                <img id="headerAvatar" src="" alt="avatar" style="width:24px; height:24px; border-radius:999px; object-fit:cover;" />
+            <button id="logoutBtn" class="btn btn--ghost btn--circle btn--sm" title="계정" aria-label="계정 메뉴">
+                <img id="headerAvatar" src="" alt="사용자 아바타" loading="lazy">
             </button>
         </div>
-        <div class="profile-dropdown" id="profileDropdown" style="display:none !important;">
+        <div class="profile-dropdown hidden" id="profileDropdown">
             <div class="profile-header">
-                <img id="profileAvatar" src="" alt="avatar">
+                <img id="profileAvatar" src="" alt="프로필 이미지" loading="lazy">
                 <div class="profile-info">
                     <div class="profile-name" id="profilePublicId">-</div>
                     <div class="profile-email" id="profileNickname">-</div>
                 </div>
             </div>
             <div class="profile-actions">
-                <button class="btn btn--secondary btn--sm" id="profileLogoutBtn"><i class="fas fa-sign-out-alt"></i><span>로그아웃</span></button>            </div>
+                <button class="btn btn--secondary btn--sm" id="profileLogoutBtn">
+                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                    <span>로그아웃</span>
+                </button>
+            </div>
         </div>
     </header>
 
     <!-- Main Content -->
     <main class="main-content">
         <!-- n회독 View -->
-        <div class="round-view" id="roundNView">
+        <section class="round-view" id="roundNView" aria-label="n회독 문제 목록">
             <div class="pop-quiz-desc" id="popQuizDesc">
                 <div class="desc-text">
                     <div class="desc-body">카드를 왼쪽으로 스와이프 하면 회독이 오르고<br>오른쪽으로 스와이프하면 팝퀴즈로 보내집니다</div>
@@ -70,13 +115,13 @@
             </div>
             
             <!-- Floating Camera Button -->
-            <button class="floating-camera-btn" id="floatingCameraBtn">
-                <i class="fas fa-camera"></i>
+            <button class="floating-camera-btn" id="floatingCameraBtn" aria-label="문제 추가">
+                <i class="fas fa-camera" aria-hidden="true"></i>
             </button>
-            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" aria-label="이미지 선택">
 
             <div class="list-controls" id="nListControls">
-                <select id="nSortSelect" aria-label="정렬">
+                <select id="nSortSelect" aria-label="정렬 방식">
                     <option value="created_recent" selected>최근 생성순</option>
                     <option value="created_oldest">오래전 생성순</option>
                     <option value="round_desc">회독 높은 순</option>
@@ -86,21 +131,21 @@
                 </select>
             </div>
 
-            <div class="question-list" id="roundNList"></div>
+            <div class="question-list" id="roundNList" role="list"></div>
             
-            <div class="empty-state" id="roundNEmpty">
-                <i class="fas fa-inbox"></i>
+            <div class="empty-state hidden" id="roundNEmpty">
+                <i class="fas fa-inbox" aria-hidden="true"></i>
                 <p>아직 복습할 문제가 없습니다</p>
             </div>
-        </div>
+        </section>
 
         <!-- Pop Quiz View -->
-        <div class="round-view" id="settingsView" style="display: none;">
-            <div class="pop-quiz-desc" id="popQuizDesc">
-                <div class="desc-icon">🎯</div>
+        <section class="round-view hidden" id="settingsView" aria-label="팝퀴즈">
+            <div class="pop-quiz-desc">
+                <div class="desc-icon" aria-hidden="true">🎯</div>
                 <div class="desc-text">
                     <div class="desc-title">팝퀴즈 안내</div>
-                    <div class="desc-body">n회독이 끝난 문제들이 뜬금없는 시점에 제시됩니다.<br/>한번 제시된 문제는 아래 목록에서 찾아보실 수 있어요.</div>
+                    <div class="desc-body">n회독이 끝난 문제들이 뜬금없는 시점에 제시됩니다.<br>한번 제시된 문제는 아래 목록에서 찾아보실 수 있어요.</div>
                 </div>
             </div>
             <div class="pop-quiz-status" id="popQuizStatus">
@@ -113,163 +158,167 @@
                     <strong id="popQuizAvgRoundStat">0.00회독</strong>
                 </div>
             </div>
-            <div class="pop-quiz-container" id="popQuizContainer"></div>
+            <div class="pop-quiz-container" id="popQuizContainer" role="list"></div>
             
-            <div class="empty-state" id="popQuizEmpty">
-                <i class="fas fa-inbox"></i>
+            <div class="empty-state hidden" id="popQuizEmpty">
+                <i class="fas fa-inbox" aria-hidden="true"></i>
                 <p>아직 팝퀴즈 문제가 없습니다</p>
             </div>
-        </div>
+        </section>
         
         <!-- Achievement View -->
-        <div class="round-view" id="achievementView" style="display: none;">
+        <section class="round-view hidden" id="achievementView" aria-label="성취도">
             <div class="pop-quiz-desc">
-                <div class="desc-icon">🏆</div>
+                <div class="desc-icon" aria-hidden="true">🏆</div>
                 <div class="desc-text">
                     <div class="desc-title">달성 완료</div>
-                    <div class="desc-body">팝퀴즈에서 정답을 맞힌 문제들입니다.<br/>정답 문제 5개 마다 네이버 포인트 1,000원을 받을 수 있어요.</div>
+                    <div class="desc-body">팝퀴즈에서 정답을 맞힌 문제들입니다.<br>정답 문제 5개 마다 네이버 포인트 1,000원을 받을 수 있어요.</div>
                 </div>
             </div>
-            <div class="pop-quiz-status" id="achievementStatus" style="display:none !important;">
+            <div class="pop-quiz-status hidden" id="achievementStatus">
                 <div class="status-row scholarship-cta-row">
-                    <button id="scholarshipCtaBtn" class="scholarship-cta-btn" disabled>
-                        <i class="fas fa-graduation-cap"></i>
+                    <button id="scholarshipCtaBtn" class="scholarship-cta-btn" disabled aria-label="장학금 신청">
+                        <i class="fas fa-graduation-cap" aria-hidden="true"></i>
                         <span>장학금 받기 - 네이버 포인트 1,000원</span>
                         <small id="scholarshipProgress">(0/5 달성완료)</small>
                     </button>
                 </div>
             </div>
-            <div class="question-list" id="achievementList"></div>
-            <div class="empty-state" id="achievementEmpty">
-                <i class="fas fa-trophy"></i>
+            <div class="question-list" id="achievementList" role="list"></div>
+            <div class="empty-state hidden" id="achievementEmpty">
+                <i class="fas fa-trophy" aria-hidden="true"></i>
                 <p>아직 성취한 문제가 없습니다</p>
             </div>
-        </div>
+        </section>
 
         <!-- Image Review View -->
-        <div class="image-review-view" id="imageReviewView" style="display: none;">
+        <section class="image-review-view hidden" id="imageReviewView" aria-label="문제 분류">
             <div class="review-header">
-                <button class="back-btn" id="backToCameraFromReview">
-                    <i class="fas fa-arrow-left"></i>
+                <button class="back-btn" id="backToCameraFromReview" aria-label="돌아가기">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i>
                 </button>
                 <h2>문제를 분류해주세요</h2>
-                <button class="back-btn" id="deleteFromReview" title="삭제">
-                    <i class="fas fa-trash"></i>
+                <button class="back-btn" id="deleteFromReview" title="삭제" aria-label="이미지 삭제">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
                 </button>
             </div>
             
             <div class="swipe-container">
                 <div class="image-card" id="imageCard">
-                    <img id="reviewImage" src="" alt="문제 이미지">
+                    <img id="reviewImage" src="" alt="문제 이미지" loading="lazy">
                 </div>
             </div>
 
-            <div class="solution-notes" style="padding: 16px 20px; background:#fff;">
-                <h3 style="margin-bottom:8px;">정답 입력란</h3>
-                <p style="color:#666; margin:0 0 10px; font-size:0.92rem;">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요.</p>
-                <input id="reviewAnswerInput" type="text" placeholder="정답을 입력하세요" style="width:100%; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />
+            <div class="solution-notes">
+                <h3>정답 입력란</h3>
+                <p class="text-muted">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요.</p>
+                <input id="reviewAnswerInput" type="text" placeholder="정답을 입력하세요" aria-label="정답 입력">
             </div>
             
             <div class="review-actions">
-                <button class="action-btn wrong" id="wrongBtn">
-                    <i class="fas fa-times-circle"></i>
+                <button class="action-btn wrong" id="wrongBtn" aria-label="틀린 문제로 분류">
+                    <i class="fas fa-times-circle" aria-hidden="true"></i>
                     <span>틀린 문제</span>
                 </button>
-                <button class="action-btn ambiguous" id="ambiguousBtn">
-                    <i class="fas fa-question-circle"></i>
+                <button class="action-btn ambiguous" id="ambiguousBtn" aria-label="애매한 문제로 분류">
+                    <i class="fas fa-question-circle" aria-hidden="true"></i>
                     <span>애매한 문제</span>
                 </button>
             </div>
-        </div>
+        </section>
         
         <!-- Solution View -->
-        <div class="solution-view" id="solutionView" style="display: none;">
+        <section class="solution-view hidden" id="solutionView" aria-label="문제 상세">
             <div class="solution-header">
-                <button class="back-btn" id="backFromSolution">
-                    <i class="fas fa-arrow-left"></i>
+                <button class="back-btn" id="backFromSolution" aria-label="돌아가기">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i>
                 </button>
                 <div class="solution-title">
                     <h2 id="solutionQuestionNumber">문제 1</h2>
                     <span class="solution-category" id="solutionCategory"></span>
                 </div>
-                <button class="back-btn" id="deleteFromSolution" title="삭제">
-                    <i class="fas fa-trash"></i>
+                <button class="back-btn" id="deleteFromSolution" title="삭제" aria-label="문제 삭제">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
                 </button>
             </div>
             
             <div class="solution-content">
                 <div class="solution-image-container">
-                    <img id="solutionImage" src="" alt="문제 이미지">
+                    <img id="solutionImage" src="" alt="문제 이미지" loading="lazy">
                 </div>
                 
                 <div class="solution-process">
                     <div class="solution-notes">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="margin: 0;">정답 입력란</h3>
-                            <span id="answerValue" style="color:#111; display:none; font-weight:600; margin: 0 10px;">정답을 알려주세요</span>
-                            <button id="answerReveal" class="btn-secondary" style="padding:6px 10px;">보기</button>
+                        <div class="answer-header">
+                            <h3>정답 입력란</h3>
+                            <span id="answerValue" class="hidden">정답을 알려주세요</span>
+                            <button id="answerReveal" class="btn-secondary">보기</button>
                         </div>
-                        <p style="color:#666; margin:6px 0 10px; font-size:0.92rem;">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요.</p>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <input id="solutionAnswerInput" type="text" placeholder="정답을 입력하세요" style="flex:1; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />
-                            <button id="solutionAnswerSubmit" class="btn-primary"><i class="fas fa-paper-plane"></i><span>제출</span></button>
+                        <p class="text-muted">⚠️ 정답이 입력되지 않으면 팝퀴즈 기능을 활용할 수 없어요.</p>
+                        <div class="answer-input-row">
+                            <input id="solutionAnswerInput" type="text" placeholder="정답을 입력하세요" aria-label="정답 입력">
+                            <button id="solutionAnswerSubmit" class="btn-primary">
+                                <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                                <span>제출</span>
+                            </button>
                         </div>
                     </div>
                     
                     <!-- Work Process Note Container -->
-                    <div class="solution-notes" style="margin-top: 16px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="margin: 0;">풀이 입력</h3>
-                        </div>
-                        <p style="color:#666; margin:6px 0 10px; font-size:0.92rem;">📷 풀이 과정을 사진으로 저장해보세요.</p>
+                    <div class="solution-notes mt-2">
+                        <h3>풀이 입력</h3>
+                        <p class="text-muted">📷 풀이 과정을 사진으로 저장해보세요.</p>
                         
                         <!-- Camera Input Interface -->
-                        <div id="workProcessCameraInterface" style="display:flex; gap:8px; align-items:center;">
-                            <button id="workProcessCameraBtn" class="btn-secondary" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px;">
-                                <i class="fas fa-camera"></i>
+                        <div id="workProcessCameraInterface">
+                            <button id="workProcessCameraBtn" class="btn-secondary">
+                                <i class="fas fa-camera" aria-hidden="true"></i>
                                 <span>사진 추가</span>
                             </button>
                         </div>
                         
                         <!-- Images Display Container -->
-                        <div id="workProcessImagesContainer" style="display:none; margin-top:12px;">
-                            <div id="workProcessImagesList" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-                                <!-- Images will be dynamically added here -->
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span id="workProcessImageCount" style="color:#666; font-size:0.9rem;">0개 이미지</span>
-                                <button id="workProcessAddMoreBtn" class="btn-secondary" style="padding:6px 10px; font-size:0.85rem;">
-                                    <i class="fas fa-plus"></i>
+                        <div id="workProcessImagesContainer" class="hidden">
+                            <div id="workProcessImagesList"></div>
+                            <div class="work-process-footer">
+                                <span id="workProcessImageCount" class="text-muted">0개 이미지</span>
+                                <button id="workProcessAddMoreBtn" class="btn-secondary">
+                                    <i class="fas fa-plus" aria-hidden="true"></i>
                                     <span>추가</span>
                                 </button>
                             </div>
                         </div>
                         
                         <!-- Hidden file input -->
-                        <input type="file" id="workProcessFileInput" accept="image/*" capture="environment" style="display:none;" multiple>
+                        <input type="file" id="workProcessFileInput" accept="image/*" capture="environment" class="hidden" multiple aria-label="풀이 이미지 선택">
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </main>
 
     <!-- Quiz Modal -->
-    <div class="image-popup-overlay" id="quizModal" style="display: none;">
+    <div class="image-popup-overlay hidden" id="quizModal" role="dialog" aria-modal="true" aria-labelledby="quiz-title">
         <div class="image-popup-content">
+            <h2 id="quiz-title" class="hidden">팝퀴즈</h2>
             <div class="quiz-image-container">
-                <img id="quizImage" src="" alt="문제 이미지">
+                <img id="quizImage" src="" alt="문제 이미지" loading="lazy">
             </div>
             <div class="quiz-answer-panel">
-                <input id="quizAnswer" type="text" placeholder="정답을 입력하세요" />
-                <button id="quizSubmit" class="btn-primary"><i class="fas fa-paper-plane"></i><span>제출</span></button>
-                <div id="quizResult" class="quiz-result" style="display:none !important;"></div>
+                <input id="quizAnswer" type="text" placeholder="정답을 입력하세요" aria-label="퀴즈 정답 입력">
+                <button id="quizSubmit" class="btn-primary">
+                    <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                    <span>제출</span>
+                </button>
+                <div id="quizResult" class="quiz-result hidden" role="alert"></div>
             </div>
         </div>
     </div>
 
     <!-- Success Modal -->
-    <div class="image-popup-overlay" id="successModal" style="display: none;">
+    <div class="image-popup-overlay hidden" id="successModal" role="dialog" aria-modal="true">
         <div class="image-popup-content success-content">
+            <button class="close-btn" id="successCloseBtn" aria-label="닫기">&times;</button>
             <div class="celebration" aria-hidden="true">
                 <span class="confetti"></span>
                 <span class="confetti"></span>
@@ -278,7 +327,7 @@
                 <span class="confetti"></span>
             </div>
             <div class="success-body">
-                <div class="success-emoji">🎉</div>
+                <div class="success-emoji" aria-hidden="true">🎉</div>
                 <h3>정답입니다!</h3>
                 <p>이제 이 문제를 완벽히 이해하신 것 같네요!</p>
             </div>
@@ -286,16 +335,17 @@
                 <button id="successLaterBtn" class="btn-secondary">나중에 또 퀴즈로 풀어볼래요</button>
                 <button id="successUnderstoodBtn" class="btn-primary">이 문제는 완전히 이해했어요!</button>
             </div>
-            <div class="success-actions" id="successDelayOptions" style="display:none; flex-direction:column; gap:8px;">
-                <button id="success5mBtn" class="btn-primary" style="width:100%;">5분뒤에 다시 풀어볼래요</button>
-                <button id="success1hBtn" class="btn-primary" style="width:100%;">1시간 뒤에 다시 풀어볼래요</button>
-                <button id="success1dBtn" class="btn-primary" style="width:100%;">내일 다시 풀어볼래요</button>
+            <div class="success-actions hidden" id="successDelayOptions">
+                <button id="successBackBtn" class="btn-secondary btn--full">← 뒤로 가기</button>
+                <button id="success5mBtn" class="btn-primary btn--full">5분뒤에 다시 풀어볼래요</button>
+                <button id="success1hBtn" class="btn-primary btn--full">1시간 뒤에 다시 풀어볼래요</button>
+                <button id="success1dBtn" class="btn-primary btn--full">내일 다시 풀어볼래요</button>
             </div>
         </div>
     </div>
 
     <!-- Fail Modal -->
-    <div class="image-popup-overlay" id="failModal" style="display: none;">
+    <div class="image-popup-overlay hidden" id="failModal" role="dialog" aria-modal="true">
         <div class="image-popup-content encourage-content">
             <div class="encourage-visual" aria-hidden="true">
                 <div class="encourage-emoji">💪</div>
@@ -316,50 +366,104 @@
     </div>
 
     <!-- Answer Required Modal -->
-    <div class="image-popup-overlay" id="answerReqModal" style="display:none !important;">
-        <div class="image-popup-content" style="max-width:520px;">
-            <button class="popup-close" id="answerReqClose"><i class="fas fa-times"></i></button>
-            <div style="padding: 8px 0 12px; text-align:center;">
-                <div style="font-size:1.6rem; margin-bottom:6px;">✍️</div>
-                <h3 style="margin:0 0 6px;">정답을 입력해 주세요</h3>
-                <p style="margin:0; color:#666; font-size:0.92rem;">팝퀴즈 기능을 사용하려면 정답이 필요해요.</p>
+    <div class="image-popup-overlay hidden" id="answerReqModal" role="dialog" aria-modal="true">
+        <div class="image-popup-content">
+            <button class="popup-close" id="answerReqClose" aria-label="닫기">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+            <div class="text-center">
+                <div class="modal-emoji" aria-hidden="true">✍️</div>
+                <h3>정답을 입력해 주세요</h3>
+                <p class="text-muted">팝퀴즈 기능을 사용하려면 정답이 필요해요.</p>
             </div>
-            <div style="display:flex; gap:8px; align-items:center; padding-top:6px;">
-                <input id="answerReqInput" type="text" placeholder="정답을 입력하세요" style="flex:1; border:2px solid #eee; border-radius:8px; padding:12px; font-size:0.95rem;" />
+            <div class="answer-input-row">
+                <input id="answerReqInput" type="text" placeholder="정답을 입력하세요" aria-label="정답 입력">
                 <button id="answerReqSubmit" class="btn-primary">저장하고 퀴즈로</button>
             </div>
         </div>
     </div>
 
     <!-- Work Process Image Modal -->
-    <div class="image-popup-overlay" id="workProcessImageModal" style="display: none;">
-        <div class="image-popup-content" style="max-width: 90vw; max-height: 90vh; padding: 0; background: transparent;">
-            <button class="popup-close" id="workProcessImageClose" style="position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-times"></i>
+    <div class="image-popup-overlay hidden" id="workProcessImageModal" role="dialog" aria-modal="true">
+        <div class="image-popup-content">
+            <button class="popup-close" id="workProcessImageClose" aria-label="닫기">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
-            <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                <img id="workProcessModalImage" src="" alt="풀이 과정 이미지" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            <div>
+                <img id="workProcessModalImage" src="" alt="풀이 과정 이미지" loading="lazy">
             </div>
         </div>
     </div>
 
+    <!-- First Time Tutorial Modal -->
+    <div class="image-popup-overlay hidden" id="tutorialModal" role="dialog" aria-modal="true">
+        <div class="image-popup-content">
+            <button class="popup-close" id="tutorialClose" aria-label="닫기">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+            <div class="text-center">
+                <div class="modal-emoji-large" aria-hidden="true">🎉</div>
+                <h2>첫 문제 카드를 생성했어요!</h2>
+                <p class="text-muted">
+                    이제 효과적으로 복습하는 방법을 알려드릴게요
+                </p>
+            </div>
+            
+            <div class="tutorial-instructions">
+                <div class="tutorial-item">
+                    <span class="emoji">👈</span>
+                    <div>
+                        <strong>왼쪽 스와이프</strong>
+                        <p class="text-muted">
+                            문제 카드를 왼쪽으로 밀면 회독 수가 올라갑니다
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="tutorial-item">
+                    <span class="emoji">👉</span>
+                    <div>
+                        <strong>오른쪽 스와이프</strong>
+                        <p class="text-muted">
+                            문제 카드를 오른쪽으로 밀면 팝퀴즈로 이동합니다
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="tutorial-item">
+                    <span class="emoji">📚</span>
+                    <div>
+                        <strong>팝퀴즈 활용</strong>
+                        <p class="text-muted">
+                            일정 시간 후 랜덤하게 문제가 나타나 복습을 도와줍니다
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="tutorialStart" class="btn-primary">
+                시작하기
+            </button>
+        </div>
+    </div>
+
     <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" id="navNRound">
-            <i class="fas fa-redo"></i>
+    <nav class="bottom-nav" role="navigation" aria-label="주 메뉴">
+        <button class="nav-item active" id="navNRound" aria-label="n회독" aria-current="page">
+            <i class="fas fa-redo" aria-hidden="true"></i>
             <span>n회독</span>
         </button>
-        <button class="nav-item" id="navSettings">
-            <i class="fas fa-question-circle"></i>
+        <button class="nav-item" id="navSettings" aria-label="팝퀴즈">
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
             <span>팝퀴즈</span>
-            <span class="quiz-badge" id="quizBadge" style="display: none;"></span>
+            <span class="quiz-badge hidden" id="quizBadge" aria-label="새 퀴즈 개수"></span>
         </button>
-        <button class="nav-item" id="navAchievement">
-            <i class="fas fa-trophy"></i>
+        <button class="nav-item" id="navAchievement" aria-label="성취도">
+            <i class="fas fa-trophy" aria-hidden="true"></i>
             <span>성취도</span>
         </button>
     </nav>
 
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
 </body>
 </html>

@@ -791,7 +791,7 @@ async function doLogout() {
     localStorage.removeItem('reviewNotePopQuizItems');
     localStorage.removeItem('reviewNoteAchievements');
     localStorage.removeItem('reviewNoteAnswerByHash');
-    localStorage.removeItem('hasSeenTutorial');
+    localStorage.removeItem(storageKey('hasSeenTutorial'));
     
     console.log('🔄 Refreshing auth UI...');
     await refreshAuthUi();
@@ -1146,11 +1146,12 @@ function cleanupCurrentImage() {
 
 // Tutorial Modal Logic
 function checkAndShowTutorial() {
-    // Check if user has seen the tutorial before
-    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
+    // Check if user has seen the tutorial before (user-specific)
+    const hasSeenTutorial = localStorage.getItem(storageKey('hasSeenTutorial'));
     
     // Only show if this is their first card AND they haven't seen the tutorial
     if (!hasSeenTutorial && questions.length === 1) {
+        console.log('📚 First card created! Showing tutorial modal...');
         // Small delay to allow the view to settle after showing the card
         setTimeout(() => {
             showTutorialModal();
@@ -1162,9 +1163,11 @@ function showTutorialModal() {
     const tutorialModal = document.getElementById('tutorialModal');
     if (tutorialModal) {
         tutorialModal.classList.remove('hidden');
+        tutorialModal.style.display = 'flex';
         
-        // Mark tutorial as seen
-        localStorage.setItem('hasSeenTutorial', 'true');
+        // Mark tutorial as seen (user-specific)
+        localStorage.setItem(storageKey('hasSeenTutorial'), 'true');
+        console.log('✅ Tutorial modal shown');
     }
 }
 
@@ -1172,6 +1175,8 @@ function hideTutorialModal() {
     const tutorialModal = document.getElementById('tutorialModal');
     if (tutorialModal) {
         tutorialModal.classList.add('hidden');
+        tutorialModal.style.display = 'none';
+        console.log('❌ Tutorial modal hidden');
     }
 }
 

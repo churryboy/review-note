@@ -975,13 +975,13 @@ function showAchievementView() {
 function trackViewNavigation(viewName) {
     if (typeof window.mixpanel !== 'undefined' && window.mixpanel && typeof window.mixpanel.track === 'function') {
         try {
-            window.mixpanel.track('View Navigation', {
-                view_name: viewName,
+            // Use view name as the event name
+            window.mixpanel.track(viewName, {
                 user_id: window.currentUserId || 'anonymous',
                 nickname: window.currentNickname || 'anonymous',
                 timestamp: new Date().toISOString()
             });
-            console.log('📊 Tracked view navigation:', viewName);
+            console.log('📊 Tracked event:', viewName);
         } catch (error) {
             console.error('❌ Failed to track view navigation:', error);
         }

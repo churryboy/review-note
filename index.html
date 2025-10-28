@@ -57,6 +57,7 @@
     <script src="storage.js" defer></script>
     <script src="utils.js" defer></script>
     <script src="analytics.js" defer></script>
+    <script src="reward-levels.js" defer></script>
 </head>
 <body>
     <!-- Auth Page View -->
@@ -168,11 +169,17 @@
         
         <!-- Achievement View -->
         <section class="round-view hidden" id="achievementView" aria-label="성취도">
-            <div class="pop-quiz-desc">
-                <div class="desc-icon" aria-hidden="true">🏆</div>
-                <div class="desc-text">
-                    <div class="desc-title">달성 완료</div>
-                    <div class="desc-body">팝퀴즈에서 정답을 맞힌 문제들입니다.<br>정답 문제 5개 마다 네이버 포인트 1,000원을 받을 수 있어요.</div>
+            <div class="reward-level-container" id="rewardLevelContainer">
+                <div class="level-header">
+                    <span class="level-badge" id="currentLevelBadge">🌱 씨앗</span>
+                    <span class="level-title" id="currentLevelTitle">새싹 학습자</span>
+                </div>
+                <div class="level-progress-bar">
+                    <div class="level-progress-fill" id="levelProgressFill" style="width: 0%"></div>
+                </div>
+                <div class="level-info">
+                    <span class="level-current" id="levelCurrentText">레벨 1</span>
+                    <span class="level-next" id="levelNextText">다음 레벨까지 5개</span>
                 </div>
             </div>
             <div class="pop-quiz-status hidden" id="achievementStatus">

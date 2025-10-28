@@ -1559,6 +1559,9 @@ function displayAchievements() {
     const status = document.getElementById('achievementStatus');
     if (!list || !empty) return;
 
+    // Update reward level display
+    updateRewardLevelDisplay();
+
     // Show scholarship CTA button if there are achievements
     if (status && achievements && achievements.length > 0) {
         status.style.display = 'block';
@@ -2358,11 +2361,48 @@ function updatePopQuizStatusPanel() {
 
     if (ready.length === 0) {
         avgEl.textContent = '0.00회독';
-        return;
-    }
+    } else {
     const sumRounds = ready.reduce((sum, item) => sum + (item.round || 0), 0);
     const avg = sumRounds / ready.length;
     avgEl.textContent = `${avg.toFixed(2)}회독`;
+    }
+}
+
+function updateRewardLevelDisplay() {
+    // Check if reward-levels.js is loaded
+    if (typeof getProgressToNextLevel === 'undefined') {
+        console.warn('Reward levels not loaded yet');
+        return;
+    }
+    
+    const achievementCount = achievements.length;
+    console.log('🏆 Updating reward level display with', achievementCount, 'achievements');
+    const levelData = getProgressToNextLevel(achievementCount);
+    console.log('📊 Level data:', levelData);
+    
+    const badgeEl = document.getElementById('currentLevelBadge');
+    const titleEl = document.getElementById('currentLevelTitle');
+    const progressFillEl = document.getElementById('levelProgressFill');
+    const currentTextEl = document.getElementById('levelCurrentText');
+    const nextTextEl = document.getElementById('levelNextText');
+    
+    if (!badgeEl || !titleEl || !progressFillEl || !currentTextEl || !nextTextEl) return;
+    
+    // Update badge and title
+    badgeEl.textContent = levelData.current.title;
+    titleEl.textContent = levelData.current.badge;
+    
+    // Update progress bar
+    progressFillEl.style.width = `${levelData.progress}%`;
+    
+    // Update level info text
+    currentTextEl.textContent = `레벨 ${levelData.current.level}`;
+    
+    if (levelData.next) {
+        nextTextEl.textContent = `다음 레벨까지 ${levelData.remaining}개`;
+    } else {
+        nextTextEl.textContent = '최고 레벨 달성!';
+    }
 }
 
 // Hash functions

@@ -1710,6 +1710,75 @@ body {
     margin-bottom: 12px;
 }
 
+/* Reward Level Container */
+.reward-level-container {
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, var(--color-orange-100) 0%, var(--color-orange-90) 100%);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-lg);
+    box-shadow: 0 4px 12px rgba(255, 136, 0, 0.15);
+}
+
+#achievementView .reward-level-container {
+    margin-top: 0;
+}
+
+#settingsView .reward-level-container {
+    margin-top: var(--space-lg);
+}
+
+.level-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.level-badge {
+    font-size: var(--type-title2);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-neutral-10);
+}
+
+.level-title {
+    font-size: var(--type-body);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-neutral-20);
+}
+
+.level-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--color-neutral-90);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: var(--space-sm);
+}
+
+.level-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-brand-orange) 0%, var(--color-orange-60) 100%);
+    border-radius: 999px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.level-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--type-footnote);
+}
+
+.level-current {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-neutral-10);
+}
+
+.level-next {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-neutral-30);
+}
+
 .status-row {
     display: flex;
     justify-content: space-between;

@@ -896,12 +896,15 @@ function showNRoundView() {
         solutionView.style.display = 'none';
         solutionView.classList.add('hidden');
     }
-
+    
     if (navNRound) navNRound.classList.add('active');
     if (navSettings) navSettings.classList.remove('active');
     if (navAchievement) navAchievement.classList.remove('active');
 
     displayNRoundQuestions();
+    
+    // Track view navigation in Mixpanel
+    trackViewNavigation('Round View');
 }
 
 function showSettingsView() {
@@ -925,12 +928,15 @@ function showSettingsView() {
         solutionView.style.display = 'none';
         solutionView.classList.add('hidden');
     }
-
+    
     if (navNRound) navNRound.classList.remove('active');
     if (navSettings) navSettings.classList.add('active');
     if (navAchievement) navAchievement.classList.remove('active');
 
     displayPopQuiz();
+    
+    // Track view navigation in Mixpanel
+    trackViewNavigation('Pop Quiz View');
 }
 
 function showAchievementView() {
@@ -954,12 +960,32 @@ function showAchievementView() {
         solutionView.style.display = 'none';
         solutionView.classList.add('hidden');
     }
-
+    
     if (navNRound) navNRound.classList.remove('active');
     if (navSettings) navSettings.classList.remove('active');
     if (navAchievement) navAchievement.classList.add('active');
 
     displayAchievements();
+    
+    // Track view navigation in Mixpanel
+    trackViewNavigation('Achievement View');
+}
+
+// Helper function to track view navigation
+function trackViewNavigation(viewName) {
+    if (typeof window.mixpanel !== 'undefined' && window.mixpanel && typeof window.mixpanel.track === 'function') {
+        try {
+            window.mixpanel.track('View Navigation', {
+                view_name: viewName,
+                user_id: window.currentUserId || 'anonymous',
+                nickname: window.currentNickname || 'anonymous',
+                timestamp: new Date().toISOString()
+            });
+            console.log('📊 Tracked view navigation:', viewName);
+        } catch (error) {
+            console.error('❌ Failed to track view navigation:', error);
+        }
+    }
 }
 
 function showImageReviewView() {

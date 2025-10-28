@@ -606,21 +606,13 @@ async function refreshAuthUi() {
             window.currentNickname = user.nickname || user.name || null;
             
             // Identify user in Mixpanel with nickname as distinct_id
-            if (window.currentNickname && window.analytics && window.analytics.initialized) {
-                try {
-                    window.mixpanel.identify(window.currentNickname);
-                    window.mixpanel.people.set({
-                        '$name': window.currentNickname,
-                        'nickname': window.currentNickname,
-                        'user_id': user.id,
-                        'public_id': user.publicId,
-                        'provider': user.provider,
-                        '$last_seen': new Date()
-                    });
-                    console.log('📊 Mixpanel identified with nickname:', window.currentNickname);
-                } catch (error) {
-                    console.error('❌ Mixpanel identify failed:', error);
-                }
+            if (window.currentNickname) {
+                identifyUserInMixpanel(window.currentNickname, {
+                    nickname: window.currentNickname,
+                    user_id: user.id,
+                    public_id: user.publicId,
+                    provider: user.provider
+                });
             }
             
             const seed = user.publicId || user.id || 'user';
@@ -635,6 +627,41 @@ async function refreshAuthUi() {
             window.currentNickname = null;
         }
     } catch (_) {}
+}
+
+// Helper function to identify user in Mixpanel with retry logic
+function identifyUserInMixpanel(nickname, properties = {}) {
+    const attemptIdentify = (retries = 0) => {
+        const maxRetries = 20;
+        
+        if (typeof window.mixpanel !== 'undefined' && 
+            window.mixpanel && 
+            typeof window.mixpanel.identify === 'function') {
+            try {
+                console.log('📊 Identifying user in Mixpanel:', nickname);
+                window.mixpanel.identify(nickname);
+                window.mixpanel.people.set({
+                    '$name': nickname,
+                    'nickname': nickname,
+                    '$last_seen': new Date(),
+                    ...properties
+                });
+                console.log('✅ Mixpanel identified successfully with nickname:', nickname);
+                return true;
+            } catch (error) {
+                console.error('❌ Mixpanel identify failed:', error);
+            }
+        } else if (retries < maxRetries) {
+            // Retry after a delay if Mixpanel is not ready yet
+            console.log(`⏳ Mixpanel not ready, retrying (${retries + 1}/${maxRetries})...`);
+            setTimeout(() => attemptIdentify(retries + 1), 200);
+        } else {
+            console.warn('⚠️ Mixpanel identification failed after max retries');
+        }
+        return false;
+    };
+    
+    attemptIdentify();
 }
 
 function routeAuthOrApp() {
